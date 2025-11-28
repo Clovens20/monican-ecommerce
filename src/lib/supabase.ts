@@ -1,7 +1,27 @@
+// CHEMIN: src/lib/supabase.ts
+// ACTION: CRÉER CE FICHIER (créer le dossier lib si nécessaire)
+
 import { createClient } from '@supabase/supabase-js';
 
-// These will need to be set in .env.local
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Récupérer les variables d'environnement avec valeurs par défaut pour permettre le build
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-role-key';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Client pour le côté serveur (avec service_role key)
+export const supabaseAdmin = createClient(
+  supabaseUrl,
+  supabaseServiceRoleKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
+
+// Client pour le côté client (avec anon key)
+export const supabase = createClient(
+  supabaseUrl,
+  supabaseAnonKey
+);

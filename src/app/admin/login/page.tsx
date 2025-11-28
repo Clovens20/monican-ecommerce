@@ -1,95 +1,153 @@
+// CHEMIN: src/app/admin/login/page.tsx
+// ACTION: REMPLACER TOUT LE CONTENU EXISTANT
+
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useState, FormEvent, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import styles from './login.module.css';
 
-export default function AdminLoginPage() {
+function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const redirectTo = searchParams.get('redirect') || '/admin';
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: FormEvent) => {
         e.preventDefault();
-        if (email === 'admin@monican.com' && password === 'admin123') {
-            // Set auth cookie/storage
-            localStorage.setItem('monican_admin_auth', 'true');
-            document.cookie = "monican_admin_auth=true; path=/";
-            router.push('/admin');
-        } else {
-            setError('Identifiants invalides. Essayez: admin@monican.com / admin123');
+        setError('');
+        setIsLoading(true);
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                router.push(redirectTo);
+                router.refresh();
+            } else {
+                setError(data.error || 'Identifiants invalides');
+            }
+        } catch (err) {
+            console.error('Erreur de connexion:', err);
+            setError('Erreur de connexion. Veuillez réessayer.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: '#111827'
-        }}>
-            <div style={{
-                background: 'white',
-                padding: '2.5rem',
-                borderRadius: '1rem',
-                width: '100%',
-                maxWidth: '400px',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <Image src="/logo.png" alt="Monican" width={150} height={50} style={{ objectFit: 'contain', filter: 'invert(1)' }} />
-                    <h2 style={{ marginTop: '1rem', fontSize: '1.5rem', fontWeight: 'bold', color: '#111827' }}>Admin Login</h2>
+        <div className={styles.container}>
+            <div className={styles.loginCard}>
+                <div className={styles.logoSection}>
+                    <div className={styles.logoPlaceholder}>
+                        <span className={styles.logoText}>MONICAN</span>
+                    </div>
+                    <h1 className={styles.title}>Administration</h1>
+                    <p className={styles.subtitle}>Connectez-vous pour accéder au panneau</p>
                 </div>
 
-                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500, color: '#374151' }}>Email</label>
+                <form onSubmit={handleLogin} className={styles.form}>
+                    <div className={styles.inputGroup}>
+                        <label htmlFor="email" className={styles.label}>
+                            Adresse email
+                        </label>
                         <input
+                            id="email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="admin@monican.com"
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                            className={styles.input}
                             required
+                            disabled={isLoading}
+                            autoComplete="email"
                         />
                     </div>
 
-                    <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 500, color: '#374151' }}>Mot de passe</label>
+                    <div className={styles.inputGroup}>
+                        <label htmlFor="password" className={styles.label}>
+                            Mot de passe
+                        </label>
                         <input
+                            id="password"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #d1d5db' }}
+                            className={styles.input}
                             required
+                            disabled={isLoading}
+                            autoComplete="current-password"
                         />
                     </div>
 
-                    {error && <div style={{ color: '#ef4444', fontSize: '0.9rem', textAlign: 'center' }}>{error}</div>}
+                    {error && (
+                        <div className={styles.errorMessage}>
+                            <span className={styles.errorIcon}>⚠️</span>
+                            {error}
+                        </div>
+                    )}
 
-                    <button type="submit" style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        background: '#10b981',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '0.5rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        fontSize: '1rem'
-                    }}>
-                        Se connecter
+                    <button 
+                        type="submit" 
+                        className={styles.submitBtn}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? (
+                            <>
+                                <span className={styles.spinner}></span>
+                                Connexion...
+                            </>
+                        ) : (
+                            'Se connecter'
+                        )}
                     </button>
                 </form>
 
-                <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: '#6b7280' }}>
-                    Identifiants de démo:<br />
-                    admin@monican.com / admin123
+                <div className={styles.demoCredentials}>
+                    <p className={styles.demoTitle}>🔐 Identifiants de démonstration</p>
+                    <div className={styles.demoInfo}>
+                        <code>admin@monican.com</code>
+                        <code>admin123</code>
+                    </div>
+                </div>
+
+                <div className={styles.securityNote}>
+                    <span className={styles.lockIcon}>🔒</span>
+                    Connexion sécurisée SSL
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AdminLoginPage() {
+    return (
+        <Suspense fallback={
+            <div className={styles.container}>
+                <div className={styles.loginCard}>
+                    <div className={styles.logoSection}>
+                        <div className={styles.logoPlaceholder}>
+                            <span className={styles.logoText}>MONICAN</span>
+                        </div>
+                        <h1 className={styles.title}>Administration</h1>
+                        <p className={styles.subtitle}>Chargement...</p>
+                    </div>
+                </div>
+            </div>
+        }>
+            <LoginForm />
+        </Suspense>
     );
 }

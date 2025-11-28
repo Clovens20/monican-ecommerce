@@ -1,26 +1,37 @@
 import Hero from "@/components/ui/Hero";
 import FeaturedCategories from "@/components/ui/FeaturedCategories";
-import ProductCard from "@/components/product/ProductCard";
-import { mockProducts } from "@/lib/products";
+import StatsSection from "@/components/ui/StatsSection";
+import NewsletterSection from "@/components/ui/NewsletterSection";
+import AnimatedSection from "@/components/ui/AnimatedSection";
+import HomePageClient from "@/components/HomePageClient";
+import { getBestSellingProducts, getFeaturedProductsWithSales } from "@/lib/products-db";
+import styles from './page.module.css';
 
-export default function Home() {
+export default async function Home() {
+  // Récupérer les meilleures ventes (top 4) depuis la base de données
+  // Les produits sont automatiquement triés par nombre de commandes
+  const bestSellers = await getBestSellingProducts(4);
+  
+  // Récupérer les produits vedettes (positions 1 à 5) avec leur quantité vendue
+  // Ces produits sont automatiquement les top 5 avec quantité affichée
+  const featuredProductsWithSales = await getFeaturedProductsWithSales(5);
+
   return (
-    <main>
+    <main className={styles.homePage}>
       <Hero />
-      <FeaturedCategories />
+      
+      <AnimatedSection direction="up" delay={200}>
+        <FeaturedCategories />
+      </AnimatedSection>
 
-      <section className="container" style={{ padding: "4rem 0" }}>
-        <h2 style={{ fontSize: "2rem", marginBottom: "2rem", textAlign: "center" }}>Meilleures Ventes</h2>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-          gap: "1rem"
-        }}>
-          {mockProducts.slice(0, 4).map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
+      <StatsSection />
+
+      <HomePageClient 
+        bestSellers={bestSellers}
+        featuredProductsWithSales={featuredProductsWithSales}
+      />
+
+      <NewsletterSection />
     </main>
   );
 }

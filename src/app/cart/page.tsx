@@ -4,18 +4,20 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '@/lib/cart';
 import { useCountry } from '@/lib/country';
+import { useLanguage } from '@/contexts/LanguageContext';
 import styles from './page.module.css';
 
 export default function CartPage() {
+    const { t } = useLanguage();
     const { items, removeItem, updateQuantity, total } = useCart();
     const { formatPrice, shippingCost, settings } = useCountry();
 
     if (items.length === 0) {
         return (
             <div className={`container ${styles.page}`} style={{ textAlign: 'center', padding: '4rem 0' }}>
-                <h1 className={styles.title}>Votre Panier est vide</h1>
+                <h1 className={styles.title}>{t('cartEmpty')}</h1>
                 <Link href="/catalog" className="btn btn-primary">
-                    Continuer vos achats
+                    {t('continueShopping')}
                 </Link>
             </div>
         );
@@ -26,7 +28,7 @@ export default function CartPage() {
 
     return (
         <div className={`container ${styles.page}`}>
-            <h1 className={styles.title}>Votre Panier</h1>
+            <h1 className={styles.title}>{t('yourCart')}</h1>
 
             <div className={styles.layout}>
                 <div className={styles.cartItems}>
@@ -38,7 +40,7 @@ export default function CartPage() {
                             <div className={styles.itemInfo}>
                                 <h3 className={styles.itemName}>{item.name}</h3>
                                 <div className={styles.itemMeta}>
-                                    Taille: {item.selectedSize} | Prix: {formatPrice(item.price)}
+                                    {t('size')}: {item.selectedSize} | {t('price')}: {formatPrice(item.price)}
                                 </div>
                                 <div className={styles.itemActions}>
                                     <div className={styles.quantityControls}>
@@ -60,7 +62,7 @@ export default function CartPage() {
                                         className={styles.removeBtn}
                                         onClick={() => removeItem(item.cartId)}
                                     >
-                                        Supprimer
+                                        {t('remove')}
                                     </button>
                                 </div>
                             </div>
@@ -72,21 +74,21 @@ export default function CartPage() {
                 </div>
 
                 <div className={styles.summary}>
-                    <h2 className={styles.summaryTitle}>Résumé</h2>
+                    <h2 className={styles.summaryTitle}>{t('orderSummary')}</h2>
                     <div className={styles.summaryRow}>
-                        <span>Sous-total</span>
+                        <span>{t('subtotal')}</span>
                         <span>{formatPrice(total)}</span>
                     </div>
                     <div className={styles.summaryRow}>
-                        <span>Livraison estimée ({settings.code})</span>
-                        <span>{shipping === 0 ? 'Gratuit' : formatPrice(shipping / settings.exchangeRate)}</span>
+                        <span>{t('shipping')} ({settings.code})</span>
+                        <span>{shipping === 0 ? t('free') : formatPrice(shipping / settings.exchangeRate)}</span>
                     </div>
                     <div className={styles.totalRow}>
-                        <span>Total estimé</span>
+                        <span>{t('total')}</span>
                         <span>{formatPrice(total + (shipping / settings.exchangeRate))}</span>
                     </div>
                     <Link href="/checkout" className={styles.checkoutBtn}>
-                        Passer la commande
+                        {t('proceedToCheckout')}
                     </Link>
                 </div>
             </div>

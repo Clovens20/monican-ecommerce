@@ -1,0 +1,712 @@
+.invoice {
+    width: 8.5in;
+    min-height: 11in;
+    background: white;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', 'Segoe UI', 'Arial', sans-serif;
+    color: #111827;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+    position: relative;
+}
+
+/* En-tête premium avec dégradé */
+.invoiceHeader {
+    position: relative;
+    background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+    padding: 0.6in 0.75in;
+    overflow: hidden;
+}
+
+.headerGradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+}
+
+.headerContent {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    color: white;
+}
+
+.companySection {
+    display: flex;
+    gap: 0.3in;
+    align-items: flex-start;
+}
+
+.logoWrapper {
+    position: relative;
+    width: 0.9in;
+    height: 0.9in;
+}
+
+.logoContainer {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.08in;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    z-index: 2;
+}
+
+.logoImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.logo {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.5in;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
+    z-index: 2;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+}
+
+.logoShadow {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    right: -6px;
+    bottom: -6px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    z-index: 1;
+}
+
+.companyDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08in;
+}
+
+.companyName {
+    font-weight: 900;
+    font-size: 0.4in;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.companyTagline {
+    font-size: 0.13in;
+    font-weight: 600;
+    opacity: 0.9;
+    letter-spacing: 0.02em;
+}
+
+.companyAddress {
+    margin-top: 0.12in;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05in;
+}
+
+.addressLine {
+    display: flex;
+    align-items: center;
+    gap: 0.08in;
+    font-size: 0.11in;
+    opacity: 0.95;
+}
+
+.icon {
+    font-size: 0.12in;
+}
+
+.invoiceMetadata {
+    text-align: right;
+}
+
+.invoiceTitle {
+    font-weight: 900;
+    font-size: 0.45in;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.08in;
+}
+
+.invoiceNumber {
+    font-size: 0.16in;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.08in 0.15in;
+    border-radius: 6px;
+    display: inline-block;
+    margin-bottom: 0.15in;
+}
+
+.metadataGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1in;
+}
+
+.metadataItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.03in;
+}
+
+.metadataLabel {
+    font-size: 0.09in;
+    font-weight: 600;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.metadataValue {
+    font-size: 0.12in;
+    font-weight: 700;
+}
+
+.statusPaid {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.06in;
+    background: #10b981;
+    color: white;
+    padding: 0.05in 0.12in;
+    border-radius: 6px;
+    font-size: 0.1in;
+    font-weight: 800;
+}
+
+.statusIcon {
+    font-size: 0.11in;
+}
+
+/* Section client */
+.customerSection {
+    padding: 0.5in 0.75in;
+    background: #f9fafb;
+}
+
+.sectionTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.12in;
+    font-weight: 800;
+    font-size: 0.16in;
+    color: #111827;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.2in;
+}
+
+.titleIcon {
+    font-size: 0.2in;
+}
+
+.customerCard {
+    background: white;
+    border-radius: 12px;
+    padding: 0.3in;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.customerHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.15in;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 0.15in;
+}
+
+.customerName {
+    font-weight: 800;
+    font-size: 0.2in;
+    color: #111827;
+}
+
+.customerBadge {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: white;
+    padding: 0.06in 0.15in;
+    border-radius: 20px;
+    font-size: 0.09in;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.customerInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08in;
+    margin-bottom: 0.15in;
+}
+
+.infoRow {
+    display: flex;
+    align-items: center;
+    gap: 0.1in;
+    font-size: 0.13in;
+    color: #4b5563;
+}
+
+.infoIcon {
+    font-size: 0.14in;
+}
+
+.infoText {
+    font-weight: 600;
+}
+
+.shippingBlock {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 0.15in;
+    border: 1px solid #e5e7eb;
+}
+
+.shippingTitle {
+    display: flex;
+    align-items: center;
+    gap: 0.08in;
+    font-weight: 700;
+    font-size: 0.12in;
+    color: #111827;
+    margin-bottom: 0.1in;
+}
+
+.shippingIcon {
+    font-size: 0.14in;
+}
+
+.shippingAddress {
+    font-size: 0.12in;
+    color: #4b5563;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+.country {
+    font-weight: 700;
+    color: #111827;
+    margin-top: 0.03in;
+}
+
+/* Section produits */
+.productsSection {
+    padding: 0.5in 0.75in;
+}
+
+.tableWrapper {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+}
+
+.productsTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.productsTable thead {
+    background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+    color: white;
+}
+
+.productsTable th {
+    padding: 0.15in;
+    text-align: left;
+    font-weight: 800;
+    font-size: 0.11in;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.thProduct {
+    text-align: left;
+}
+
+.thCenter {
+    text-align: center;
+}
+
+.thRight {
+    text-align: right;
+}
+
+.productsTable td {
+    padding: 0.15in;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.evenRow {
+    background: #fafafa;
+}
+
+.oddRow {
+    background: white;
+}
+
+.productCell {
+    width: 40%;
+}
+
+.productInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.04in;
+}
+
+.productName {
+    font-weight: 700;
+    font-size: 0.13in;
+    color: #111827;
+}
+
+.productSku {
+    font-size: 0.1in;
+    color: #6b7280;
+    font-family: 'Courier New', monospace;
+}
+
+.centerCell {
+    text-align: center;
+}
+
+.rightCell {
+    text-align: right;
+    font-size: 0.13in;
+    color: #374151;
+    font-weight: 600;
+}
+
+.sizeBadge {
+    display: inline-block;
+    background: #e0e7ff;
+    color: #3730a3;
+    padding: 0.04in 0.1in;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.11in;
+}
+
+.quantityBadge {
+    display: inline-block;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 0.04in 0.1in;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.11in;
+}
+
+.totalCell {
+    font-weight: 800;
+    color: #111827;
+    font-size: 0.14in;
+}
+
+/* Section totaux */
+.totalsSection {
+    padding: 0 0.75in 0.5in 0.75in;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.totalsCard {
+    width: 45%;
+    background: white;
+    border-radius: 12px;
+    padding: 0.3in;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border: 2px solid #e5e7eb;
+}
+
+.totalsTitle {
+    font-weight: 800;
+    font-size: 0.14in;
+    color: #111827;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.15in;
+    padding-bottom: 0.1in;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.totalsGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12in;
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.13in;
+}
+
+.totalLabel {
+    font-weight: 600;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.08in;
+}
+
+.labelIcon {
+    font-size: 0.12in;
+}
+
+.totalAmount {
+    font-weight: 700;
+    color: #111827;
+    font-size: 0.14in;
+}
+
+.totalDivider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
+    margin: 0.08in 0;
+}
+
+.grandTotalRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+    color: white;
+    padding: 0.15in;
+    border-radius: 8px;
+    margin-top: 0.1in;
+}
+
+.grandTotalLabel {
+    font-weight: 900;
+    font-size: 0.15in;
+    letter-spacing: 0.02em;
+}
+
+.grandTotalAmount {
+    font-weight: 900;
+    font-size: 0.22in;
+}
+
+/* Section paiement */
+.paymentSection {
+    padding: 0 0.75in 0.5in 0.75in;
+}
+
+.paymentCard {
+    background: #f0fdf4;
+    border-radius: 12px;
+    padding: 0.25in;
+    border: 2px solid #86efac;
+}
+
+.paymentHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.1in;
+    font-weight: 800;
+    font-size: 0.14in;
+    color: #166534;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.12in;
+}
+
+.paymentIcon {
+    font-size: 0.18in;
+}
+
+.paymentDetails {
+    display: flex;
+    justify-content: space-between;
+}
+
+.paymentRow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05in;
+}
+
+.paymentLabel {
+    font-size: 0.1in;
+    font-weight: 600;
+    color: #166534;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+.paymentValue {
+    font-size: 0.13in;
+    font-weight: 700;
+    color: #14532d;
+}
+
+.paymentStatus {
+    display: flex;
+    align-items: center;
+    gap: 0.08in;
+    font-size: 0.13in;
+    font-weight: 700;
+    color: #14532d;
+}
+
+.statusDot {
+    width: 0.1in;
+    height: 0.1in;
+    background: #22c55e;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Pied de page */
+.invoiceFooter {
+    margin-top: auto;
+    padding: 0.5in 0.75in;
+    background: #f9fafb;
+}
+
+.footerDivider {
+    height: 3px;
+    background: linear-gradient(90deg, #1e40af 0%, #7c3aed 50%, #1e40af 100%);
+    margin-bottom: 0.3in;
+    border-radius: 2px;
+}
+
+.footerContent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25in;
+}
+
+.thankYouMessage {
+    display: flex;
+    gap: 0.2in;
+    align-items: flex-start;
+    background: white;
+    padding: 0.25in;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+}
+
+.thankYouIcon {
+    font-size: 0.35in;
+}
+
+.thankYouText {
+    flex: 1;
+}
+
+.thankYouTitle {
+    font-weight: 800;
+    font-size: 0.16in;
+    color: #111827;
+    margin-bottom: 0.06in;
+}
+
+.thankYouSubtext {
+    font-size: 0.12in;
+    color: #6b7280;
+    line-height: 1.6;
+}
+
+.footerInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.08in;
+    text-align: center;
+}
+
+.footerNote {
+    font-size: 0.11in;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.footerLinks {
+    font-size: 0.1in;
+    color: #9ca3af;
+    display: flex;
+    justify-content: center;
+    gap: 0.12in;
+}
+
+.separator {
+    color: #d1d5db;
+}
+
+/* Styles d'impression */
+@media print {
+    /* Masquer tout sauf la facture */
+    body * {
+        visibility: hidden;
+    }
+
+    .invoice,
+    .invoice * {
+        visibility: visible;
+    }
+
+    .invoice {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 8.5in;
+        min-height: 11in;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        background: white;
+    }
+
+    @page {
+        size: letter;
+        margin: 0;
+    }
+}
+
+/* Styles d'écran */
+@media screen {
+    .invoice {
+        max-width: 100%;
+        margin: 2rem auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+}

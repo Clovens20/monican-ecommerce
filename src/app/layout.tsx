@@ -10,12 +10,26 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Monican | E-commerce Multi-pays",
   description: "Vêtements et accessoires de qualité pour USA, Canada et Mexique.",
+  icons: {
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    shortcut: [
+      { url: '/logo.png', type: 'image/png' },
+    ],
+  },
 };
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
+import ConditionalHeader from "@/components/layout/ConditionalHeader";
+import ConditionalFooter from "@/components/layout/ConditionalFooter";
 import { CartProvider } from "@/lib/cart";
 import { CountryProvider } from "@/lib/country";
+import { WishlistProvider } from "@/lib/wishlist";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 
 export default function RootLayout({
   children,
@@ -25,13 +39,17 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={`${inter.variable}`}>
-        <CountryProvider>
-          <CartProvider>
-            <Header />
-            <main>{children}</main>
-            <Footer />
-          </CartProvider>
-        </CountryProvider>
+        <LanguageProvider>
+          <CountryProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <ConditionalHeader />
+                <main>{children}</main>
+                <ConditionalFooter />
+              </WishlistProvider>
+            </CartProvider>
+          </CountryProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

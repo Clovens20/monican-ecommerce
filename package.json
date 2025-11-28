@@ -4,18 +4,33 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
+    "dev:clean": "node -e \"const fs=require('fs');const path='.next/dev/lock';try{fs.unlinkSync(path);console.log('Lock file removed')}catch(e){}\" && next dev -H 0.0.0.0",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "next start -H 0.0.0.0",
+    "preview": "next start -H 0.0.0.0",
+    "lint": "eslint",
+    "clean": "if exist .next rmdir /s /q .next",
+    "clean:lock": "node -e \"const fs=require('fs');const path='.next/dev/lock';try{fs.unlinkSync(path);console.log('Lock file removed')}catch(e){console.log('No lock file found')}\"",
+    "seed:products": "node scripts/seed-products.js",
+    "seed:sales": "node scripts/seed-sales.js",
+    "check:translations": "node scripts/check-translations.js",
+    "server": "node server.mjs",
+    "server:dev": "node --watch server.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
     "next": "16.0.4",
+    "papaparse": "^5.5.3",
+    "pg": "^8.16.3",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/papaparse": "^5.5.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

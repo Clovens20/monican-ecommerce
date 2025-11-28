@@ -19,13 +19,49 @@
 .card {
     position: relative;
     height: 300px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
     background-color: var(--color-gray-100);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+}
+
+.card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary);
+}
+
+.cardBackground {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s ease;
+}
+
+.card:hover .cardBackground {
+    transform: scale(1.1);
+}
+
+.cardHoverEffect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.card:hover .cardHoverEffect {
+    opacity: 1;
 }
 
 .cardImage {
@@ -60,6 +96,11 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+}
+
+.card:hover .cardTitle {
+    transform: scale(1.05);
 }
 
 @media (min-width: 768px) {

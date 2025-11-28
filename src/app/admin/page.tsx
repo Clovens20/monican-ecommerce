@@ -5,6 +5,7 @@ import { mockProducts } from '@/lib/products';
 import { mockCustomers, mockFinancialStats } from '@/lib/mockData';
 import StatCard from '@/components/admin/StatCard';
 import Link from 'next/link';
+import styles from './page.module.css';
 
 export default function AdminDashboard() {
     // Calculate stats
@@ -45,23 +46,16 @@ export default function AdminDashboard() {
     };
 
     return (
-        <div>
-            <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>
-                    Dashboard
-                </h1>
-                <p style={{ color: '#6b7280' }}>
-                    Vue d'ensemble de votre boutique e-commerce
+        <div className={styles.container}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Dashboard Administrateur</h1>
+                <p className={styles.subtitle}>
+                    Vue d'ensemble complète de votre boutique e-commerce
                 </p>
             </div>
 
             {/* Stats Grid */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '2.5rem'
-            }}>
+            <div className={styles.statsGrid}>
                 <StatCard
                     label="Revenus Totaux"
                     value={`$${totalRevenue.toFixed(2)}`}
@@ -92,138 +86,44 @@ export default function AdminDashboard() {
             </div>
 
             {/* Quick Actions */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '1rem',
-                marginBottom: '2.5rem'
-            }}>
-                <Link href="/admin/orders" style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    padding: '1.25rem',
-                    borderRadius: '0.75rem',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'transform 0.2s, box-shadow 0.2s'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(102, 126, 234, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                    }}>
-                    <span style={{ fontSize: '1.5rem' }}>📋</span>
+            <div className={styles.quickActions}>
+                <Link href="/admin/orders" className={styles.actionCard}>
+                    <span className={styles.actionIcon}>📋</span>
                     <span>Gérer les Commandes</span>
                 </Link>
-                <Link href="/admin/products" style={{
-                    background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                    color: 'white',
-                    padding: '1.25rem',
-                    borderRadius: '0.75rem',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'transform 0.2s, box-shadow 0.2s'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(245, 87, 108, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                    }}>
-                    <span style={{ fontSize: '1.5rem' }}>🛍️</span>
+                <Link href="/admin/products" className={styles.actionCard}>
+                    <span className={styles.actionIcon}>🛍️</span>
                     <span>Gérer les Produits</span>
                 </Link>
-                <Link href="/admin/finances" style={{
-                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    color: 'white',
-                    padding: '1.25rem',
-                    borderRadius: '0.75rem',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'transform 0.2s, box-shadow 0.2s'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(79, 172, 254, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                    }}>
-                    <span style={{ fontSize: '1.5rem' }}>💵</span>
+                <Link href="/admin/finances" className={styles.actionCard}>
+                    <span className={styles.actionIcon}>💵</span>
                     <span>Finances</span>
                 </Link>
-                <Link href="/admin/users" style={{
-                    background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                    color: 'white',
-                    padding: '1.25rem',
-                    borderRadius: '0.75rem',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.75rem',
-                    transition: 'transform 0.2s, box-shadow 0.2s'
-                }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(250, 112, 154, 0.3)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
-                    }}>
-                    <span style={{ fontSize: '1.5rem' }}>👥</span>
+                <Link href="/admin/users" className={styles.actionCard}>
+                    <span className={styles.actionIcon}>👥</span>
                     <span>Utilisateurs</span>
                 </Link>
             </div>
 
             {/* Revenue by Country */}
-            <div style={{
-                background: 'white',
-                padding: '1.5rem',
-                borderRadius: '1rem',
-                border: '1px solid #e5e7eb',
-                marginBottom: '2.5rem'
-            }}>
-                <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
-                    Revenus par Pays
-                </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+            <div className={styles.section}>
+                <h2 className={styles.sectionTitle}>Revenus par Pays</h2>
+                <div className={styles.countryGrid}>
                     {mockFinancialStats.revenueByCountry.map((country) => (
-                        <div key={country.country} style={{
-                            padding: '1.25rem',
-                            background: '#f9fafb',
-                            borderRadius: '0.75rem',
-                            border: '1px solid #e5e7eb'
-                        }}>
-                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+                        <div key={country.country} className={styles.countryCard}>
+                            <div className={styles.countryFlag}>
                                 {country.country === 'US' ? '🇺🇸' : country.country === 'CA' ? '🇨🇦' : '🇲🇽'}
                             </div>
-                            <div style={{ fontSize: '0.85rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                            <div className={styles.countryName}>
                                 {country.country === 'US' ? 'États-Unis' : country.country === 'CA' ? 'Canada' : 'Mexique'}
                             </div>
-                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#10b981' }}>
+                            <div className={styles.countryRevenue}>
                                 {new Intl.NumberFormat('fr-FR', {
                                     style: 'currency',
                                     currency: country.currency
                                 }).format(country.revenue)}
                             </div>
-                            <div style={{ fontSize: '0.85rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                            <div className={styles.countryOrders}>
                                 {country.orderCount} commandes
                             </div>
                         </div>
@@ -232,40 +132,33 @@ export default function AdminDashboard() {
             </div>
 
             {/* Recent Orders */}
-            <div style={{ background: 'white', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #e5e7eb' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', margin: 0 }}>
-                        Dernières Commandes
-                    </h2>
-                    <Link href="/admin/orders" style={{
-                        color: '#667eea',
-                        textDecoration: 'none',
-                        fontWeight: 600,
-                        fontSize: '0.9rem'
-                    }}>
+            <div className={styles.section}>
+                <div className={styles.sectionTitle}>
+                    <h2>Dernières Commandes</h2>
+                    <Link href="/admin/orders" className={styles.viewAllLink}>
                         Voir toutes →
                     </Link>
                 </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <table className={styles.ordersTable}>
                     <thead>
-                        <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                            <th style={{ padding: '1rem 0', color: '#6b7280', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>ID Commande</th>
-                            <th style={{ padding: '1rem 0', color: '#6b7280', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Client</th>
-                            <th style={{ padding: '1rem 0', color: '#6b7280', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Date</th>
-                            <th style={{ padding: '1rem 0', color: '#6b7280', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Statut</th>
-                            <th style={{ padding: '1rem 0', color: '#6b7280', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Total</th>
+                        <tr>
+                            <th>ID Commande</th>
+                            <th>Client</th>
+                            <th>Date</th>
+                            <th>Statut</th>
+                            <th>Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         {recentOrders.map((order) => (
-                            <tr key={order.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                <td style={{ padding: '1rem 0', fontWeight: 600 }}>{order.id}</td>
-                                <td style={{ padding: '1rem 0' }}>{order.customerName}</td>
-                                <td style={{ padding: '1rem 0', color: '#6b7280' }}>
+                            <tr key={order.id}>
+                                <td style={{ fontWeight: 600 }}>{order.id}</td>
+                                <td>{order.customerName}</td>
+                                <td style={{ color: 'var(--color-gray-600)' }}>
                                     {new Date(order.date).toLocaleDateString('fr-FR')}
                                 </td>
-                                <td style={{ padding: '1rem 0' }}>{getStatusBadge(order.status)}</td>
-                                <td style={{ padding: '1rem 0', fontWeight: 600 }}>
+                                <td>{getStatusBadge(order.status)}</td>
+                                <td style={{ fontWeight: 600 }}>
                                     {new Intl.NumberFormat('fr-FR', {
                                         style: 'currency',
                                         currency: order.currency

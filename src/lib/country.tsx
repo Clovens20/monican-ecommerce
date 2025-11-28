@@ -14,7 +14,6 @@ interface CountrySettings {
     flag: string;
     shippingRule: {
         flatRate: number;
-        freeThreshold?: number;
     };
 }
 
@@ -28,7 +27,6 @@ const countrySettings: Record<CountryCode, CountrySettings> = {
         flag: '🇺🇸',
         shippingRule: {
             flatRate: 10,
-            freeThreshold: 100,
         },
     },
     CA: {
@@ -97,13 +95,8 @@ export function CountryProvider({ children }: { children: React.ReactNode }) {
     };
 
     const shippingCost = (subtotalInUSD: number) => {
-        const subtotalLocal = convertPrice(subtotalInUSD);
-        const rule = settings.shippingRule;
-
-        if (rule.freeThreshold && subtotalLocal >= rule.freeThreshold) {
-            return 0;
-        }
-        return rule.flatRate;
+        // Retourne toujours le tarif fixe, sans seuil de livraison gratuite
+        return settings.shippingRule.flatRate;
     };
 
     return (

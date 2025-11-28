@@ -1,0 +1,29 @@
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond blanc -->
+  <rect width="32" height="32" fill="#FFFFFF" rx="6"/>
+  
+  <!-- Lettre C en teal/vert foncé (couleur primaire) - forme circulaire/ovale -->
+  <path d="M22 8 C 26 8, 28 10, 28 14 C 28 18, 26 20, 22 20" 
+        stroke="#059669" 
+        stroke-width="2.8" 
+        fill="none" 
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <path d="M22 20 C 18 20, 16 18, 16 14 C 16 10, 18 8, 22 8" 
+        stroke="#059669" 
+        stroke-width="2.8" 
+        fill="none" 
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  
+  <!-- Lettre M en bleu vif (couleur secondaire) - design moderne et angulaire -->
+  <path d="M12 24 L 12 14 L 16 18 L 20 14 L 20 24" 
+        stroke="#3B82F6" 
+        stroke-width="2.5" 
+        fill="none" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  <line x1="12" y1="14" x2="16" y2="18" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="20" y1="14" x2="16" y2="18" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round"/>
+</svg>
+

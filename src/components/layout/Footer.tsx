@@ -1,8 +1,12 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './Footer.module.css';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Footer() {
+    const { t } = useLanguage();
     return (
         <footer className={styles.footer}>
             <div className={styles.container}>
@@ -15,13 +19,13 @@ export default function Footer() {
                         style={{ objectFit: 'contain', opacity: 0.8 }}
                     />
                     <p className={styles.brandDesc}>
-                        Votre destination mode multi-pays. Qualité, style et service exceptionnel pour USA, Canada et Mexique.
+                        {t('brandDescription')}
                     </p>
                 </div>
 
                 <div className={styles.linksGrid}>
                     <div>
-                        <h4 className={styles.colTitle}>Boutique</h4>
+                        <h4 className={styles.colTitle}>{t('shopTitle')}</h4>
                         <ul className={styles.linkList}>
                             <li><Link href="/catalog?category=tennis" className={styles.link}>Tennis</Link></li>
                             <li><Link href="/catalog?category=chemises" className={styles.link}>Chemises</Link></li>
@@ -31,28 +35,28 @@ export default function Footer() {
                     </div>
 
                     <div>
-                        <h4 className={styles.colTitle}>Aide</h4>
+                        <h4 className={styles.colTitle}>{t('helpTitle')}</h4>
                         <ul className={styles.linkList}>
-                            <li><Link href="/track-order" className={styles.link}>Suivre ma commande</Link></li>
-                            <li><Link href="/shipping" className={styles.link}>Livraison</Link></li>
-                            <li><Link href="/returns" className={styles.link}>Retours</Link></li>
-                            <li><Link href="/faq" className={styles.link}>FAQ</Link></li>
+                            <li><Link href="/track-order" className={styles.link}>{t('trackOrder')}</Link></li>
+                            <li><Link href="/shipping" className={styles.link}>{t('delivery')}</Link></li>
+                            <li><Link href="/returns" className={styles.link}>{t('returns')}</Link></li>
+                            <li><Link href="/faq" className={styles.link}>{t('faq')}</Link></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h4 className={styles.colTitle}>Légal</h4>
+                        <h4 className={styles.colTitle}>{t('legalTitle')}</h4>
                         <ul className={styles.linkList}>
-                            <li><Link href="/terms" className={styles.link}>Conditions générales</Link></li>
-                            <li><Link href="/privacy" className={styles.link}>Confidentialité</Link></li>
-                            <li><Link href="/contact" className={styles.link}>Contact</Link></li>
+                            <li><Link href="/terms" className={styles.link}>{t('terms')}</Link></li>
+                            <li><Link href="/privacy" className={styles.link}>{t('privacy')}</Link></li>
+                            <li><Link href="/contact" className={styles.link}>{t('contact')}</Link></li>
                         </ul>
                     </div>
                 </div>
             </div>
 
             <div className={styles.bottom}>
-                <p>&copy; {new Date().getFullYear()} Monican. Tous droits réservés.</p>
+                <p>&copy; {new Date().getFullYear()} Monican. {t('allRightsReserved')}</p>
             </div>
         </footer>
     );

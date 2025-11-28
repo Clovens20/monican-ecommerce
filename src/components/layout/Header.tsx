@@ -1,14 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './Header.module.css';
 import { useCart } from '@/lib/cart';
 import { useCountry, CountryCode } from '@/lib/country';
+import { useLanguage } from '@/contexts/LanguageContext';
+import LanguageSelector from '@/components/LanguageSelector';
+import SearchModal from '@/components/ui/SearchModal';
 
 export default function Header() {
     const { itemCount } = useCart();
     const { country, setCountry } = useCountry();
+    const { t } = useLanguage();
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
     return (
         <header className={styles.header}>
@@ -28,15 +34,18 @@ export default function Header() {
                 {/* Desktop Navigation */}
                 <nav className={styles.nav}>
                     <ul className={styles.navLinks}>
-                        <li><Link href="/" className={styles.navLink}>Accueil</Link></li>
-                        <li><Link href="/catalog" className={styles.navLink}>Catalogue</Link></li>
-                        <li><Link href="/about" className={styles.navLink}>À propos</Link></li>
-                        <li><Link href="/contact" className={styles.navLink}>Contact</Link></li>
+                        <li><Link href="/" className={styles.navLink}>{t('home')}</Link></li>
+                        <li><Link href="/catalog" className={styles.navLink}>{t('catalog')}</Link></li>
+                        <li><Link href="/wholesale" className={`${styles.navLink} ${styles.wholesaleLink}`}>{t('wholesale')}</Link></li>
+                        <li><Link href="/about" className={styles.navLink}>{t('about')}</Link></li>
+                        <li><Link href="/contact" className={styles.navLink}>{t('contact')}</Link></li>
                     </ul>
                 </nav>
 
-                {/* Actions (Search, User, Cart) */}
+                {/* Actions (Language, Country, Search, Cart) */}
                 <div className={styles.actions}>
+                    <LanguageSelector />
+
                     <select
                         value={country}
                         onChange={(e) => setCountry(e.target.value as CountryCode)}
@@ -55,14 +64,20 @@ export default function Header() {
                         <option value="MX">🇲🇽 MXN</option>
                     </select>
 
-                    <button className={styles.iconBtn} aria-label="Recherche">
+                    <button 
+                        className={styles.iconBtn} 
+                        aria-label="Recherche"
+                        onClick={() => setIsSearchOpen(true)}
+                    >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                     </button>
 
-                    <Link href="/cart" className={`${styles.iconBtn} ${styles.cartBtn}`} aria-label="Panier">
+                    <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+
+                    <Link href="/cart" className={`${styles.iconBtn} ${styles.cartBtn}`} aria-label={t('cart')}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="9" cy="21" r="1"></circle>
                             <circle cx="20" cy="21" r="1"></circle>

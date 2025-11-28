@@ -1,0 +1,462 @@
+.shippingLabel {
+    width: 4in;
+    height: 6in;
+    background: white;
+    border: 3px solid #000;
+    padding: 0.4in;
+    box-sizing: border-box;
+    font-family: 'Inter', 'Arial', sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15in;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+}
+
+/* En-tête avec branding */
+.labelHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.15in;
+    border-bottom: 3px solid #000;
+}
+
+.brandSection {
+    display: flex;
+    align-items: center;
+    gap: 0.15in;
+}
+
+.logoContainer {
+    position: relative;
+    width: 0.6in;
+    height: 0.6in;
+}
+
+.logoWrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.05in;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+}
+
+.logoImage {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.logo {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 900;
+    font-size: 0.3in;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+.logoBg {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(124, 58, 237, 0.2) 100%);
+    border-radius: 12px;
+    z-index: 1;
+}
+
+.companyInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.02in;
+}
+
+.companyName {
+    font-weight: 900;
+    font-size: 0.24in;
+    color: #000;
+    letter-spacing: 0.03em;
+    line-height: 1;
+}
+
+.tagline {
+    font-size: 0.09in;
+    color: #666;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.priorityBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.08in;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    padding: 0.08in 0.15in;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+}
+
+.badgeIcon {
+    font-size: 0.16in;
+}
+
+.badgeText {
+    font-weight: 800;
+    font-size: 0.11in;
+    color: #000;
+    letter-spacing: 0.02em;
+}
+
+/* Barre d'informations de commande */
+.orderBar {
+    display: flex;
+    justify-content: space-between;
+    background: #f3f4f6;
+    padding: 0.1in 0.15in;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.orderDetail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.03in;
+}
+
+.orderLabel {
+    font-size: 0.08in;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: 0.03em;
+}
+
+.orderValue {
+    font-size: 0.12in;
+    font-weight: 800;
+    color: #000;
+    font-family: 'Courier New', monospace;
+}
+
+/* Section destinataire - Focus principal */
+.recipientSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.1in;
+    margin-bottom: 0.12in;
+}
+
+.headerIcon {
+    font-size: 0.18in;
+}
+
+.headerTitle {
+    font-weight: 800;
+    font-size: 0.14in;
+    color: #000;
+    letter-spacing: 0.04em;
+}
+
+.recipientBox {
+    flex: 1;
+    background: #f9fafb;
+    border: 2px solid #000;
+    border-radius: 8px;
+    padding: 0.2in;
+    display: flex;
+    flex-direction: column;
+    gap: 0.12in;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.recipientName {
+    font-weight: 900;
+    font-size: 0.18in;
+    color: #000;
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+    padding-bottom: 0.08in;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.addressLines {
+    display: flex;
+    flex-direction: column;
+    gap: 0.06in;
+}
+
+.addressLine {
+    font-size: 0.13in;
+    font-weight: 600;
+    color: #1f2937;
+    line-height: 1.4;
+}
+
+.countryLine {
+    font-size: 0.14in;
+    font-weight: 800;
+    color: #000;
+    text-transform: uppercase;
+    margin-top: 0.04in;
+    letter-spacing: 0.02em;
+}
+
+.contactLine {
+    display: flex;
+    align-items: center;
+    gap: 0.08in;
+    padding-top: 0.08in;
+    border-top: 1px solid #e5e7eb;
+}
+
+.phoneIcon {
+    font-size: 0.12in;
+}
+
+.phoneNumber {
+    font-size: 0.12in;
+    font-weight: 700;
+    color: #374151;
+    font-family: 'Courier New', monospace;
+}
+
+/* Section expéditeur - Compacte */
+.senderSection {
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 0.12in;
+}
+
+.senderHeader {
+    font-size: 0.09in;
+    font-weight: 800;
+    color: #6b7280;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.06in;
+}
+
+.senderBox {
+    display: flex;
+    flex-direction: column;
+    gap: 0.03in;
+}
+
+.senderName {
+    font-weight: 800;
+    font-size: 0.11in;
+    color: #000;
+}
+
+.senderAddress,
+.senderContact {
+    font-size: 0.09in;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+/* Section suivi */
+.trackingSection {
+    background: white;
+    border: 2px solid #000;
+    border-radius: 8px;
+    padding: 0.12in;
+}
+
+.trackingBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.08in;
+}
+
+.trackingLabel {
+    font-size: 0.09in;
+    font-weight: 700;
+    color: #6b7280;
+    letter-spacing: 0.04em;
+}
+
+.trackingNumber {
+    font-size: 0.16in;
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    color: #000;
+    letter-spacing: 0.08em;
+    background: #fef3c7;
+    padding: 0.06in 0.12in;
+    border-radius: 4px;
+}
+
+.trackingBarcode {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 1px;
+    height: 0.35in;
+    width: 100%;
+    padding: 0.05in;
+    background: white;
+}
+
+.barcodeLine {
+    width: 2px;
+    background: #000;
+    transition: opacity 0.2s;
+}
+
+/* Pied de page */
+.labelFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.1in;
+    border-top: 2px solid #e5e7eb;
+}
+
+.itemsBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.08in;
+    background: #e0e7ff;
+    padding: 0.06in 0.12in;
+    border-radius: 6px;
+    border: 1px solid #c7d2fe;
+}
+
+.itemsIcon {
+    font-size: 0.12in;
+}
+
+.itemsText {
+    font-size: 0.1in;
+    font-weight: 700;
+    color: #3730a3;
+}
+
+.qrSection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.04in;
+}
+
+.qrCode {
+    width: 0.5in;
+    height: 0.5in;
+    border: 2px solid #000;
+    border-radius: 4px;
+    padding: 0.04in;
+    background: white;
+}
+
+.qrPattern {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+}
+
+.qrDot {
+    background: #000;
+    border-radius: 1px;
+}
+
+.qrLabel {
+    font-size: 0.08in;
+    font-weight: 600;
+    color: #6b7280;
+}
+
+/* Avertissement */
+.printWarning {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.1in;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #fbbf24;
+    border-radius: 6px;
+    padding: 0.08in;
+    margin-top: 0.05in;
+}
+
+.warningIcon {
+    font-size: 0.14in;
+}
+
+.warningText {
+    font-size: 0.09in;
+    font-weight: 700;
+    color: #92400e;
+    text-align: center;
+}
+
+/* Styles d'impression */
+@media print {
+    /* Masquer tout sauf l'étiquette */
+    body * {
+        visibility: hidden;
+    }
+
+    .shippingLabel,
+    .shippingLabel * {
+        visibility: visible;
+    }
+
+    .shippingLabel {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 4in;
+        height: 6in;
+        margin: 0;
+        padding: 0.4in;
+        border: 3px solid #000;
+        box-shadow: none;
+        background: white;
+    }
+
+    .printWarning {
+        display: none;
+    }
+
+    @page {
+        size: 4in 6in;
+        margin: 0;
+    }
+}
+
+/* Styles d'écran */
+@media screen {
+    .shippingLabel {
+        max-width: 100%;
+        margin: 2rem auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+}

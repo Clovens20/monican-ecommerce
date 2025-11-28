@@ -1,0 +1,370 @@
+/* CHEMIN: src/app/admin/dashboard.module.css */
+/* ACTION: CRÉER CE FICHIER */
+
+.dashboard {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  
+  /* Page Header */
+  .pageHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+  }
+  
+  .pageTitle {
+    font-size: 32px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 4px 0;
+  }
+  
+  .pageSubtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+  }
+  
+  .headerActions {
+    display: flex;
+    gap: 12px;
+  }
+  
+  .btnPrimary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+  }
+  
+  .btnPrimary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  }
+  
+  .btnSecondary {
+    background: white;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+  }
+  
+  .btnSecondary:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+  }
+  
+  /* Stats Grid */
+  .statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  
+  .statCard {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: all 0.2s ease;
+  }
+  
+  .statCard:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  
+  .statHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  
+  .statIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+  
+  .statChange {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  
+  .statChange.up {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  .statChange.down {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  
+  .statValue {
+    font-size: 32px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 4px;
+  }
+  
+  .statLabel {
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  /* Content Grid */
+  .contentGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+  
+  /* Card */
+  .card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  
+  .cardHeader {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .cardTitle {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+  }
+  
+  .cardLink {
+    color: #667eea;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  .cardLink:hover {
+    color: #764ba2;
+  }
+  
+  .cardBody {
+    padding: 24px;
+  }
+  
+  /* Table */
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table thead th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+  }
+  
+  .table tbody tr {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.2s ease;
+  }
+  
+  .table tbody tr:hover {
+    background: #f9fafb;
+  }
+  
+  .table tbody td {
+    padding: 16px 0;
+    font-size: 14px;
+    color: #374151;
+  }
+  
+  .orderId {
+    font-weight: 600;
+    color: #667eea;
+  }
+  
+  .amount {
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  .date {
+    color: #9ca3af;
+    font-size: 13px;
+  }
+  
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  
+  .status.completed {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  
+  .status.processing {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+  
+  .status.pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  /* Product List */
+  .productList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .productItem {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px;
+    border-radius: 8px;
+    transition: background 0.2s ease;
+  }
+  
+  .productItem:hover {
+    background: #f9fafb;
+  }
+  
+  .productRank {
+    width: 32px;
+    height: 32px;
+    background: #f3f4f6;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  .productInfo {
+    flex: 1;
+  }
+  
+  .productName {
+    font-weight: 600;
+    color: #111827;
+    margin-bottom: 2px;
+  }
+  
+  .productSales {
+    font-size: 13px;
+    color: #6b7280;
+  }
+  
+  .productRevenue {
+    font-weight: 700;
+    font-size: 16px;
+    color: #10b981;
+  }
+  
+  /* Activity Feed */
+  .activityFeed {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .activityItem {
+    display: flex;
+    gap: 16px;
+  }
+  
+  .activityIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+  
+  .activityContent {
+    flex: 1;
+  }
+  
+  .activityText {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 4px;
+  }
+  
+  .activityTime {
+    font-size: 13px;
+    color: #9ca3af;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .pageHeader {
+      flex-direction: column;
+      gap: 16px;
+    }
+  
+    .headerActions {
+      width: 100%;
+    }
+  
+    .btnPrimary,
+    .btnSecondary {
+      flex: 1;
+    }
+  
+    .statsGrid {
+      grid-template-columns: 1fr;
+    }
+  
+    .contentGrid {
+      grid-template-columns: 1fr;
+    }
+  }

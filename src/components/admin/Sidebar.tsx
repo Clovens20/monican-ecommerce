@@ -1,3 +1,6 @@
+// CHEMIN: src/components/admin/Sidebar.tsx
+// ACTION: REMPLACER TOUT LE CONTENU
+
 'use client';
 
 import Link from 'next/link';
@@ -8,6 +11,7 @@ const navItems = [
     { name: 'Dashboard', path: '/admin', icon: '📊' },
     { name: 'Commandes', path: '/admin/orders', icon: '📦' },
     { name: 'Produits', path: '/admin/products', icon: '🏷️' },
+    { name: 'Import CSV', path: '/admin/products/import', icon: '📥' },
     { name: 'Clients', path: '/admin/customers', icon: '👥' },
     { name: 'Finances', path: '/admin/finances', icon: '💰' },
     { name: 'Paramètres', path: '/admin/settings', icon: '⚙️' },

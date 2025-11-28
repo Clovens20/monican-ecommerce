@@ -1,14 +1,19 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './Hero.module.css';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function Hero() {
+    const { t } = useLanguage();
+
     return (
         <section className={styles.hero}>
             <div className={styles.imageWrapper}>
                 <Image
                     src="/hero-banner.png"
-                    alt="Nouvelle Collection Monican"
+                    alt={t('heroTitle')}
                     fill
                     className={styles.image}
                     priority
@@ -19,19 +24,17 @@ export default function Hero() {
             <div className={styles.content}>
                 <div className={styles.textContent}>
                     <h1 className={styles.title}>
-                        Style <span className={styles.highlight}>International</span>,<br />
-                        Livré chez Vous.
+                        {t('heroTitle')}
                     </h1>
                     <p className={styles.subtitle}>
-                        Découvrez la nouvelle collection de tennis, jeans et accessoires.
-                        Qualité premium pour USA, Canada et Mexique.
+                        {t('heroSubtitle2')}
                     </p>
                     <div className={styles.buttons}>
                         <Link href="/catalog" className="btn btn-primary">
-                            Acheter Maintenant
+                            {t('buyNow')}
                         </Link>
                         <Link href="/catalog?category=new" className="btn btn-secondary">
-                            Nouveautés
+                            {t('newArrivals')}
                         </Link>
                     </div>
                 </div>

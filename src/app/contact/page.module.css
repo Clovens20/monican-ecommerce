@@ -1,0 +1,159 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1rem;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--color-dark);
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    font-size: 1.25rem;
+    color: var(--color-gray-500);
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+}
+
+.formSection,
+.infoSection {
+    background: white;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-gray-200);
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    margin-bottom: 1.5rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+}
+
+.input,
+.textarea {
+    padding: 0.75rem;
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.input:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.textarea {
+    resize: vertical;
+}
+
+.submitButton {
+    padding: 1rem 2rem;
+    background: var(--color-dark);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.submitButton:hover {
+    background: #000;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.successMessage {
+    color: var(--primary);
+    font-weight: 500;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.contactInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.contactItem {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.contactIcon {
+    font-size: 2rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-light);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+.contactItem h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-dark);
+    margin-bottom: 0.5rem;
+}
+
+.contactItem p {
+    color: var(--color-gray-600);
+    line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 2rem;
+    }
+
+    .layout {
+        grid-template-columns: 1fr;
+    }
+}
+

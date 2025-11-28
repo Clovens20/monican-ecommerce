@@ -26,11 +26,23 @@
     color: #d1d5db;
 }
 
-.grid {
+.mainLayout {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 4rem;
     margin-bottom: 4rem;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+}
+
+.sidebar {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--color-gray-200);
 }
 
 /* Gallery Styles */
@@ -48,6 +60,17 @@
     overflow: hidden;
     position: relative;
     border: 1px solid #e5e7eb;
+    cursor: zoom-in;
+}
+
+.mainImageContainer {
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+
+.mainImageWrapper:hover .mainImageContainer {
+    transform: scale(1.02);
 }
 
 .mainImage {
@@ -321,8 +344,14 @@
     color: #6b7280;
 }
 
+.actionButtons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
 .addToCartBtn {
-    width: 100%;
+    flex: 1;
     padding: 1rem 2rem;
     background: #111827;
     color: white;
@@ -344,6 +373,86 @@
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+}
+
+.wishlistBtn {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #e5e7eb;
+    background: white;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #111827;
+}
+
+.wishlistBtn:hover {
+    border-color: #111827;
+    background: #f9fafb;
+    transform: scale(1.05);
+}
+
+.engagementInfo {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background: #fef3c7;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.engagementText {
+    font-size: 0.9rem;
+    color: #92400e;
+    font-weight: 500;
+}
+
+.serviceIcons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.serviceIcon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.serviceIcon:hover {
+    background: #f3f4f6;
+    transform: translateY(-2px);
+}
+
+.serviceIcon:focus {
+    outline: 2px solid #111827;
+    outline-offset: 2px;
+}
+
+.serviceIcon .icon {
+    font-size: 1.5rem;
+}
+
+.serviceIcon span:not(.icon) {
+    font-size: 0.85rem;
+    color: #4b5563;
+    text-align: center;
+    font-weight: 500;
 }
 
 .shippingInfo {
@@ -382,6 +491,15 @@
 
 /* Responsive */
 @media (max-width: 1024px) {
+    .mainLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+        margin-top: 3rem;
+    }
+
     .grid {
         grid-template-columns: 1fr;
         gap: 2rem;

@@ -1,0 +1,298 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.title {
+    font-size: 3rem;
+    font-weight: 800;
+    color: var(--color-dark);
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.subtitle {
+    font-size: 1.25rem;
+    color: var(--color-gray-500);
+}
+
+.discountBanner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.discountCard {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    color: white;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+}
+
+.discountCard:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.discountAmount {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.discountLabel {
+    font-size: 1rem;
+    opacity: 0.95;
+}
+
+.layout {
+    display: grid;
+    gap: 2rem;
+}
+
+.formSection {
+    background: white;
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--color-gray-200);
+}
+
+.sectionTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--color-gray-200);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.formGroup.fullWidth {
+    grid-column: 1 / -1;
+}
+
+.label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+}
+
+.input,
+.select,
+.textarea {
+    padding: 0.75rem;
+    border: 2px solid var(--color-gray-200);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.textarea {
+    resize: vertical;
+}
+
+.addItemSection {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--color-light);
+    border-radius: var(--radius-md);
+}
+
+.addItemForm {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1fr auto;
+    gap: 1rem;
+    align-items: end;
+}
+
+.addButton {
+    padding: 0.75rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.addButton:hover {
+    background: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.itemsTable {
+    margin: 2rem 0;
+    overflow-x: auto;
+}
+
+.itemsTable table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.itemsTable th {
+    background: var(--color-light);
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    border-bottom: 2px solid var(--color-gray-200);
+}
+
+.itemsTable td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-gray-200);
+}
+
+.itemsTable tr:hover {
+    background: var(--color-light);
+}
+
+.removeButton {
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.removeButton:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+.summary {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: var(--color-light);
+    border-radius: var(--radius-md);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1rem;
+    color: var(--color-gray-800);
+}
+
+.summaryRowTotal {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--color-gray-200);
+    margin-top: 0.5rem;
+}
+
+.discountText {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.submitButton {
+    margin-top: 2rem;
+    padding: 1rem 2rem;
+    background: var(--color-dark);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.submitButton:hover:not(:disabled) {
+    background: #000;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.submitButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .title {
+        font-size: 2rem;
+    }
+
+    .discountBanner {
+        grid-template-columns: 1fr;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .addItemForm {
+        grid-template-columns: 1fr;
+    }
+
+    .itemsTable {
+        font-size: 0.9rem;
+    }
+
+    .itemsTable th,
+    .itemsTable td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+

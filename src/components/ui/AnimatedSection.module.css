@@ -1,0 +1,41 @@
+.animatedSection {
+    opacity: 0;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animatedSection.visible {
+    opacity: 1;
+}
+
+.animatedSection.up {
+    transform: translateY(50px);
+}
+
+.animatedSection.up.visible {
+    transform: translateY(0);
+}
+
+.animatedSection.down {
+    transform: translateY(-50px);
+}
+
+.animatedSection.down.visible {
+    transform: translateY(0);
+}
+
+.animatedSection.left {
+    transform: translateX(50px);
+}
+
+.animatedSection.left.visible {
+    transform: translateX(0);
+}
+
+.animatedSection.right {
+    transform: translateX(-50px);
+}
+
+.animatedSection.right.visible {
+    transform: translateX(0);
+}
+

@@ -1,14 +1,29 @@
 'use client';
 
-import { Order } from '@/lib/types';
+import { useState } from 'react';
+import { Order, OrderStatus } from '@/lib/types';
+import OrderProcessingWorkflow from './OrderProcessingWorkflow';
+import ShippingLabel from './ShippingLabel';
+import Invoice from './Invoice';
 import styles from './OrderDetails.module.css';
 
 interface OrderDetailsProps {
     order: Order;
+    subAdminCode?: string;
     onClose: () => void;
+    onStatusUpdate?: (orderId: string, newStatus: OrderStatus, trackingNumber?: string) => void;
 }
 
-export default function OrderDetails({ order, onClose }: OrderDetailsProps) {
+export default function OrderDetails({ order, subAdminCode = '', onClose, onStatusUpdate }: OrderDetailsProps) {
+    const [showWorkflow, setShowWorkflow] = useState(false);
+    const [showShippingLabel, setShowShippingLabel] = useState(false);
+    const [showInvoice, setShowInvoice] = useState(false);
+
+    const handleStatusUpdate = (orderId: string, newStatus: OrderStatus, trackingNumber?: string) => {
+        if (onStatusUpdate) {
+            onStatusUpdate(orderId, newStatus, trackingNumber);
+        }
+    };
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleString('fr-FR', {
             year: 'numeric',
@@ -37,8 +52,28 @@ export default function OrderDetails({ order, onClose }: OrderDetailsProps) {
         return statusMap[status] || styles.statusPending;
     };
 
-    const handlePrint = () => {
-        window.print();
+    const handlePrintLabel = () => {
+        // S'assurer que seule l'étiquette est affichée
+        setShowInvoice(false);
+        setShowShippingLabel(true);
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                setShowShippingLabel(false);
+            }, 100);
+        }, 100);
+    };
+
+    const handlePrintInvoice = () => {
+        // S'assurer que seule la facture est affichée
+        setShowShippingLabel(false);
+        setShowInvoice(true);
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+                setShowInvoice(false);
+            }, 100);
+        }, 100);
     };
 
     const handleMarkAsProcessed = () => {
@@ -47,8 +82,19 @@ export default function OrderDetails({ order, onClose }: OrderDetailsProps) {
     };
 
     return (
-        <div className={styles.modal} onClick={onClose}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <>
+            {showShippingLabel && (
+                <div className={styles.printContainer}>
+                    <ShippingLabel order={order} />
+                </div>
+            )}
+            {showInvoice && (
+                <div className={styles.printContainer}>
+                    <Invoice order={order} />
+                </div>
+            )}
+            <div className={styles.modal} onClick={onClose}>
+                <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
                 {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerInfo}>
@@ -180,16 +226,35 @@ export default function OrderDetails({ order, onClose }: OrderDetailsProps) {
 
                 {/* Actions */}
                 <div className={styles.actions}>
-                    <button className={`${styles.actionBtn} ${styles.secondaryBtn}`} onClick={handlePrint}>
-                        🖨️ Imprimer Bon de Préparation
-                    </button>
-                    {order.status === 'pending' && (
-                        <button className={`${styles.actionBtn} ${styles.primaryBtn}`} onClick={handleMarkAsProcessed}>
-                            ✓ Marquer comme Traitée
+                    <div className={styles.printActions}>
+                        <button className={`${styles.actionBtn} ${styles.secondaryBtn}`} onClick={handlePrintLabel}>
+                            📦 Imprimer Étiquette
+                        </button>
+                        <button className={`${styles.actionBtn} ${styles.secondaryBtn}`} onClick={handlePrintInvoice}>
+                            🧾 Imprimer Facture
+                        </button>
+                    </div>
+                    {(order.status === 'pending' || order.status === 'processing') && (
+                        <button 
+                            className={`${styles.actionBtn} ${styles.primaryBtn}`} 
+                            onClick={() => setShowWorkflow(true)}
+                        >
+                            {order.status === 'pending' ? '▶️ Traiter la Commande' : '📦 Finaliser l\'Expédition'}
                         </button>
                     )}
                 </div>
             </div>
-        </div>
+
+            {/* Workflow Modal */}
+            {showWorkflow && (
+                <OrderProcessingWorkflow
+                    order={order}
+                    subAdminCode={subAdminCode}
+                    onStatusUpdate={handleStatusUpdate}
+                    onClose={() => setShowWorkflow(false)}
+                />
+            )}
+            </div>
+        </>
     );
 }

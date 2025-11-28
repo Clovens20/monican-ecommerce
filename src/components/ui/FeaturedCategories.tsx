@@ -1,27 +1,42 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import AnimatedSection from './AnimatedSection';
+import { useLanguage } from '@/contexts/LanguageContext';
 import styles from './FeaturedCategories.module.css';
 
 const categories = [
-    { name: 'Tennis', slug: 'tennis', image: '/cat-tennis.jpg' }, // Placeholder images needed
-    { name: 'Chemises', slug: 'chemises', image: '/cat-shirts.jpg' },
-    { name: 'Jeans', slug: 'jeans', image: '/cat-jeans.jpg' },
-    { name: 'Maillots', slug: 'maillots', image: '/cat-jerseys.jpg' },
+    { nameKey: 'tennis', slug: 'tennis', color: '#3B82F6' },
+    { nameKey: 'shirts', slug: 'chemises', color: '#10B981' },
+    { nameKey: 'jeans', slug: 'jeans', color: '#8B5CF6' },
+    { nameKey: 'jerseys', slug: 'maillots', color: '#F59E0B' },
 ];
 
 export default function FeaturedCategories() {
+    const { t } = useLanguage();
+    
     return (
         <section className={styles.section}>
             <div className="container">
-                <h2 className={styles.title}>Nos Catégories</h2>
+                <AnimatedSection direction="up">
+                    <h2 className={styles.title}>{t('categoriesTitle')}</h2>
+                </AnimatedSection>
                 <div className={styles.grid}>
-                    {categories.map((cat) => (
-                        <Link key={cat.slug} href={`/catalog?category=${cat.slug}`} className={styles.card}>
-                            {/* Using a colored placeholder div for now if image fails, or Next.js Image with fallback */}
-                            <div style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: '#e5e7eb' }}></div>
-                            <div className={styles.cardOverlay}></div>
-                            <span className={styles.cardTitle}>{cat.name}</span>
-                        </Link>
+                    {categories.map((cat, index) => (
+                        <AnimatedSection key={cat.slug} delay={index * 100} direction="up">
+                            <Link href={`/catalog?category=${cat.slug}`} className={styles.card}>
+                                <div 
+                                    className={styles.cardBackground}
+                                    style={{ 
+                                        background: `linear-gradient(135deg, ${cat.color} 0%, ${cat.color}dd 100%)`
+                                    }}
+                                ></div>
+                                <div className={styles.cardOverlay}></div>
+                                <span className={styles.cardTitle}>{t(cat.nameKey)}</span>
+                                <div className={styles.cardHoverEffect}></div>
+                            </Link>
+                        </AnimatedSection>
                     ))}
                 </div>
             </div>

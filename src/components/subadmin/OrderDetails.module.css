@@ -289,6 +289,13 @@
     background: #f9fafb;
     position: sticky;
     bottom: 0;
+    flex-wrap: wrap;
+}
+
+.printActions {
+    display: flex;
+    gap: 0.75rem;
+    flex: 1;
 }
 
 .actionBtn {
@@ -339,6 +346,37 @@
     color: #78350f;
     margin: 0;
     line-height: 1.6;
+}
+
+.printContainer {
+    display: none;
+}
+
+@media print {
+    /* Masquer tout sauf le conteneur d'impression */
+    body * {
+        visibility: hidden;
+    }
+
+    .printContainer,
+    .printContainer * {
+        visibility: visible;
+    }
+
+    .printContainer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        display: block;
+    }
+
+    /* Masquer le modal et tout le reste */
+    .modal,
+    .modal * {
+        display: none !important;
+        visibility: hidden !important;
+    }
 }
 
 @media (max-width: 768px) {

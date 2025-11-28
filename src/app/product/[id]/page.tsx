@@ -2,12 +2,22 @@
 
 import { useState, use } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { mockProducts, getProductsByCategory } from '@/lib/products';
 import ProductCard from '@/components/product/ProductCard';
+import ProductReviews from '@/components/product/ProductReviews';
+import ProductRecommendations from '@/components/product/ProductRecommendations';
+import PaymentSecurityModal from '@/components/product/PaymentSecurityModal';
+import FreeShippingModal from '@/components/product/FreeShippingModal';
+import FreeReturnsModal from '@/components/product/FreeReturnsModal';
+import SizeGuideModal from '@/components/product/SizeGuideModal';
+import { useProductViewers } from '@/hooks/useProductViewers';
 import styles from './page.module.css';
 import { notFound } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 import { useCountry } from '@/lib/country';
+import { useWishlist } from '@/lib/wishlist';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type TabType = 'description' | 'features' | 'shipping';
 
@@ -17,14 +27,27 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
     const { addItem } = useCart();
     const { formatPrice } = useCountry();
+    const { isInWishlist, toggleItem } = useWishlist();
+    const { t } = useLanguage();
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<TabType>('description');
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    
+    // Modal states
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [shippingModalOpen, setShippingModalOpen] = useState(false);
+    const [returnsModalOpen, setReturnsModalOpen] = useState(false);
+    const [sizeGuideModalOpen, setSizeGuideModalOpen] = useState(false);
+    
+    // Real-time viewer count (hook must be called before conditional return)
+    const viewerCount = useProductViewers({ productId: product?.id || '' });
 
     if (!product) {
         return notFound();
     }
+    
+    const isWishlisted = isInWishlist(product.id);
 
     // Get similar products from the same category
     const similarProducts = getProductsByCategory(product.category)
@@ -38,7 +61,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
     const handleAddToCart = () => {
         if (!selectedSize) {
-            alert('Veuillez sélectionner une taille');
+            alert(t('pleaseSelectSize'));
             return;
         }
 
@@ -47,13 +70,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             addItem(product, selectedSize);
         }
 
-        alert(`${quantity} produit(s) ajouté(s) au panier !`);
+        alert(`${quantity} ${t('addedToCart')}`);
     };
 
     const getStockStatus = () => {
-        if (totalStock === 0) return { text: 'Rupture de stock', class: 'outOfStock' };
-        if (totalStock < 10) return { text: `Plus que ${totalStock} en stock`, class: 'lowStock' };
-        return { text: 'En stock', class: '' };
+        if (totalStock === 0) return { text: t('outOfStock'), class: 'outOfStock' };
+        if (totalStock < 10) return { text: `${t('onlyLeft')} ${totalStock} ${t('leftInStock')}`, class: 'lowStock' };
+        return { text: t('inStock'), class: '' };
     };
 
     const stockStatus = getStockStatus();
@@ -62,55 +85,60 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         <div className={styles.container}>
             {/* Breadcrumb */}
             <div className={styles.breadcrumb}>
-                <Link href="/">Accueil</Link>
+                <Link href="/">{t('home')}</Link>
                 <span>/</span>
-                <Link href="/catalog">Catalogue</Link>
+                <Link href="/catalog">{t('catalog')}</Link>
                 <span>/</span>
                 <Link href={`/catalog?category=${product.category}`}>{product.category}</Link>
                 <span>/</span>
                 <span>{product.name}</span>
             </div>
 
-            <div className={styles.grid}>
-                {/* Gallery */}
-                <div className={styles.gallery}>
-                    <div className={styles.mainImageWrapper}>
-                        {product.isNew && <div className={styles.newBadge}>Nouveau</div>}
-                        {/* Placeholder for main image */}
-                        <div style={{
-                            width: '100%',
-                            height: '100%',
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontSize: '1.5rem',
-                            fontWeight: 'bold'
-                        }}>
-                            {product.name}
-                        </div>
-                    </div>
-                    <div className={styles.thumbnails}>
-                        {product.images.map((img, index) => (
-                            <div
-                                key={img.id}
-                                className={`${styles.thumbnail} ${selectedImageIndex === index ? styles.active : ''}`}
-                                onClick={() => setSelectedImageIndex(index)}
-                            >
-                                {/* Placeholder thumbnails */}
+            <div className={styles.mainLayout}>
+                <div className={styles.grid}>
+                    {/* Gallery */}
+                    <div className={styles.gallery}>
+                        <div className={styles.mainImageWrapper}>
+                            {product.isNew && <div className={styles.newBadge}>{t('new')}</div>}
+                            <div className={styles.mainImageContainer}>
                                 <div style={{
                                     width: '100%',
                                     height: '100%',
-                                    background: `linear-gradient(135deg, #667eea ${index * 20}%, #764ba2 100%)`
-                                }} />
+                                    background: `linear-gradient(135deg, ${selectedImageIndex % 2 === 0 ? '#3B82F6' : '#10B981'} 0%, ${selectedImageIndex % 2 === 0 ? '#1E40AF' : '#059669'} 100%)`,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontSize: '1.5rem',
+                                    fontWeight: 'bold',
+                                    borderRadius: '1rem',
+                                    transition: 'transform 0.3s ease'
+                                }}>
+                                    {product.name}
+                                </div>
                             </div>
-                        ))}
+                        </div>
+                        <div className={styles.thumbnails}>
+                            {product.images.map((img, index) => (
+                                <div
+                                    key={img.id}
+                                    className={`${styles.thumbnail} ${selectedImageIndex === index ? styles.active : ''}`}
+                                    onClick={() => setSelectedImageIndex(index)}
+                                >
+                                    <div style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        background: `linear-gradient(135deg, ${index % 2 === 0 ? '#3B82F6' : '#10B981'} ${index * 20}%, ${index % 2 === 0 ? '#1E40AF' : '#059669'} 100%)`,
+                                        borderRadius: '0.5rem',
+                                        transition: 'all 0.2s'
+                                    }} />
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
 
-                {/* Info */}
-                <div className={styles.info}>
+                    {/* Info */}
+                    <div className={styles.info}>
                     <span className={styles.category}>{product.category}</span>
                     <h1 className={styles.title}>{product.name}</h1>
                     <div className={styles.price}>{formatPrice(product.price)}</div>
@@ -209,9 +237,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                                         <li>🇲🇽 Mexique : 5-14 jours ouvrables</li>
                                     </ul>
                                     <p style={{ marginTop: '1rem' }}>
-                                        <strong>Livraison gratuite</strong> pour les commandes de plus de 100 USD / 150 CAD / 200 MXN
-                                    </p>
-                                    <p style={{ marginTop: '1rem' }}>
                                         <strong>Retours gratuits</strong> sous 30 jours
                                     </p>
                                 </div>
@@ -219,35 +244,104 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                         </div>
                     </div>
 
-                    <button
-                        className={styles.addToCartBtn}
-                        onClick={handleAddToCart}
-                        disabled={totalStock === 0}
-                    >
-                        {totalStock === 0 ? 'Rupture de stock' : 'Ajouter au Panier'}
-                    </button>
+                    <div className={styles.actionButtons}>
+                        <button
+                            className={styles.addToCartBtn}
+                            onClick={handleAddToCart}
+                            disabled={totalStock === 0}
+                        >
+                            {totalStock === 0 ? 'Rupture de stock' : 'Ajouter au Panier'}
+                        </button>
+                        <button
+                            className={styles.wishlistBtn}
+                            onClick={() => toggleItem(product)}
+                            aria-label={t('addToWishlist')}
+                        >
+                            <svg 
+                                width="24" 
+                                height="24" 
+                                viewBox="0 0 24 24" 
+                                fill={isWishlisted ? "currentColor" : "none"} 
+                                stroke="currentColor" 
+                                strokeWidth="2"
+                            >
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            </svg>
+                        </button>
+                    </div>
 
-                    <div className={styles.shippingInfo}>
-                        <strong>🚚 Livraison Rapide</strong>
-                        Calculée à l'étape suivante pour USA, Canada et Mexique.
-                        <br />
-                        <strong>↩️ Retours Faciles</strong>
-                        Retours gratuits sous 30 jours.
+                    {viewerCount !== null && viewerCount > 0 && (
+                        <div className={styles.engagementInfo}>
+                            <span className={styles.engagementText}>
+                                {viewerCount} {viewerCount === 1 ? 'personne regarde' : 'personnes regardent'} ce produit
+                            </span>
+                        </div>
+                    )}
+
+                    <div className={styles.serviceIcons}>
+                        <button 
+                            onClick={() => setPaymentModalOpen(true)}
+                            className={styles.serviceIcon}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
+                        >
+                            <span className={styles.icon}>🔒</span>
+                            <span>Paiement Sécurisé</span>
+                        </button>
+                        <button 
+                            onClick={() => setShippingModalOpen(true)}
+                            className={styles.serviceIcon}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
+                        >
+                            <span className={styles.icon}>🚚</span>
+                            <span>Options de Livraison</span>
+                        </button>
+                        <button 
+                            onClick={() => setReturnsModalOpen(true)}
+                            className={styles.serviceIcon}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
+                        >
+                            <span className={styles.icon}>↩️</span>
+                            <span>Retours Gratuits</span>
+                        </button>
+                        <button 
+                            onClick={() => setSizeGuideModalOpen(true)}
+                            className={styles.serviceIcon}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
+                        >
+                            <span className={styles.icon}>📏</span>
+                            <span>Taille & Ajustement</span>
+                        </button>
+                    </div>
                     </div>
                 </div>
             </div>
 
-            {/* Similar Products */}
-            {similarProducts.length > 0 && (
-                <div className={styles.similarProducts}>
-                    <h2>Produits Similaires</h2>
-                    <div className={styles.productsGrid}>
-                        {similarProducts.map((p) => (
-                            <ProductCard key={p.id} product={p} />
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* Recommendations Sidebar */}
+            <div className={styles.sidebar}>
+                <ProductRecommendations products={similarProducts.slice(0, 4)} />
+            </div>
+
+            {/* Reviews Section */}
+            <ProductReviews />
+
+            {/* Modals */}
+            <PaymentSecurityModal 
+                isOpen={paymentModalOpen} 
+                onClose={() => setPaymentModalOpen(false)} 
+            />
+            <FreeShippingModal 
+                isOpen={shippingModalOpen} 
+                onClose={() => setShippingModalOpen(false)}
+                productPrice={product.price}
+            />
+            <FreeReturnsModal 
+                isOpen={returnsModalOpen} 
+                onClose={() => setReturnsModalOpen(false)} 
+            />
+            <SizeGuideModal 
+                isOpen={sizeGuideModalOpen} 
+                onClose={() => setSizeGuideModalOpen(false)} 
+            />
         </div>
     );
 }
