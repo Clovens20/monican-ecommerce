@@ -5,7 +5,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ReactNode, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import styles from './admin.module.css';
 
 interface AdminLayoutProps {
@@ -21,6 +21,8 @@ interface Counters {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  
+  // ✅ TOUS LES HOOKS DOIVENT ÊTRE ICI, AVANT TOUT RETURN CONDITIONNEL
   const [counters, setCounters] = useState<Counters>({
     pendingOrders: 0,
     pendingReturns: 0,
@@ -30,11 +32,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchRef = useRef<number>(0);
-
-  // Don't show layout on login page or sousadmin page
-  if (pathname === '/admin/login' || pathname === '/admin/sousadmin') {
-    return <>{children}</>;
-  }
 
   // Fonction pour récupérer les compteurs en temps réel (optimisée avec debounce)
   const fetchCounters = useCallback(async (force = false) => {
@@ -65,37 +62,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       setLoading(false);
     }
   }, []);
-
-  // Charger les compteurs au montage
-  useEffect(() => {
-    fetchCounters(true);
-  }, [fetchCounters]);
-
-  // Mettre à jour en temps réel toutes les 15 secondes (optimisé de 10 à 15)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchCounters(false);
-    }, 15000); // Mise à jour toutes les 15 secondes
-
-    return () => clearInterval(interval);
-  }, [fetchCounters]);
-
-  // Réactualiser avec debounce quand on change de page
-  useEffect(() => {
-    if (fetchTimeoutRef.current) {
-      clearTimeout(fetchTimeoutRef.current);
-    }
-    
-    fetchTimeoutRef.current = setTimeout(() => {
-      fetchCounters(true);
-    }, 500); // Debounce de 500ms
-
-    return () => {
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-    };
-  }, [pathname, fetchCounters]);
 
   // Fonction de déconnexion améliorée avec API
   const handleLogout = useCallback(async () => {
@@ -137,6 +103,44 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const isActive = useCallback((path: string) => {
     return pathname === path || pathname.startsWith(path + '/');
   }, [pathname]);
+
+  // Charger les compteurs au montage
+  useEffect(() => {
+    fetchCounters(true);
+  }, [fetchCounters]);
+
+  // Mettre à jour en temps réel toutes les 15 secondes (optimisé de 10 à 15)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchCounters(false);
+    }, 15000); // Mise à jour toutes les 15 secondes
+
+    return () => clearInterval(interval);
+  }, [fetchCounters]);
+
+  // Réactualiser avec debounce quand on change de page
+  useEffect(() => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchCounters(true);
+    }, 500); // Debounce de 500ms
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, [pathname, fetchCounters]);
+
+  // ✅ MAINTENANT LES RETURNS CONDITIONNELS APRÈS TOUS LES HOOKS
+  
+  // Don't show layout on login page or sousadmin page
+  if (pathname === '/admin/login' || pathname === '/admin/sousadmin') {
+    return <>{children}</>;
+  }
 
   return (
     <div className={styles.adminLayout}>
