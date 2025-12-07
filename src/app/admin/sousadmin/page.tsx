@@ -314,7 +314,13 @@ export default function SubAdminPage() {
                                             image: item.image || ''
                                         })) || []) as OrderItem[],
                                         status: order.status as any,
-                                        statusHistory: order.statusHistory || [],
+                                        // ✅ FIX: Cast explicite de statusHistory avec mapping proper
+                                        statusHistory: (order.statusHistory || []).map(sh => ({
+                                            status: sh.status as any,
+                                            timestamp: sh.timestamp,
+                                            note: sh.note,
+                                            updatedBy: sh.updatedBy
+                                        })),
                                         subtotal: order.subtotal || order.total,
                                         shippingCost: order.shippingCost || 0,
                                         tax: order.tax || 0,
@@ -369,7 +375,13 @@ export default function SubAdminPage() {
                                                                     shippingAddress: data.order.shippingAddress as ShippingAddress,
                                                                     items: data.order.items as OrderItem[],
                                                                     status: data.order.status as any,
-                                                                    statusHistory: data.order.statusHistory || [],
+                                                                    // ✅ FIX: Cast explicite de statusHistory
+                                                                    statusHistory: (data.order.statusHistory || []).map((sh: any) => ({
+                                                                        status: sh.status as any,
+                                                                        timestamp: sh.timestamp,
+                                                                        note: sh.note,
+                                                                        updatedBy: sh.updatedBy
+                                                                    })),
                                                                     subtotal: data.order.subtotal || data.order.total,
                                                                     shippingCost: data.order.shippingCost || 0,
                                                                     tax: data.order.tax || 0,
@@ -418,4 +430,3 @@ export default function SubAdminPage() {
         </div>
     );
 }
-
