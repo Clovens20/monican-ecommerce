@@ -697,8 +697,9 @@
     }
 
     @page {
-        size: letter;
+        size: 8.5in 11in;
         margin: 0;
+        /* Format optimisé pour impression standard 8.5x11 (Letter) */
     }
 }
 

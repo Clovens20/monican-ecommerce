@@ -37,8 +37,8 @@ async function generateUniqueSubAdminCode(supabaseAdmin: any): Promise<string | 
     let counter = 1;
     let candidateCode: string;
 
-    // Limite raisonnable: 9999 sous-admins maximum
-    while (counter <= 9999) {
+    // Limite raisonnable: 999 sous-admins maximum (format MON-001 à MON-999 avec 3 chiffres)
+    while (counter <= 999) {
       candidateCode = `MON-${String(counter).padStart(3, '0')}`;
 
       // Si le code n'est pas utilisé, on l'a trouvé
@@ -50,8 +50,8 @@ async function generateUniqueSubAdminCode(supabaseAdmin: any): Promise<string | 
       counter++;
     }
 
-    // Tous les codes sont utilisés (peu probable)
-    console.error('❌ Tous les codes MON-XXX sont utilisés (9999 max)');
+    // Tous les codes sont utilisés (999 sous-admins max avec format 3 chiffres)
+    console.error('❌ Tous les codes MON-XXX sont utilisés (999 max)');
     return null;
 
   } catch (error) {

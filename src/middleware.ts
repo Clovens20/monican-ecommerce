@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const publicRoutes = ['/admin/login', '/api/auth/login', '/api/auth/logout'];
+const publicRoutes = ['/admin/login', '/admin/sousadmin', '/api/auth/login', '/api/auth/logout'];
 const adminRoutes = ['/admin'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Permettre l'accès public à la page sous-admin et son API d'authentification (authentification par code)
+  if (pathname.startsWith('/admin/sousadmin') || pathname.startsWith('/api/admin/subadmin/auth')) {
+    return NextResponse.next();
+  }
 
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();

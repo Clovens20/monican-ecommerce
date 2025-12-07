@@ -17,16 +17,19 @@ interface SubAdminOrder {
     orderNumber: string;
     customerName: string;
     customerEmail: string;
+    customerPhone?: string;
     date: string;
     status: string;
     total: number;
     currency: string;
     items: Array<{
         id: string;
+        productId?: string;
         name: string;
         quantity: number;
         price: number;
         size?: string;
+        image?: string;
     }>;
     shippingAddress: {
         street: string;
@@ -36,6 +39,16 @@ interface SubAdminOrder {
         country: string;
     };
     trackingNumber?: string;
+    subtotal?: number;
+    shippingCost?: number;
+    tax?: number;
+    paymentMethod?: string;
+    statusHistory?: Array<{
+        status: string;
+        timestamp: string;
+        note?: string;
+        updatedBy?: string;
+    }>;
 }
 
 export default function SubAdminPage() {
@@ -70,7 +83,14 @@ export default function SubAdminPage() {
                 setIsLoggedIn(true);
                 fetchOrders();
             } else {
-                setError(data.error || 'Code invalide ou sous-admin inactif');
+                let errorMsg = data.error || 'Code invalide ou sous-admin inactif';
+                
+                // Ajouter les codes disponibles si disponibles en debug
+                if (data.debug && data.debug.activeCodes && data.debug.activeCodes.length > 0) {
+                    errorMsg += `\n\nCodes disponibles : ${data.debug.activeCodes.join(', ')}`;
+                }
+                
+                setError(errorMsg);
             }
         } catch (err) {
             console.error('Error logging in subadmin:', err);
@@ -125,8 +145,8 @@ export default function SubAdminPage() {
                             <input
                                 type="text"
                                 value={code}
-                                onChange={(e) => setCode(e.target.value)}
-                                placeholder="SA-XXX"
+                                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                                placeholder="MON-001"
                                 className={styles.loginInput}
                                 required
                             />
@@ -138,11 +158,20 @@ export default function SubAdminPage() {
                                     borderRadius: '0.5rem', 
                                     color: '#991b1b',
                                     fontSize: '0.9rem',
-                                    marginTop: '0.5rem'
+                                    marginTop: '0.5rem',
+                                    whiteSpace: 'pre-line'
                                 }}>
                                     {error}
                                 </div>
                             )}
+                            <p style={{ 
+                                fontSize: '0.85rem', 
+                                color: '#6b7280', 
+                                marginTop: '0.5rem',
+                                fontStyle: 'italic'
+                            }}>
+                                💡 Le format du code est MON-XXX (ex: MON-001)
+                            </p>
                         </div>
                         <button 
                             type="submit" 
@@ -157,7 +186,10 @@ export default function SubAdminPage() {
         );
     }
 
-    const filteredOrders = orders;
+    // Filtrer les commandes selon le statut sélectionné
+    const filteredOrders = filterStatus === 'all' 
+        ? orders 
+        : orders.filter(o => o.status === filterStatus);
 
     return (
         <div className={styles.page}>
@@ -259,12 +291,12 @@ export default function SubAdminPage() {
                                 </tr>
                             ) : (
                                 filteredOrders.map(order => {
-                                    // Convertir SubAdminOrder en Order pour OrderDetails
+                                    // Convertir SubAdminOrder en Order pour OrderDetails en utilisant les données réelles
                                     const orderForDetails: Order = {
                                         id: order.id,
                                         customerName: order.customerName,
                                         customerEmail: order.customerEmail,
-                                        customerPhone: '',
+                                        customerPhone: order.customerPhone || '',
                                         shippingAddress: (order.shippingAddress || {
                                             street: '',
                                             city: '',
@@ -278,19 +310,19 @@ export default function SubAdminPage() {
                                             quantity: item.quantity,
                                             price: item.price,
                                             size: item.size || '',
-                                            productId: (item as any).productId || item.id,
-                                            image: (item as any).image || ''
+                                            productId: item.productId || item.id,
+                                            image: item.image || ''
                                         })) || []) as OrderItem[],
                                         status: order.status as any,
-                                        statusHistory: [],
-                                        subtotal: order.total,
-                                        shippingCost: 0,
-                                        tax: 0,
+                                        statusHistory: order.statusHistory || [],
+                                        subtotal: order.subtotal || order.total,
+                                        shippingCost: order.shippingCost || 0,
+                                        tax: order.tax || 0,
                                         total: order.total,
                                         currency: order.currency as 'USD' | 'CAD' | 'MXN',
                                         date: order.date,
                                         trackingNumber: order.trackingNumber,
-                                        paymentMethod: ''
+                                        paymentMethod: order.paymentMethod || 'Non spécifié'
                                     };
                                     
                                     return (
@@ -321,7 +353,41 @@ export default function SubAdminPage() {
                                             <td>
                                                 <button
                                                     className={styles.actionButton}
-                                                    onClick={() => setSelectedOrder(orderForDetails)}
+                                                    onClick={async () => {
+                                                        // Récupérer les détails complets depuis la base de données
+                                                        try {
+                                                            const response = await fetch(`/api/admin/subadmin/orders/${order.id}`);
+                                                            const data = await response.json();
+                                                            
+                                                            if (data.success && data.order) {
+                                                                // Convertir en format Order
+                                                                const fullOrder: Order = {
+                                                                    id: data.order.id,
+                                                                    customerName: data.order.customerName,
+                                                                    customerEmail: data.order.customerEmail,
+                                                                    customerPhone: data.order.customerPhone || '',
+                                                                    shippingAddress: data.order.shippingAddress as ShippingAddress,
+                                                                    items: data.order.items as OrderItem[],
+                                                                    status: data.order.status as any,
+                                                                    statusHistory: data.order.statusHistory || [],
+                                                                    subtotal: data.order.subtotal || data.order.total,
+                                                                    shippingCost: data.order.shippingCost || 0,
+                                                                    tax: data.order.tax || 0,
+                                                                    total: data.order.total,
+                                                                    currency: data.order.currency as 'USD' | 'CAD' | 'MXN',
+                                                                    date: data.order.date,
+                                                                    trackingNumber: data.order.trackingNumber,
+                                                                    paymentMethod: data.order.paymentMethod || 'Non spécifié'
+                                                                };
+                                                                setSelectedOrder(fullOrder);
+                                                            } else {
+                                                                alert('Erreur lors du chargement des détails de la commande');
+                                                            }
+                                                        } catch (err) {
+                                                            console.error('Error fetching order details:', err);
+                                                            alert('Erreur de connexion au serveur');
+                                                        }
+                                                    }}
                                                 >
                                                     Voir Détails
                                                 </button>
@@ -341,22 +407,11 @@ export default function SubAdminPage() {
                     order={selectedOrder}
                     subAdminCode={code}
                     onClose={() => setSelectedOrder(null)}
-                    onStatusUpdate={(orderId, newStatus, trackingNumber) => {
-                        // Update order status in the list
-                        setSelectedOrder({
-                            ...selectedOrder,
-                            status: newStatus,
-                            trackingNumber: trackingNumber || selectedOrder.trackingNumber,
-                            statusHistory: [
-                                ...selectedOrder.statusHistory,
-                                {
-                                    status: newStatus,
-                                    timestamp: new Date().toISOString(),
-                                    note: newStatus === 'shipped' ? `Expédié avec suivi: ${trackingNumber}` : 'Statut mis à jour',
-                                    updatedBy: code
-                                }
-                            ]
-                        });
+                    onStatusUpdate={async (orderId, newStatus, trackingNumber) => {
+                        // Rafraîchir les données depuis la base de données
+                        await fetchOrders();
+                        // Fermer le modal
+                        setSelectedOrder(null);
                     }}
                 />
             )}

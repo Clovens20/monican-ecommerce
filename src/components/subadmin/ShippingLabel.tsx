@@ -109,10 +109,9 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 <div className={styles.senderHeader}>EXPÉDITEUR</div>
                 <div className={styles.senderBox}>
                     <div className={styles.senderName}>MONICAN</div>
-                    <div className={styles.senderAddress}>
-                        123 Commerce Street, Montreal, QC H3A 0G4, CANADA
-                    </div>
-                    <div className={styles.senderContact}>support@monican.com</div>
+                    <div className={styles.senderContact}>support@monican.shop</div>
+                    <div className={styles.senderContact}>www.monican.shop</div>
+                    <div className={styles.senderContact}>+1 717-880-1479</div>
                 </div>
             </div>
 

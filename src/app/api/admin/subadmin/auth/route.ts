@@ -47,14 +47,31 @@ export async function POST(request: NextRequest) {
     if (!subAdmin) {
       // Vérifier tous les codes existants pour le diagnostic
       const allCodes = subAdmins?.map((a: any) => a.subadmin_code).filter(Boolean) || [];
+      const activeCodes = subAdmins
+        ?.filter((a: any) => a.is_active && a.subadmin_code)
+        .map((a: any) => a.subadmin_code) || [];
+      
       console.log('📋 Codes existants:', allCodes);
+      console.log('✅ Codes actifs:', activeCodes);
+      
+      // Construire un message d'erreur plus utile
+      let errorMessage = `Code invalide: "${normalizedCode}".`;
+      
+      if (activeCodes.length > 0) {
+        const codesList = activeCodes.slice(0, 3).join(', ');
+        errorMessage += ` Codes disponibles: ${codesList}${activeCodes.length > 3 ? '...' : ''}`;
+      } else {
+        errorMessage += ' Aucun sous-admin actif trouvé dans la base de données.';
+      }
       
       return NextResponse.json(
         { 
-          error: `Code invalide: "${normalizedCode}". Vérifiez que le code est correct.`,
+          error: errorMessage,
           debug: process.env.NODE_ENV === 'development' ? {
             searchedCode: normalizedCode,
-            availableCodes: allCodes.slice(0, 5) // Limiter pour la sécurité
+            totalSubAdmins: subAdmins?.length || 0,
+            activeCodes: activeCodes.slice(0, 5),
+            allCodes: allCodes.slice(0, 5)
           } : undefined
         },
         { status: 404 }

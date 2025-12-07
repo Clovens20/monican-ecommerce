@@ -449,6 +449,7 @@
     @page {
         size: 4in 6in;
         margin: 0;
+        /* Format optimisé pour imprimantes Phomemo 4x6 */
     }
 }
 

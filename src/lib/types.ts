@@ -111,7 +111,7 @@ export interface Admin extends User {
 
 export interface SubAdmin extends User {
     role: 'subadmin';
-    code: string; // Unique code like SA-001
+    code: string; // Unique code like MON-001 (automatically generated with 3 digits)
     isActive: boolean;
     assignedBy: string; // Admin ID
 }

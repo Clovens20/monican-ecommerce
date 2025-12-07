@@ -70,7 +70,8 @@ function getOrderConfirmationTemplate(data: {
             <p>Nous vous enverrons un email de confirmation dès que votre commande sera expédiée.</p>
         </div>
         <div class="footer">
-            <p>Monican E-commerce - support@monican.com</p>
+            <p>Monican E-commerce - support@monican.shop</p>
+            <p>www.monican.shop - +1 717-880-1479</p>
         </div>
     </div>
 </body>
@@ -117,7 +118,8 @@ function getShippingNotificationTemplate(data: {
             <p>Vous pouvez suivre votre colis en utilisant le numéro de suivi ci-dessus.</p>
         </div>
         <div class="footer">
-            <p>Monican E-commerce - support@monican.com</p>
+            <p>Monican E-commerce - support@monican.shop</p>
+            <p>www.monican.shop - +1 717-880-1479</p>
         </div>
     </div>
 </body>

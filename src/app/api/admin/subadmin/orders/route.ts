@@ -40,13 +40,19 @@ export async function GET(request: NextRequest) {
         orderNumber: order.id,
         customerName: order.customerName,
         customerEmail: order.customerEmail,
+        customerPhone: order.customerPhone || '',
         date: order.date,
         status: order.status,
         total: order.total,
         currency: order.currency,
         items: order.items,
         shippingAddress: order.shippingAddress,
-        trackingNumber: order.trackingNumber
+        trackingNumber: order.trackingNumber,
+        subtotal: order.subtotal,
+        shippingCost: order.shippingCost,
+        tax: order.tax,
+        paymentMethod: order.paymentMethod || 'Non spécifié',
+        statusHistory: order.statusHistory || []
       }))
     });
     

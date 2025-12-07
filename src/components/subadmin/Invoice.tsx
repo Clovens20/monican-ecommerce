@@ -69,20 +69,16 @@ export default function Invoice({ order }: InvoiceProps) {
                             <div className={styles.companyTagline}>E-Commerce Excellence Mondiale</div>
                             <div className={styles.companyAddress}>
                                 <div className={styles.addressLine}>
-                                    <span className={styles.icon}>📍</span>
-                                    123 Commerce Street, Montreal, QC H3A 0G4
-                                </div>
-                                <div className={styles.addressLine}>
-                                    <span className={styles.icon}>🇨🇦</span>
-                                    Canada
-                                </div>
-                                <div className={styles.addressLine}>
                                     <span className={styles.icon}>📧</span>
-                                    support@monican.com
+                                    support@monican.shop
                                 </div>
                                 <div className={styles.addressLine}>
                                     <span className={styles.icon}>🌐</span>
-                                    www.monican.com
+                                    www.monican.shop
+                                </div>
+                                <div className={styles.addressLine}>
+                                    <span className={styles.icon}>📞</span>
+                                    +1 717-880-1479
                                 </div>
                             </div>
                         </div>
@@ -272,11 +268,11 @@ export default function Invoice({ order }: InvoiceProps) {
                             📄 Cette facture doit être conservée avec le colis
                         </div>
                         <div className={styles.footerLinks}>
-                            <span>support@monican.com</span>
+                            <span>support@monican.shop</span>
                             <span className={styles.separator}>•</span>
-                            <span>www.monican.com</span>
+                            <span>www.monican.shop</span>
                             <span className={styles.separator}>•</span>
-                            <span>+1 (514) 555-0100</span>
+                            <span>+1 717-880-1479</span>
                         </div>
                     </div>
                 </div>
