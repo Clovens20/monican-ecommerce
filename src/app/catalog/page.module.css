@@ -248,6 +248,73 @@
     grid-template-columns: 1fr;
   }
   
+  /* Loading State */
+  .loadingState {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .loadingSpinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Error State */
+  .errorState {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .errorIcon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .errorTitle {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #dc2626;
+    margin: 0 0 0.5rem;
+  }
+
+  .errorText {
+    font-size: 1rem;
+    color: #6b7280;
+    margin: 0 0 2rem;
+  }
+
+  .errorBtn {
+    padding: 1rem 2rem;
+    background: #dc2626;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .errorBtn:hover {
+    background: #b91c1c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(220, 38, 38, 0.4);
+  }
+
   /* Empty State */
   .emptyState {
     text-align: center;

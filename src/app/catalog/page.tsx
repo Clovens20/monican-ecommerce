@@ -1,30 +1,55 @@
-// CHEMIN: src/app/catalog/page.tsx
-// ACTION: REMPLACER TOUT LE CONTENU
-
 'use client';
 
-import { useState } from 'react';
-import { mockProducts } from '@/lib/products';
+import { useState, useEffect } from 'react';
+import { Product } from '@/lib/types';
 import ProductCard from '@/components/product/ProductCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import styles from './page.module.css';
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'popular';
-type Category = 'all' | 'tennis' | 'chemises' | 'jeans' | 'maillots';
+type Category = 'all' | 'tennis' | 'chemises' | 'jeans' | 'maillots' | 'accessoires' | 'chaussures';
 
 export default function CatalogPage() {
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<Category>('all');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter products
-  const filteredProducts = mockProducts.filter(product => 
-    selectedCategory === 'all' || product.category === selectedCategory
-  );
+  // Charger les produits depuis l'API
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const url = selectedCategory === 'all' 
+          ? '/api/products'
+          : `/api/products?category=${selectedCategory}`;
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors du chargement des produits');
+        }
+        
+        const data = await response.json();
+        setProducts(data.products || []);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProducts();
+  }, [selectedCategory]);
 
   // Sort products
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
+  const sortedProducts = [...products].sort((a, b) => {
     switch (sortBy) {
       case 'price-asc':
         return a.price - b.price;
@@ -38,13 +63,70 @@ export default function CatalogPage() {
     }
   });
 
+  // Charger les catégories actives depuis l'API
+  const [activeCategories, setActiveCategories] = useState<Array<{slug: string, name_key: string, icon: string | null}>>([]);
+  useEffect(() => {
+    async function fetchActiveCategories() {
+      try {
+        const response = await fetch('/api/categories');
+        if (response.ok) {
+          const data = await response.json();
+          setActiveCategories(data.categories || []);
+        }
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    }
+    fetchActiveCategories();
+
+    // Écouter les mises à jour
+    const handleCategoriesUpdate = () => {
+      fetchActiveCategories();
+    };
+    window.addEventListener('categories-updated', handleCategoriesUpdate);
+    return () => {
+      window.removeEventListener('categories-updated', handleCategoriesUpdate);
+    };
+  }, []);
+
+  // Calculer les compteurs par catégorie (seulement pour les catégories actives)
+  const categoryCounts = {
+    all: products.length,
+    tennis: products.filter(p => p.category === 'tennis').length,
+    chemises: products.filter(p => p.category === 'chemises').length,
+    jeans: products.filter(p => p.category === 'jeans').length,
+    maillots: products.filter(p => p.category === 'maillots').length,
+    accessoires: products.filter(p => p.category === 'accessoires').length,
+    chaussures: products.filter(p => p.category === 'chaussures').length,
+  };
+
+  // Créer la liste des catégories avec seulement les actives
   const categories = [
-    { id: 'all', nameKey: 'all', icon: '🏪', count: mockProducts.length },
-    { id: 'tennis', nameKey: 'tennis', icon: '👟', count: mockProducts.filter(p => p.category === 'tennis').length },
-    { id: 'chemises', nameKey: 'shirts', icon: '👔', count: mockProducts.filter(p => p.category === 'chemises').length },
-    { id: 'jeans', nameKey: 'jeans', icon: '👖', count: mockProducts.filter(p => p.category === 'jeans').length },
-    { id: 'maillots', nameKey: 'jerseys', icon: '👕', count: mockProducts.filter(p => p.category === 'maillots').length },
+    { id: 'all', nameKey: 'all', icon: '🏪', count: categoryCounts.all },
+    ...activeCategories.map(cat => ({
+      id: cat.slug,
+      nameKey: cat.name_key,
+      icon: cat.icon || '📦',
+      count: categoryCounts[cat.slug as keyof typeof categoryCounts] || 0,
+    })),
   ];
+
+  // Charger tous les produits pour les stats (une seule fois)
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  useEffect(() => {
+    async function fetchAllProducts() {
+      try {
+        const response = await fetch('/api/products');
+        if (response.ok) {
+          const data = await response.json();
+          setAllProducts(data.products || []);
+        }
+      } catch (err) {
+        console.error('Error fetching all products for stats:', err);
+      }
+    }
+    fetchAllProducts();
+  }, []);
 
   return (
     <div className={styles.page}>
@@ -61,11 +143,11 @@ export default function CatalogPage() {
             </p>
             <div className={styles.heroStats}>
               <div className={styles.statItem}>
-                <span className={styles.statNumber}>{mockProducts.length}+</span>
+                <span className={styles.statNumber}>{allProducts.length}+</span>
                 <span className={styles.statLabel}>{t('products')}</span>
               </div>
               <div className={styles.statItem}>
-                <span className={styles.statNumber}>4</span>
+                <span className={styles.statNumber}>{categories.filter(c => c.id !== 'all' && c.count > 0).length}</span>
                 <span className={styles.statLabel}>{t('categories')}</span>
               </div>
               <div className={styles.statItem}>
@@ -99,7 +181,7 @@ export default function CatalogPage() {
         <div className={styles.toolbar}>
           <div className={styles.toolbarLeft}>
             <h2 className={styles.resultsTitle}>
-              {filteredProducts.length} {filteredProducts.length > 1 ? t('productsFound') : t('productFound')}
+              {loading ? '...' : sortedProducts.length} {sortedProducts.length > 1 ? t('productsFound') : t('productFound')}
               {selectedCategory !== 'all' && (
                 <span className={styles.categoryLabel}>
                   {t('inCategory')} {t(categories.find(c => c.id === selectedCategory)?.nameKey || 'all')}
@@ -150,15 +232,40 @@ export default function CatalogPage() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className={styles.loadingState}>
+            <div className={styles.loadingSpinner}></div>
+            <p>{t('loading')}...</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className={styles.errorState}>
+            <div className={styles.errorIcon}>⚠️</div>
+            <h3 className={styles.errorTitle}>{t('error')}</h3>
+            <p className={styles.errorText}>{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className={styles.errorBtn}
+            >
+              {t('retry')}
+            </button>
+          </div>
+        )}
+
         {/* Products Grid */}
-        <div className={`${styles.productsGrid} ${viewMode === 'list' ? styles.listView : ''}`}>
-          {sortedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} viewMode={viewMode} />
-          ))}
-        </div>
+        {!loading && !error && (
+          <div className={`${styles.productsGrid} ${viewMode === 'list' ? styles.listView : ''}`}>
+            {sortedProducts.map((product) => (
+              <ProductCard key={product.id} product={product} viewMode={viewMode} />
+            ))}
+          </div>
+        )}
 
         {/* Empty State */}
-        {filteredProducts.length === 0 && (
+        {!loading && !error && sortedProducts.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>🔍</div>
             <h3 className={styles.emptyTitle}>{t('noProductsFound')}</h3>

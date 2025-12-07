@@ -18,25 +18,19 @@ export default function Hero() {
                     className={styles.image}
                     priority
                 />
+                <div className={styles.overlay}></div>
             </div>
-            <div className={styles.overlay}></div>
-
+            
             <div className={styles.content}>
-                <div className={styles.textContent}>
-                    <h1 className={styles.title}>
-                        {t('heroTitle')}
-                    </h1>
-                    <p className={styles.subtitle}>
-                        {t('heroSubtitle2')}
-                    </p>
-                    <div className={styles.buttons}>
-                        <Link href="/catalog" className="btn btn-primary">
-                            {t('buyNow')}
-                        </Link>
-                        <Link href="/catalog?category=new" className="btn btn-secondary">
-                            {t('newArrivals')}
-                        </Link>
-                    </div>
+                <div className={styles.buttonContainer}>
+                    <Link href="/catalog" className={styles.btnPrimary} prefetch={true}>
+                        <span className={styles.btnText}>{t('buyNow')}</span>
+                        <span className={styles.btnIcon}>→</span>
+                    </Link>
+                    <Link href="/catalog?category=new" className={styles.btnSecondary} prefetch={true}>
+                        <span className={styles.btnText}>{t('newArrivals')}</span>
+                        <span className={styles.btnIcon}>🆕</span>
+                    </Link>
                 </div>
             </div>
         </section>

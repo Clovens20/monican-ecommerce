@@ -138,6 +138,45 @@ export async function getOrderByEmailAndNumber(
 }
 
 /**
+ * Récupère une commande par email et soit numéro de commande soit numéro de suivi
+ */
+export async function getOrderByEmailAndIdentifier(
+    email: string,
+    identifier: string
+): Promise<Order | null> {
+    try {
+        // Rechercher d'abord par order_number
+        const { data: orderByNumber, error: errorByNumber } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('order_number', identifier)
+            .eq('customer_email', email)
+            .single();
+
+        if (!errorByNumber && orderByNumber) {
+            return convertSupabaseToOrder(orderByNumber);
+        }
+
+        // Si pas trouvé, rechercher par tracking_number
+        const { data: orderByTracking, error: errorByTracking } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('tracking_number', identifier)
+            .eq('customer_email', email)
+            .single();
+
+        if (!errorByTracking && orderByTracking) {
+            return convertSupabaseToOrder(orderByTracking);
+        }
+
+        return null;
+    } catch (error) {
+        console.error('Error in getOrderByEmailAndIdentifier:', error);
+        return null;
+    }
+}
+
+/**
  * Récupère les commandes d'un client (si connecté)
  */
 export async function getCustomerOrders(customerId: string): Promise<Order[]> {
@@ -166,23 +205,99 @@ export async function getCustomerOrders(customerId: string): Promise<Order[]> {
 
 /**
  * Récupère toutes les commandes (Admin)
+ * ⚠️ ATTENTION: Cette fonction charge TOUTES les commandes en mémoire
+ * Pour de meilleures performances, utilisez getAllOrdersPaginated() avec pagination
  */
 export async function getAllOrders(): Promise<Order[]> {
     try {
-        const { data, error } = await supabaseAdmin
-            .from('orders')
-            .select('*')
-            .order('created_at', { ascending: false });
+        // Utiliser une requête paginée avec une limite élevée (1000)
+        // Pour éviter de charger des millions de commandes en mémoire
+        let allOrders: Order[] = [];
+        let page = 0;
+        const pageSize = 1000;
+        let hasMore = true;
 
-        if (error) {
-            console.error('Error fetching all orders:', error);
-            return [];
+        while (hasMore) {
+            const { data, error } = await supabaseAdmin
+                .from('orders')
+                .select('id, order_number, customer_id, customer_name, customer_email, customer_phone, shipping_address, items, status, status_history, subtotal, shipping_cost, tax, total, currency, payment_method, payment_id, payment_status, tracking_number, internal_notes, created_at, updated_at')
+                .order('created_at', { ascending: false })
+                .range(page * pageSize, (page + 1) * pageSize - 1);
+
+            if (error) {
+                console.error('Error fetching all orders:', error);
+                break;
+            }
+
+            if (!data || data.length === 0) {
+                hasMore = false;
+                break;
+            }
+
+            allOrders = allOrders.concat(data.map((order: any) => convertSupabaseToOrder(order)));
+            
+            // Si on a récupéré moins que pageSize, on a atteint la fin
+            if (data.length < pageSize) {
+                hasMore = false;
+            } else {
+                page++;
+            }
         }
 
-        return data.map(convertSupabaseToOrder);
+        return allOrders;
     } catch (error) {
         console.error('Error in getAllOrders:', error);
         return [];
+    }
+}
+
+/**
+ * Récupère les commandes avec pagination (Admin - RECOMMANDÉ)
+ * @param page - Numéro de page (0-indexed)
+ * @param pageSize - Nombre d'éléments par page (défaut: 50)
+ * @returns Object avec orders, totalCount, hasMore
+ */
+export async function getAllOrdersPaginated(
+    page: number = 0,
+    pageSize: number = 50
+): Promise<{ orders: Order[]; totalCount: number; hasMore: boolean }> {
+    try {
+        // Compter le total d'abord (optimisé)
+        const { count, error: countError } = await supabaseAdmin
+            .from('orders')
+            .select('*', { count: 'exact', head: true });
+
+        if (countError) {
+            console.error('Error counting orders:', countError);
+            return { orders: [], totalCount: 0, hasMore: false };
+        }
+
+        const totalCount = count || 0;
+        const offset = page * pageSize;
+
+        // Récupérer les commandes paginées (colonnes spécifiques pour optimiser)
+        const { data, error } = await supabaseAdmin
+            .from('orders')
+            .select('id, order_number, customer_id, customer_name, customer_email, customer_phone, shipping_address, items, status, status_history, subtotal, shipping_cost, tax, total, currency, payment_method, payment_id, payment_status, tracking_number, internal_notes, created_at, updated_at')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + pageSize - 1);
+
+        if (error) {
+            console.error('Error fetching paginated orders:', error);
+            return { orders: [], totalCount: 0, hasMore: false };
+        }
+
+        const orders = (data || []).map(convertSupabaseToOrder);
+        const hasMore = offset + orders.length < totalCount;
+
+        return {
+            orders,
+            totalCount,
+            hasMore,
+        };
+    } catch (error) {
+        console.error('Error in getAllOrdersPaginated:', error);
+        return { orders: [], totalCount: 0, hasMore: false };
     }
 }
 
@@ -300,6 +415,33 @@ export async function createOrder(orderData: {
         return convertSupabaseToOrder(data);
     } catch (error) {
         console.error('Error in createOrder:', error);
+        return null;
+    }
+}
+
+/**
+ * Récupère une commande par payment_id
+ */
+export async function getOrderByPaymentId(paymentId: string): Promise<Order | null> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('orders')
+            .select('*')
+            .eq('payment_id', paymentId)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                // Aucune commande trouvée
+                return null;
+            }
+            console.error('Error fetching order by payment ID:', error);
+            return null;
+        }
+
+        return convertSupabaseToOrder(data);
+    } catch (error) {
+        console.error('Error in getOrderByPaymentId:', error);
         return null;
     }
 }

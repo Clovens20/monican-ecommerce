@@ -52,6 +52,26 @@
     color: var(--color-gray-700);
 }
 
+.sectionContent {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.contactInfo {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+}
+
+.contactInfo p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    color: var(--color-gray-700);
+}
+
 @media (max-width: 768px) {
     .title {
         font-size: 2rem;

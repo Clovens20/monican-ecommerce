@@ -124,3 +124,34 @@
         grid-column: span 2;
     }
 }
+
+@media (max-width: 767px) {
+    .container {
+        padding: var(--spacing-lg) var(--spacing-md);
+    }
+
+    .sectionTitle {
+        font-size: 1.25rem;
+    }
+
+    .formSection {
+        padding: var(--spacing-md);
+    }
+
+    .summary {
+        position: sticky;
+        bottom: 0;
+        margin-top: var(--spacing-lg);
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: var(--spacing-md) var(--spacing-sm);
+    }
+
+    .input,
+    .select {
+        font-size: 16px; /* Évite le zoom automatique sur iOS */
+    }
+}

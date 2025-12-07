@@ -14,16 +14,23 @@
     "seed:products": "node scripts/seed-products.js",
     "seed:sales": "node scripts/seed-sales.js",
     "check:translations": "node scripts/check-translations.js",
+    "check:env": "node scripts/check-env.js",
+    "check:admin": "node scripts/check-admin.js",
+    "test:supabase": "node scripts/test-supabase-connection.js",
+    "test:verify-auth": "node scripts/test-verify-auth.js",
+    "change:password": "node scripts/change-admin-password.js",
     "server": "node server.mjs",
     "server:dev": "node --watch server.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.84.0",
+    "@types/qrcode": "^1.5.6",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "next": "16.0.4",
     "papaparse": "^5.5.3",
     "pg": "^8.16.3",
+    "qrcode": "^1.5.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "zod": "^4.1.13"
@@ -33,6 +40,8 @@
     "@types/papaparse": "^5.5.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@upstash/ratelimit": "^2.0.7",
+    "@upstash/redis": "^1.35.7",
     "eslint": "^9",
     "eslint-config-next": "16.0.4",
     "typescript": "^5"

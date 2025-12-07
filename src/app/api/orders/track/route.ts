@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getOrderByEmailAndNumber } from '@/lib/orders-db';
+import { getOrderByEmailAndIdentifier } from '@/lib/orders-db';
+import { supabase } from '@/lib/supabase';
 
 const TrackOrderSchema = z.object({
-  orderNumber: z.string().min(1),
+  identifier: z.string().min(1), // Peut être orderNumber ou trackingNumber
   email: z.string().email(),
 });
 
 /**
  * Route pour suivre une commande sans compte
  * Vérifie que l'email correspond à la commande
+ * Accepte soit le numéro de commande soit le numéro de suivi
  */
 export async function POST(request: NextRequest) {
   try {
@@ -24,24 +26,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { orderNumber, email } = validationResult.data;
+    const { identifier, email } = validationResult.data;
 
-    // Récupérer la commande en vérifiant l'email
-    const order = await getOrderByEmailAndNumber(email, orderNumber);
+    // Récupérer la commande en vérifiant l'email et soit order_number soit tracking_number
+    const order = await getOrderByEmailAndIdentifier(email, identifier);
 
     if (!order) {
       return NextResponse.json(
-        { error: 'Commande non trouvée. Vérifiez le numéro de commande et l\'email.' },
+        { error: 'Commande non trouvée. Vérifiez le numéro de commande/numéro de suivi et l\'email.' },
         { status: 404 }
       );
     }
+
+    // Récupérer le order_number depuis la base de données
+    const { data: orderData } = await supabase
+      .from('orders')
+      .select('order_number')
+      .eq('id', order.id)
+      .single();
 
     // Retourner les informations de la commande (sans données sensibles)
     return NextResponse.json({
       success: true,
       order: {
         id: order.id,
-        orderNumber: order.id, // Utiliser l'ID comme numéro pour l'instant
+        orderNumber: orderData?.order_number || order.id,
         status: order.status,
         statusHistory: order.statusHistory,
         items: order.items,

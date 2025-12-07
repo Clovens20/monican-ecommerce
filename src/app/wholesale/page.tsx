@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCountry } from '@/lib/country';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { mockProducts } from '@/lib/products';
+import { Product } from '@/lib/types';
 import styles from './page.module.css';
 
 interface WholesaleItem {
@@ -18,6 +18,8 @@ interface WholesaleItem {
 export default function WholesalePage() {
     const { t } = useLanguage();
     const { formatPrice } = useCountry();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState({
         companyName: '',
         contactName: '',
@@ -36,6 +38,25 @@ export default function WholesalePage() {
     const [selectedProduct, setSelectedProduct] = useState('');
     const [selectedSize, setSelectedSize] = useState('');
     const [quantity, setQuantity] = useState(1);
+
+    // Charger les produits depuis l'API
+    useEffect(() => {
+        async function fetchProducts() {
+            try {
+                setLoading(true);
+                const response = await fetch('/api/products');
+                if (response.ok) {
+                    const data = await response.json();
+                    setProducts(data.products || []);
+                }
+            } catch (err) {
+                console.error('Error fetching products:', err);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchProducts();
+    }, []);
 
     const getDiscount = (totalQuantity: number) => {
         if (totalQuantity >= 48) return 50;
@@ -56,7 +77,7 @@ export default function WholesalePage() {
             return;
         }
 
-        const product = mockProducts.find(p => p.id === selectedProduct);
+        const product = products.find(p => p.id === selectedProduct);
         if (!product) return;
 
         const variant = product.variants.find(v => v.size === selectedSize);
@@ -129,7 +150,7 @@ export default function WholesalePage() {
         setItems([]);
     };
 
-    const selectedProductData = mockProducts.find(p => p.id === selectedProduct);
+    const selectedProductData = products.find(p => p.id === selectedProduct);
 
     return (
         <div className={styles.container}>
@@ -293,9 +314,10 @@ export default function WholesalePage() {
                                     className={styles.select}
                                     value={selectedProduct}
                                     onChange={(e) => setSelectedProduct(e.target.value)}
+                                    disabled={loading}
                                 >
-                                    <option value="">{t('selectProduct') || 'Sélectionner un produit'}</option>
-                                    {mockProducts.map(product => (
+                                    <option value="">{loading ? 'Chargement...' : (t('selectProduct') || 'Sélectionner un produit')}</option>
+                                    {products.map(product => (
                                         <option key={product.id} value={product.id}>
                                             {product.name} - {formatPrice(product.price)}
                                         </option>

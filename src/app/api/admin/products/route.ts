@@ -1,87 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createProduct } from '@/lib/db-products';
+import { supabaseAdmin } from '@/lib/supabase';
 
 /**
- * POST /api/admin/products
- * Créer un nouveau produit
+ * Route pour récupérer tous les produits (admin) - inclut les produits inactifs
  */
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const body = await request.json();
-    const {
-      name,
-      description,
-      detailedDescription,
-      price,
-      category,
-      brand,
-      images,
-      variants,
-      features,
-      colors,
-      isNew,
-      isFeatured,
-    } = body;
-
-    // Validation
-    if (!name || !description || !price || !category) {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    
+    let query = supabaseAdmin
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (category) {
+      query = query.eq('category', category);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching products:', error);
       return NextResponse.json(
-        { success: false, error: 'Champs obligatoires manquants' },
-        { status: 400 }
+        { error: 'Erreur lors de la récupération des produits' },
+        { status: 500 }
       );
     }
-
-    if (!images || images.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Au moins une image est requise' },
-        { status: 400 }
-      );
-    }
-
-    if (!variants || variants.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Au moins une variante (taille) est requise' },
-        { status: 400 }
-      );
-    }
-
-    // Créer le produit
-    const product = await createProduct({
-      name,
-      description: description || '',
-      detailedDescription: detailedDescription || '',
-      price: parseFloat(price),
-      category,
-      brand: brand || undefined,
-      images: images.map((img: any) => ({
-        url: img.url,
-        alt: img.alt || name,
-        isPrimary: img.isPrimary || false,
-      })),
-      variants: variants.map((v: any) => ({
-        size: v.size,
-        stock: parseInt(v.stock) || 0,
-        sku: v.sku || `${name}-${v.size}`.toUpperCase().replace(/\s+/g, '-'),
-      })),
-      features: (features || []).map((f: any) => ({
-        name: f.name,
-        value: f.value,
-      })),
-      colors: colors || [],
-      isNew: isNew || false,
-      isFeatured: isFeatured || false,
-    });
-
+    
     return NextResponse.json({
       success: true,
-      data: product,
+      products: (data || []).map(product => ({
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        price: parseFloat(product.price.toString()),
+        category: product.category,
+        images: Array.isArray(product.images) ? product.images : [],
+        variants: Array.isArray(product.variants) ? product.variants : [],
+        isNew: product.is_new || false,
+        isFeatured: product.is_featured || false,
+        isActive: product.is_active !== false, // Inclut les produits inactifs pour l'admin
+        createdAt: product.created_at,
+        updatedAt: product.updated_at
+      }))
     });
-  } catch (error: any) {
-    console.error('Error creating product:', error);
+    
+  } catch (error) {
+    console.error('Error fetching products:', error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Erreur lors de la création du produit' },
+      { error: 'Erreur lors de la récupération des produits' },
       { status: 500 }
     );
   }
 }
-

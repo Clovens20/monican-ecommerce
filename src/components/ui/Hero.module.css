@@ -1,10 +1,11 @@
 .hero {
     position: relative;
     height: 600px;
-    display: flex;
-    align-items: center;
     overflow: hidden;
     background-color: var(--color-gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .imageWrapper {
@@ -26,46 +27,147 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0) 100%);
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.4) 0%,
+        rgba(0, 0, 0, 0.2) 50%,
+        rgba(0, 0, 0, 0.4) 100%
+    );
     z-index: 2;
 }
 
 .content {
     position: relative;
     z-index: 3;
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 var(--spacing-md);
-    width: 100%;
-}
-
-.textContent {
-    max-width: 500px;
-}
-
-.title {
-    font-size: 3.5rem;
-    font-weight: 800;
-    line-height: 1.1;
-    margin-bottom: var(--spacing-md);
-    color: var(--color-dark);
-    letter-spacing: -0.02em;
-}
-
-.subtitle {
-    font-size: 1.25rem;
-    color: var(--color-gray-800);
-    margin-bottom: var(--spacing-xl);
-    line-height: 1.5;
-}
-
-.highlight {
-    color: var(--primary);
-}
-
-.buttons {
     display: flex;
-    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: center;
+}
+
+.buttonContainer {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.btnPrimary,
+.btnSecondary {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 1rem 2.5rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border: 2px solid transparent;
+}
+
+.btnPrimary {
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    color: white;
+}
+
+.btnPrimary::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btnPrimary:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btnPrimary:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.btnPrimary:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+.btnSecondary {
+    background: rgba(255, 255, 255, 0.95);
+    color: #1F2937;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.btnSecondary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s;
+}
+
+.btnSecondary:hover::before {
+    left: 100%;
+}
+
+.btnSecondary:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.8);
+}
+
+.btnSecondary:active {
+    transform: translateY(-1px) scale(1.02);
+}
+
+.btnText {
+    position: relative;
+    z-index: 1;
+    letter-spacing: 0.5px;
+}
+
+.btnIcon {
+    position: relative;
+    z-index: 1;
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.btnPrimary:hover .btnIcon {
+    transform: translateX(5px);
+}
+
+.btnSecondary:hover .btnIcon {
+    transform: scale(1.2) rotate(10deg);
 }
 
 @media (max-width: 768px) {
@@ -73,11 +175,35 @@
         height: 500px;
     }
 
-    .title {
-        font-size: 2.5rem;
+    .buttonContainer {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        width: 100%;
+    }
+
+    .btnPrimary,
+    .btnSecondary {
+        width: 100%;
+        max-width: 280px;
+        padding: 0.9rem 2rem;
+        font-size: 1rem;
+        justify-content: center;
     }
 
     .overlay {
-        background: rgba(255, 255, 255, 0.7);
+        background: linear-gradient(
+            135deg,
+            rgba(0, 0, 0, 0.5) 0%,
+            rgba(0, 0, 0, 0.3) 50%,
+            rgba(0, 0, 0, 0.5) 100%
+        );
+    }
+}
+
+@media (max-width: 480px) {
+    .btnPrimary,
+    .btnSecondary {
+        padding: 0.8rem 1.5rem;
+        font-size: 0.95rem;
     }
 }

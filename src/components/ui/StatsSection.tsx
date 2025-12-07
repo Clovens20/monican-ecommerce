@@ -8,9 +8,9 @@ export default function StatsSection() {
     const { t } = useLanguage();
     
     const stats = [
-        { number: '10K+', labelKey: 'satisfiedCustomers' },
-        { number: '50+', labelKey: 'countriesServed' },
-        { number: '99%', labelKey: 'satisfactionRate' },
+        { number: '3k+', labelKey: 'satisfiedCustomers' },
+        { number: '3', labelKey: 'countriesServed' },
+        { number: '96%', labelKey: 'satisfactionRate' },
         { number: '24/7', labelKey: 'customerSupport' },
     ];
 

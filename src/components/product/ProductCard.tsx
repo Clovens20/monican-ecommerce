@@ -4,11 +4,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Product } from '@/lib/types';
 import styles from './ProductCard.module.css';
 import { useCountry } from '@/lib/country';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { findBestPromotion, calculateDiscountedPrice, Promotion } from '@/lib/promotions';
 
 interface ProductCardProps {
   product: Product;
@@ -20,9 +21,34 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
   const { formatPrice } = useCountry();
   const { t } = useLanguage();
   const [isHovered, setIsHovered] = useState(false);
+  const [promotion, setPromotion] = useState<Promotion | null>(null);
+
+  // Charger les promotions pour ce produit
+  useEffect(() => {
+    async function fetchPromotion() {
+      try {
+        const response = await fetch(`/api/promotions?productId=${product.id}&category=${product.category}`);
+        if (response.ok) {
+          const data = await response.json();
+          const bestPromo = findBestPromotion(data.promotions || [], product.id, product.category);
+          setPromotion(bestPromo);
+        }
+      } catch (err) {
+        console.error('Error fetching promotion:', err);
+      }
+    }
+    fetchPromotion();
+  }, [product.id, product.category]);
 
   // Calculate total stock
   const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
+
+  // Calculer le prix avec promotion
+  const { discountedPrice, discountAmount } = promotion
+    ? calculateDiscountedPrice(product.price, promotion)
+    : { discountedPrice: product.price, discountAmount: 0 };
+  
+  const hasDiscount = discountAmount > 0;
 
   const getStockStatus = () => {
     if (totalStock === 0) return { text: t('outOfStock'), class: 'out', color: '#ef4444' };
@@ -40,6 +66,7 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
       <Link 
         href={`/product/${product.id}`} 
         className={styles.cardList}
+        prefetch={true}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -76,7 +103,17 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
 
           <div className={styles.footer}>
             <div className={styles.priceSection}>
-              <span className={styles.price}>{formatPrice(product.price)}</span>
+              {hasDiscount ? (
+                <div className={styles.priceWithDiscount}>
+                  <span className={styles.originalPrice}>{formatPrice(product.price)}</span>
+                  <span className={styles.discountedPrice}>{formatPrice(discountedPrice)}</span>
+                  <span className={styles.discountBadge}>
+                    -{promotion?.discount_type === 'percentage' ? `${promotion.discount_value}%` : formatPrice(discountAmount)}
+                  </span>
+                </div>
+              ) : (
+                <span className={styles.price}>{formatPrice(product.price)}</span>
+              )}
               <span className={`${styles.stockBadge} ${styles[stockStatus.class]}`}>
                 <span className={styles.stockDot} style={{ background: stockStatus.color }}></span>
                 {stockStatus.text}
@@ -101,6 +138,7 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
     <Link 
       href={`/product/${product.id}`} 
       className={styles.card}
+      prefetch={true}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -170,7 +208,7 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
         <div className={styles.header}>
           <span className={styles.category}>{product.category}</span>
           <span className={styles.rating}>
-            ⭐ 4.{Math.floor(Math.random() * 3) + 7}
+            ⭐ 4.8
           </span>
         </div>
 
@@ -179,8 +217,20 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
 
         <div className={styles.priceRow}>
           <div className={styles.priceSection}>
-            <span className={styles.price}>{formatPrice(product.price)}</span>
-            <span className={styles.priceLabel}>{t('taxIncluded')}</span>
+            {hasDiscount ? (
+              <div className={styles.priceWithDiscount}>
+                <span className={styles.originalPrice}>{formatPrice(product.price)}</span>
+                <span className={styles.discountedPrice}>{formatPrice(discountedPrice)}</span>
+                <span className={styles.discountBadge}>
+                  -{promotion?.discount_type === 'percentage' ? `${promotion.discount_value}%` : formatPrice(discountAmount)}
+                </span>
+              </div>
+            ) : (
+              <>
+                <span className={styles.price}>{formatPrice(product.price)}</span>
+                <span className={styles.priceLabel}>{t('taxIncluded')}</span>
+              </>
+            )}
           </div>
           <span className={styles.stockInfo}>
             {totalStock > 0 ? `${totalStock} ${t('available')}` : t('outOfStock')}

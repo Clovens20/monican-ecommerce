@@ -266,6 +266,37 @@
     align-items: baseline;
     gap: 0.5rem;
   }
+
+  .priceWithDiscount {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .originalPrice {
+    font-size: 14px;
+    color: #9ca3af;
+    text-decoration: line-through;
+    font-weight: 400;
+  }
+
+  .discountedPrice {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #10b981;
+  }
+
+  .discountBadge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 4px;
+    align-self: flex-start;
+  }
   
   .price {
     font-size: 1.5rem;

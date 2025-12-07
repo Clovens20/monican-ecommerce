@@ -61,6 +61,34 @@ export async function confirm_stock_reduction(
 }
 
 /**
+ * Libère le stock réservé (en cas d'échec de paiement ou de commande)
+ */
+export async function release_reserved_stock(
+    productId: string,
+    size: string,
+    quantity: number
+): Promise<boolean> {
+    try {
+        const { error } = await supabaseAdmin
+            .rpc('release_reserved_stock', {
+                p_product_id: productId,
+                p_size: size,
+                p_quantity: quantity,
+            });
+
+        if (error) {
+            console.error('Error releasing reserved stock:', error);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error in release_reserved_stock:', error);
+        return false;
+    }
+}
+
+/**
  * Récupère le stock disponible d'un produit
  */
 export async function getProductStock(

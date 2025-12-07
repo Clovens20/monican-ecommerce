@@ -54,24 +54,114 @@ function convertSupabaseToProduct(supabaseProduct: SupabaseProduct): Product {
 
 /**
  * Récupère tous les produits actifs
+ * ⚠️ ATTENTION: Cette fonction charge TOUS les produits en mémoire
+ * Pour de meilleures performances, utilisez getAllProductsPaginated() avec pagination
  */
 export async function getAllProducts(): Promise<Product[]> {
     try {
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false });
+        // Utiliser une requête paginée avec une limite élevée (500)
+        // Pour éviter de charger des milliers de produits en mémoire
+        let allProducts: Product[] = [];
+        let page = 0;
+        const pageSize = 500;
+        let hasMore = true;
 
-        if (error) {
-            console.error('Error fetching products:', error);
-            return [];
+        while (hasMore) {
+            const { data, error } = await supabase
+                .from('products')
+                .select('id, name, description, detailed_description, price, category, brand, images, variants, features, colors, is_new, is_featured, is_active, created_at, updated_at')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false })
+                .range(page * pageSize, (page + 1) * pageSize - 1);
+
+            if (error) {
+                console.error('Error fetching products:', error);
+                break;
+            }
+
+            if (!data || data.length === 0) {
+                hasMore = false;
+                break;
+            }
+
+            allProducts = allProducts.concat(data.map((product: any) => convertSupabaseToProduct(product)));
+            
+            // Si on a récupéré moins que pageSize, on a atteint la fin
+            if (data.length < pageSize) {
+                hasMore = false;
+            } else {
+                page++;
+            }
         }
 
-        return data.map(convertSupabaseToProduct);
+        return allProducts;
     } catch (error) {
         console.error('Error in getAllProducts:', error);
         return [];
+    }
+}
+
+/**
+ * Récupère les produits avec pagination (RECOMMANDÉ)
+ * @param page - Numéro de page (0-indexed)
+ * @param pageSize - Nombre d'éléments par page (défaut: 50)
+ * @param isActiveOnly - Filtrer uniquement les produits actifs (défaut: true)
+ * @returns Object avec products, totalCount, hasMore
+ */
+export async function getAllProductsPaginated(
+    page: number = 0,
+    pageSize: number = 50,
+    isActiveOnly: boolean = true
+): Promise<{ products: Product[]; totalCount: number; hasMore: boolean }> {
+    try {
+        // Compter le total d'abord (optimisé)
+        let countQuery = supabase
+            .from('products')
+            .select('*', { count: 'exact', head: true });
+        
+        if (isActiveOnly) {
+            countQuery = countQuery.eq('is_active', true);
+        }
+
+        const { count, error: countError } = await countQuery;
+
+        if (countError) {
+            console.error('Error counting products:', countError);
+            return { products: [], totalCount: 0, hasMore: false };
+        }
+
+        const totalCount = count || 0;
+        const offset = page * pageSize;
+
+        // Récupérer les produits paginés (colonnes spécifiques pour optimiser)
+        let query = supabase
+            .from('products')
+            .select('id, name, description, detailed_description, price, category, brand, images, variants, features, colors, is_new, is_featured, is_active, created_at, updated_at')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + pageSize - 1);
+        
+        if (isActiveOnly) {
+            query = query.eq('is_active', true);
+        }
+
+        const { data, error } = await query;
+
+        if (error) {
+            console.error('Error fetching paginated products:', error);
+            return { products: [], totalCount: 0, hasMore: false };
+        }
+
+        const products = (data || []).map(convertSupabaseToProduct);
+        const hasMore = offset + products.length < totalCount;
+
+        return {
+            products,
+            totalCount,
+            hasMore,
+        };
+    } catch (error) {
+        console.error('Error in getAllProductsPaginated:', error);
+        return { products: [], totalCount: 0, hasMore: false };
     }
 }
 

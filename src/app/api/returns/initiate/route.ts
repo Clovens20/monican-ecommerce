@@ -113,7 +113,19 @@ export async function POST(request: NextRequest) {
             .eq('id', order.id)
             .single();
 
+        // Récupérer l'adresse de retour officielle
+        const returnAddress = {
+            name: 'MONICAN',
+            street: process.env.SHIPPING_ORIGIN_STREET || '123 Commerce Street',
+            city: process.env.SHIPPING_ORIGIN_CITY || 'Montreal',
+            state: process.env.SHIPPING_ORIGIN_STATE || 'QC',
+            zip: process.env.SHIPPING_ORIGIN_ZIP || 'H3A 0G4',
+            country: process.env.SHIPPING_ORIGIN_COUNTRY || 'CA',
+            phone: process.env.SHOP_PHONE || '+1-514-555-0123',
+        };
+
         // Enregistrer la demande de retour en base de données
+        const bodyData = await request.json();
         const { data: newReturn, error: insertError } = await supabaseAdmin
             .from('returns')
             .insert({
@@ -124,6 +136,10 @@ export async function POST(request: NextRequest) {
                 items: orderDetails?.items || null,
                 currency: orderDetails?.currency || 'USD',
                 status: 'pending',
+                reason: bodyData.reason || null,
+                notes: bodyData.additionalInfo || null,
+                product_photo_url: bodyData.productPhotoUrl || null,
+                return_address: returnAddress,
             })
             .select()
             .single();

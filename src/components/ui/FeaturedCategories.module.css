@@ -107,4 +107,42 @@
     .grid {
         grid-template-columns: repeat(4, 1fr);
     }
+
+    .card {
+        height: 300px;
+    }
+}
+
+@media (max-width: 767px) {
+    .section {
+        padding: var(--spacing-lg) 0;
+    }
+
+    .title {
+        font-size: 1.5rem;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .card {
+        height: 200px;
+    }
+
+    .cardTitle {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .card {
+        height: 180px;
+    }
+
+    .cardTitle {
+        font-size: 1rem;
+    }
 }

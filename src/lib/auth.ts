@@ -4,6 +4,7 @@
 
 import { supabase, supabaseAdmin } from './supabase';
 import { User, Admin } from './types';
+import { NextRequest } from 'next/server';
 
 // ============================================================================
 // TYPES
@@ -64,7 +65,7 @@ export async function loginAdmin(credentials: LoginCredentials): Promise<AuthRes
         }
 
         // Vérifier que c'est un admin
-        if (profile.role !== 'admin' && profile.role !== 'super_admin') {
+        if (profile.role !== 'admin') {
             return {
                 success: false,
                 error: 'Accès non autorisé',
@@ -155,7 +156,7 @@ export async function getCurrentUser(): Promise<User | Admin | null> {
  */
 export async function isAdmin(): Promise<boolean> {
     const user = await getCurrentUser();
-    return user?.role === 'admin' || user?.role === 'super_admin';
+    return user?.role === 'admin';
 }
 
 /**
@@ -210,6 +211,148 @@ export async function createAdmin(
         return {
             success: false,
             error: 'Erreur lors de la création de l\'admin',
+        };
+    }
+}
+
+/**
+ * Vérifie l'authentification d'un admin depuis une requête API
+ * Utilise le cookie admin_token pour identifier l'utilisateur
+ */
+export async function verifyAuth(request: NextRequest): Promise<{ status: number; user?: Admin; error?: string }> {
+    try {
+        // Récupérer le cookie admin_token
+        const authCookie = request.cookies.get('admin_token');
+        
+        if (!authCookie?.value) {
+            console.warn('verifyAuth: No admin_token cookie found');
+            return {
+                status: 401,
+                error: 'Session expirée ou non connecté. Veuillez vous reconnecter.',
+            };
+        }
+
+        // Extraire l'ID utilisateur du cookie (format: admin-{userId})
+        const userId = authCookie.value.replace('admin-', '');
+        
+        if (!userId || userId === authCookie.value) {
+            console.warn('verifyAuth: Invalid token format', { cookieValue: authCookie.value.substring(0, 20) });
+            return {
+                status: 401,
+                error: 'Token de session invalide. Veuillez vous reconnecter.',
+            };
+        }
+
+        // Récupérer le profil utilisateur depuis la base de données
+        // Utiliser supabaseAdmin avec service role key qui devrait bypasser RLS
+        console.log('[verifyAuth] Attempting to fetch user profile', { 
+            userId,
+            supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+            hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY !== 'placeholder-service-role-key'
+        });
+
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('user_profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (profileError) {
+            console.error('[verifyAuth] Database error - Full details:', { 
+                error: profileError, 
+                errorCode: profileError.code,
+                errorMessage: profileError.message,
+                errorDetails: profileError.details,
+                errorHint: profileError.hint,
+                userId,
+                supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+                serviceRoleKeyLength: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0,
+                serviceRoleKeyPrefix: process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 20) || 'NOT_SET'
+            });
+            
+            // Si l'erreur est "not found", c'est différent d'une erreur de connexion
+            if (profileError.code === 'PGRST116') {
+                console.warn('[verifyAuth] User profile not found in database', { userId });
+                return {
+                    status: 401,
+                    error: 'Utilisateur non trouvé. Veuillez vous reconnecter.',
+                };
+            }
+            
+            // Si c'est une erreur de permission RLS
+            if (profileError.code === '42501' || 
+                profileError.message?.includes('permission denied') || 
+                profileError.message?.includes('policy') ||
+                profileError.message?.includes('new row violates row-level security')) {
+                console.error('[verifyAuth] RLS Policy error detected');
+                console.error('[verifyAuth] This usually means:');
+                console.error('  1. The service role key is not correctly configured');
+                console.error('  2. The RLS policies are blocking access');
+                console.error('  3. The migration 010_fix_user_profiles_rls.sql has not been executed');
+                return {
+                    status: 500,
+                    error: 'Erreur de permissions. Vérifiez que la clé service role Supabase est correctement configurée et que la migration RLS a été exécutée.',
+                };
+            }
+            
+            return {
+                status: 500,
+                error: 'Erreur de base de données lors de la vérification',
+            };
+        }
+
+        console.log('[verifyAuth] User profile fetched successfully', { 
+            userId: profile?.id, 
+            email: profile?.email, 
+            role: profile?.role,
+            isActive: profile?.is_active 
+        });
+
+        if (!profile) {
+            console.warn('verifyAuth: Profile not found', { userId });
+            return {
+                status: 401,
+                error: 'Profil utilisateur non trouvé. Veuillez vous reconnecter.',
+            };
+        }
+
+        // Vérifier que c'est un admin
+        if (profile.role !== 'admin') {
+            console.warn('verifyAuth: User is not admin', { userId, role: profile.role });
+            return {
+                status: 403,
+                error: 'Accès refusé. Seuls les administrateurs peuvent accéder à cette fonctionnalité.',
+            };
+        }
+
+        // Vérifier que le compte est actif
+        if (!profile.is_active) {
+            console.warn('verifyAuth: Account is inactive', { userId });
+            return {
+                status: 403,
+                error: 'Votre compte a été désactivé. Contactez un administrateur.',
+            };
+        }
+
+        const user: Admin = {
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            role: profile.role as 'admin',
+            createdAt: profile.created_at,
+            lastLogin: profile.last_login || undefined,
+            permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+        };
+
+        return {
+            status: 200,
+            user,
+        };
+    } catch (error) {
+        console.error('Error in verifyAuth:', error);
+        return {
+            status: 500,
+            error: 'Erreur lors de la vérification de l\'authentification',
         };
     }
 }

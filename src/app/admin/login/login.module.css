@@ -104,6 +104,41 @@
     background: #f9fafb;
     cursor: not-allowed;
   }
+
+  .passwordWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .passwordWrapper .input {
+    padding-right: 3rem;
+  }
+
+  .passwordToggle {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    transition: color 0.2s;
+    border-radius: 0.5rem;
+  }
+
+  .passwordToggle:hover:not(:disabled) {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .passwordToggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
   
   .errorMessage {
     display: flex;

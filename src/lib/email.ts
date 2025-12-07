@@ -145,10 +145,22 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
         if (options.template && options.data) {
             switch (options.template) {
                 case 'order_confirmation':
-                    html = getOrderConfirmationTemplate(options.data);
+                    html = getOrderConfirmationTemplate(options.data as {
+                        orderNumber: string;
+                        customerName: string;
+                        items: Array<{ name: string; quantity: number; price: number }>;
+                        total: number;
+                        currency: string;
+                        shippingAddress: any;
+                    });
                     break;
                 case 'shipping_notification':
-                    html = getShippingNotificationTemplate(options.data);
+                    html = getShippingNotificationTemplate(options.data as {
+                        orderNumber: string;
+                        customerName: string;
+                        trackingNumber: string;
+                        carrier?: string;
+                    });
                     break;
                 default:
                     html = options.html || '';

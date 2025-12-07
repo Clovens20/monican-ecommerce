@@ -15,6 +15,15 @@ export default function Header() {
     const { country, setCountry } = useCountry();
     const { t } = useLanguage();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen(!isMobileMenuOpen);
+    };
+
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+    };
 
     return (
         <header className={styles.header}>
@@ -31,14 +40,28 @@ export default function Header() {
                     />
                 </Link>
 
+                {/* Mobile Menu Button */}
+                <button 
+                    className={styles.mobileMenuBtn}
+                    onClick={toggleMobileMenu}
+                    aria-label="Menu"
+                    aria-expanded={isMobileMenuOpen}
+                >
+                    <span className={`${styles.hamburger} ${isMobileMenuOpen ? styles.hamburgerOpen : ''}`}>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
+                </button>
+
                 {/* Desktop Navigation */}
                 <nav className={styles.nav}>
                     <ul className={styles.navLinks}>
-                        <li><Link href="/" className={styles.navLink}>{t('home')}</Link></li>
-                        <li><Link href="/catalog" className={styles.navLink}>{t('catalog')}</Link></li>
-                        <li><Link href="/wholesale" className={`${styles.navLink} ${styles.wholesaleLink}`}>{t('wholesale')}</Link></li>
-                        <li><Link href="/about" className={styles.navLink}>{t('about')}</Link></li>
-                        <li><Link href="/contact" className={styles.navLink}>{t('contact')}</Link></li>
+                        <li><Link href="/" className={styles.navLink} prefetch={true}>{t('home')}</Link></li>
+                        <li><Link href="/catalog" className={styles.navLink} prefetch={true}>{t('catalog')}</Link></li>
+                        <li><Link href="/wholesale" className={`${styles.navLink} ${styles.wholesaleLink}`} prefetch={true}>{t('wholesale')}</Link></li>
+                        <li><Link href="/about" className={styles.navLink} prefetch={true}>{t('about')}</Link></li>
+                        <li><Link href="/contact" className={styles.navLink} prefetch={true}>{t('contact')}</Link></li>
                     </ul>
                 </nav>
 
@@ -86,6 +109,45 @@ export default function Header() {
                         {itemCount > 0 && <span className={styles.cartCount}>{itemCount}</span>}
                     </Link>
                 </div>
+            </div>
+
+            {/* Mobile Menu Overlay */}
+            <div 
+                className={`${styles.mobileMenuOverlay} ${isMobileMenuOpen ? styles.mobileMenuOpen : ''}`}
+                onClick={closeMobileMenu}
+            >
+                <nav 
+                    className={styles.mobileNav}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <ul className={styles.mobileNavLinks}>
+                        <li>
+                            <Link href="/" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                                {t('home')}
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/catalog" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                                {t('catalog')}
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/wholesale" className={`${styles.mobileNavLink} ${styles.wholesaleLink}`} prefetch={true} onClick={closeMobileMenu}>
+                                {t('wholesale')} 💰
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/about" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                                {t('about')}
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/contact" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                                {t('contact')}
+                            </Link>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </header>
     );

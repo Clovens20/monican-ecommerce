@@ -1,96 +1,219 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import styles from './page.module.css';
 
-const monthlyData = [
-    { month: 'Jan', value: 4500 },
-    { month: 'Fév', value: 5200 },
-    { month: 'Mar', value: 4800 },
-    { month: 'Avr', value: 6100 },
-    { month: 'Mai', value: 5900 },
-    { month: 'Juin', value: 7500 },
-    { month: 'Juil', value: 8200 },
-    { month: 'Août', value: 7800 },
-    { month: 'Sep', value: 9100 },
-    { month: 'Oct', value: 10500 },
-    { month: 'Nov', value: 12450 },
-    { month: 'Déc', value: 3200 }, // Current partial month
-];
-
-const maxVal = Math.max(...monthlyData.map(d => d.value));
+interface FinancialStats {
+    totalRevenue: number;
+    totalOrders: number;
+    averageOrderValue: number;
+    revenueByCountry: Array<{
+        country: string;
+        revenue: number;
+        currency: string;
+        orderCount: number;
+    }>;
+    monthlyRevenue: Array<{
+        month: string;
+        value: number;
+    }>;
+}
 
 export default function FinancesPage() {
+    const [stats, setStats] = useState<FinancialStats | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchFinancialStats() {
+            try {
+                const response = await fetch('/api/admin/dashboard/stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Calculer le panier moyen
+                    const averageOrderValue = data.stats.totalOrders > 0 
+                        ? data.stats.totalRevenue / data.stats.totalOrders 
+                        : 0;
+                    
+                    // Générer les données mensuelles (pour l'instant, on utilise les données disponibles)
+                    // TODO: Implémenter une vraie agrégation mensuelle
+                    const monthlyRevenue = [
+                        { month: 'Jan', value: 0 },
+                        { month: 'Fév', value: 0 },
+                        { month: 'Mar', value: 0 },
+                        { month: 'Avr', value: 0 },
+                        { month: 'Mai', value: 0 },
+                        { month: 'Juin', value: 0 },
+                        { month: 'Juil', value: 0 },
+                        { month: 'Août', value: 0 },
+                        { month: 'Sep', value: 0 },
+                        { month: 'Oct', value: 0 },
+                        { month: 'Nov', value: 0 },
+                        { month: 'Déc', value: 0 },
+                    ];
+                    
+                    setStats({
+                        totalRevenue: data.stats.totalRevenue,
+                        totalOrders: data.stats.totalOrders,
+                        averageOrderValue,
+                        revenueByCountry: data.stats.revenueByCountry || [],
+                        monthlyRevenue
+                    });
+                } else {
+                    setError(data.error || 'Erreur lors du chargement des statistiques');
+                }
+            } catch (err) {
+                console.error('Error fetching financial stats:', err);
+                setError('Erreur de connexion au serveur');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        fetchFinancialStats();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className={styles.container}>
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                    <p>Chargement des rapports financiers...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !stats) {
+        return (
+            <div className={styles.container}>
+                <div style={{ textAlign: 'center', padding: '3rem' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⚠️</div>
+                    <p>{error || 'Erreur lors du chargement des données'}</p>
+                    <button 
+                        onClick={() => window.location.reload()} 
+                        style={{ marginTop: '1rem', padding: '0.5rem 1rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+                    >
+                        Réessayer
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    const maxVal = Math.max(...stats.monthlyRevenue.map(d => d.value), 1);
+
     return (
         <div className={styles.container}>
             <h1 className={styles.title}>Rapports Financiers</h1>
 
             <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
-                    <div className={styles.statLabel}>Revenus Totaux (Année)</div>
-                    <div className={styles.statValue}>$85,250.00</div>
+                    <div className={styles.statLabel}>Revenus Totaux</div>
+                    <div className={styles.statValue}>
+                        {new Intl.NumberFormat('fr-FR', {
+                            style: 'currency',
+                            currency: 'USD'
+                        }).format(stats.totalRevenue)}
+                    </div>
                 </div>
                 <div className={styles.statCard}>
                     <div className={styles.statLabel}>Commandes</div>
-                    <div className={styles.statValue}>1,245</div>
+                    <div className={styles.statValue}>{stats.totalOrders}</div>
                 </div>
                 <div className={styles.statCard}>
                     <div className={styles.statLabel}>Panier Moyen</div>
-                    <div className={styles.statValue}>$68.47</div>
+                    <div className={styles.statValue}>
+                        {new Intl.NumberFormat('fr-FR', {
+                            style: 'currency',
+                            currency: 'USD'
+                        }).format(stats.averageOrderValue)}
+                    </div>
                 </div>
                 <div className={styles.statCard}>
-                    <div className={styles.statLabel}>Taux de Conversion</div>
-                    <div className={styles.statValue}>3.2%</div>
+                    <div className={styles.statLabel}>Pays Actifs</div>
+                    <div className={styles.statValue}>{stats.revenueByCountry.length}</div>
                 </div>
             </div>
 
             <div className={styles.card}>
                 <h2 className={styles.subtitle}>Évolution des Revenus</h2>
-                <div className={styles.chartContainer}>
-                    {monthlyData.map((data) => (
-                        <div key={data.month} className={styles.barGroup}>
-                            <div
-                                className={styles.bar}
-                                style={{ height: `${(data.value / maxVal) * 100}%` }}
-                                title={`$${data.value}`}
-                            ></div>
-                            <span className={styles.barLabel}>{data.month}</span>
-                        </div>
-                    ))}
-                </div>
+                {stats.monthlyRevenue.some(d => d.value > 0) ? (
+                    <div className={styles.chartContainer}>
+                        {stats.monthlyRevenue.map((data) => (
+                            <div key={data.month} className={styles.barGroup}>
+                                <div
+                                    className={styles.bar}
+                                    style={{ height: `${(data.value / maxVal) * 100}%` }}
+                                    title={new Intl.NumberFormat('fr-FR', {
+                                        style: 'currency',
+                                        currency: 'USD'
+                                    }).format(data.value)}
+                                ></div>
+                                <span className={styles.barLabel}>{data.month}</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                        <p>Aucune donnée mensuelle disponible</p>
+                        <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                            Les données mensuelles seront disponibles une fois que vous aurez des commandes
+                        </p>
+                    </div>
+                )}
             </div>
 
             <div className={styles.card}>
                 <h2 className={styles.subtitle}>Performance par Pays</h2>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th className={styles.th}>Pays</th>
-                            <th className={styles.th}>Commandes</th>
-                            <th className={styles.th}>Revenus</th>
-                            <th className={styles.th}>% du Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td className={styles.td}>🇺🇸 USA</td>
-                            <td className={styles.td}>850</td>
-                            <td className={styles.td}>$58,200.00</td>
-                            <td className={styles.td}>68%</td>
-                        </tr>
-                        <tr>
-                            <td className={styles.td}>🇨🇦 Canada</td>
-                            <td className={styles.td}>280</td>
-                            <td className={styles.td}>$19,400.00</td>
-                            <td className={styles.td}>23%</td>
-                        </tr>
-                        <tr>
-                            <td className={styles.td}>🇲🇽 Mexique</td>
-                            <td className={styles.td}>115</td>
-                            <td className={styles.td}>$7,650.00</td>
-                            <td className={styles.td}>9%</td>
-                        </tr>
-                    </tbody>
-                </table>
+                {stats.revenueByCountry.length > 0 ? (
+                    <table className={styles.table}>
+                        <thead>
+                            <tr>
+                                <th className={styles.th}>Pays</th>
+                                <th className={styles.th}>Commandes</th>
+                                <th className={styles.th}>Revenus</th>
+                                <th className={styles.th}>% du Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {stats.revenueByCountry
+                                .sort((a, b) => b.revenue - a.revenue)
+                                .map((country) => {
+                                    const percentage = stats.totalRevenue > 0 
+                                        ? (country.revenue / stats.totalRevenue) * 100 
+                                        : 0;
+                                    const flag = country.country === 'US' ? '🇺🇸' 
+                                        : country.country === 'CA' ? '🇨🇦' 
+                                        : country.country === 'MX' ? '🇲🇽' 
+                                        : '🌍';
+                                    const countryName = country.country === 'US' ? 'États-Unis'
+                                        : country.country === 'CA' ? 'Canada'
+                                        : country.country === 'MX' ? 'Mexique'
+                                        : country.country;
+                                    
+                                    return (
+                                        <tr key={country.country}>
+                                            <td className={styles.td}>{flag} {countryName}</td>
+                                            <td className={styles.td}>{country.orderCount}</td>
+                                            <td className={styles.td}>
+                                                {new Intl.NumberFormat('fr-FR', {
+                                                    style: 'currency',
+                                                    currency: country.currency || 'USD'
+                                                }).format(country.revenue)}
+                                            </td>
+                                            <td className={styles.td}>{percentage.toFixed(1)}%</td>
+                                        </tr>
+                                    );
+                                })}
+                        </tbody>
+                    </table>
+                ) : (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                        <p>Aucune donnée par pays disponible</p>
+                    </div>
+                )}
             </div>
         </div>
     );

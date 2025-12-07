@@ -26,6 +26,7 @@ export const metadata: Metadata = {
 
 import ConditionalHeader from "@/components/layout/ConditionalHeader";
 import ConditionalFooter from "@/components/layout/ConditionalFooter";
+import PromotionBanner from "@/components/promotions/PromotionBanner";
 import { CartProvider } from "@/lib/cart";
 import { CountryProvider } from "@/lib/country";
 import { WishlistProvider } from "@/lib/wishlist";
@@ -43,6 +44,7 @@ export default function RootLayout({
           <CountryProvider>
             <CartProvider>
               <WishlistProvider>
+                <PromotionBanner />
                 <ConditionalHeader />
                 <main>{children}</main>
                 <ConditionalFooter />

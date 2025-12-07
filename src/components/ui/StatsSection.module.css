@@ -56,6 +56,10 @@
 }
 
 @media (max-width: 768px) {
+    .statsSection {
+        padding: 3rem 0;
+    }
+
     .statsGrid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
@@ -67,6 +71,33 @@
 
     .statNumber {
         font-size: 2rem;
+    }
+
+    .statLabel {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .statsSection {
+        padding: 2rem 0;
+    }
+
+    .statsGrid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .statCard {
+        padding: 1.25rem;
+    }
+
+    .statNumber {
+        font-size: 1.75rem;
+    }
+
+    .statLabel {
+        font-size: 0.85rem;
     }
 }
 

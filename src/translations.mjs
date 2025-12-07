@@ -13,7 +13,7 @@ export const translations = {
       cart: 'Cart',
       
       // Hero
-      heroTitle: 'Discover Authentic Haitian Fashion',
+      heroTitle: 'Your Premium Fashion Destination',
       heroSubtitle: 'Handcrafted quality, delivered to your door',
       shopNow: 'Shop Now',
       
@@ -83,6 +83,7 @@ export const translations = {
       trackOrder: 'Track Order',
       delivery: 'Delivery',
       returns: 'Returns',
+      returnProduct: 'Return a Product',
       faq: 'FAQ',
       terms: 'Terms & Conditions',
       privacy: 'Privacy',
@@ -344,7 +345,7 @@ export const translations = {
       cart: 'Panier',
       
       // Hero
-      heroTitle: 'Découvrez la Mode Haïtienne Authentique',
+      heroTitle: 'Votre Destination Mode Premium',
       heroSubtitle: 'Qualité artisanale, livrée à votre porte',
       shopNow: 'Magasiner',
       
@@ -414,6 +415,7 @@ export const translations = {
       trackOrder: 'Suivre ma commande',
       delivery: 'Livraison',
       returns: 'Retours',
+      returnProduct: 'Retourner un Produit',
       faq: 'FAQ',
       terms: 'Conditions générales',
       privacy: 'Confidentialité',
@@ -702,7 +704,7 @@ export const translations = {
       cart: 'Carrito',
       
       // Hero
-      heroTitle: 'Descubre la Moda Haitiana Auténtica',
+      heroTitle: 'Tu Destino de Moda Premium',
       heroSubtitle: 'Calidad artesanal, entregada a tu puerta',
       shopNow: 'Comprar ahora',
       
@@ -772,6 +774,7 @@ export const translations = {
       trackOrder: 'Rastrear pedido',
       delivery: 'Envío',
       returns: 'Devoluciones',
+      returnProduct: 'Devolver un Producto',
       faq: 'Preguntas frecuentes',
       terms: 'Términos y condiciones',
       privacy: 'Privacidad',
@@ -1016,7 +1019,7 @@ export const translations = {
       cart: 'Panye',
       
       // Hero
-      heroTitle: 'Dekouvri Mòd Ayisyen Otantik',
+      heroTitle: 'Destinasyon Mòd Premium Ou',
       heroSubtitle: 'Kalite atizanal, livre lakay ou',
       shopNow: 'Achte Kounye a',
       

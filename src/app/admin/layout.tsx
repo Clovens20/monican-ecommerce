@@ -5,21 +5,68 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import styles from './admin.module.css';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
+interface Counters {
+  pendingOrders: number;
+  pendingReturns: number;
+  totalNotifications: number;
+}
+
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const [counters, setCounters] = useState<Counters>({
+    pendingOrders: 0,
+    pendingReturns: 0,
+    totalNotifications: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
   // Don't show layout on login page or sousadmin page
   if (pathname === '/admin/login' || pathname === '/admin/sousadmin') {
     return <>{children}</>;
   }
+
+  // Fonction pour récupérer les compteurs en temps réel
+  const fetchCounters = async () => {
+    try {
+      const response = await fetch('/api/admin/counters');
+      const data = await response.json();
+      
+      if (data.success && data.counters) {
+        setCounters(data.counters);
+      }
+    } catch (error) {
+      console.error('Error fetching counters:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Charger les compteurs au montage
+  useEffect(() => {
+    fetchCounters();
+  }, []);
+
+  // Mettre à jour en temps réel toutes les 10 secondes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchCounters();
+    }, 10000); // Mise à jour toutes les 10 secondes
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Réactualiser aussi quand on change de page (en cas de modification)
+  useEffect(() => {
+    fetchCounters();
+  }, [pathname]);
 
   const handleLogout = () => {
     document.cookie = 'admin_token=; path=/; max-age=0';
@@ -56,7 +103,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             >
               <span className={styles.navIcon}>📦</span>
               <span>Commandes</span>
-              <span className={styles.badge}>12</span>
+              {counters.pendingOrders > 0 && (
+                <span className={styles.badge}>{counters.pendingOrders}</span>
+              )}
             </Link>
 
             <Link 
@@ -65,6 +114,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             >
               <span className={styles.navIcon}>🏷️</span>
               <span>Produits</span>
+            </Link>
+
+            <Link 
+              href="/admin/categories" 
+              className={`${styles.navItem} ${isActive('/admin/categories') ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>📂</span>
+              <span>Catégories</span>
+            </Link>
+
+            <Link 
+              href="/admin/returns" 
+              className={`${styles.navItem} ${isActive('/admin/returns') ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>↩️</span>
+              <span>Retours</span>
             </Link>
 
             <Link 
@@ -81,6 +146,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             >
               <span className={styles.navIcon}>💰</span>
               <span>Finances</span>
+            </Link>
+
+            <Link 
+              href="/admin/promotions" 
+              className={`${styles.navItem} ${isActive('/admin/promotions') ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>🎁</span>
+              <span>Promotions</span>
+            </Link>
+
+            <Link 
+              href="/admin/newsletter" 
+              className={`${styles.navItem} ${isActive('/admin/newsletter') ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>📧</span>
+              <span>Newsletter</span>
             </Link>
 
             <Link 
@@ -110,6 +191,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <span className={styles.navIcon}>🎨</span>
               <span>Éditeur de Site</span>
             </Link>
+
+            <Link 
+              href="/admin/legal-editor" 
+              className={`${styles.navItem} ${isActive('/admin/legal-editor') ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>📜</span>
+              <span>Contenu Légal</span>
+            </Link>
           </div>
         </nav>
 
@@ -136,7 +225,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className={styles.topBarActions}>
             <button className={styles.iconBtn} title="Notifications">
               <span className={styles.notifIcon}>🔔</span>
-              <span className={styles.notifBadge}>3</span>
+              {counters.totalNotifications > 0 && (
+                <span className={styles.notifBadge}>
+                  {counters.totalNotifications > 99 ? '99+' : counters.totalNotifications}
+                </span>
+              )}
             </button>
             
             <div className={styles.userProfile}>

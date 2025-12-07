@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { loginAdmin } from '@/lib/auth';
+import { rateLimitMiddleware, RATE_LIMITS, getClientIP } from '@/lib/rate-limit';
 
 const LoginSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -9,6 +10,12 @@ const LoginSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting pour le login (protection brute force)
+    const rateLimitResponse = rateLimitMiddleware(request, RATE_LIMITS.login);
+    if (rateLimitResponse) {
+      return rateLimitResponse;
+    }
+
     const body = await request.json();
     
     const validationResult = LoginSchema.safeParse(body);

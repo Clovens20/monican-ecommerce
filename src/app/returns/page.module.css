@@ -79,8 +79,53 @@
     font-weight: 600;
 }
 
+.link {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+}
+
 .link:hover {
     text-decoration: underline;
+}
+
+.contactInfo {
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: #f9fafb;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+}
+
+.contactInfo p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    color: var(--color-gray-700);
+}
+
+.ctaSection {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    border-radius: var(--radius-lg);
+}
+
+.ctaButton {
+    display: inline-block;
+    padding: 1rem 2rem;
+    background: white;
+    color: var(--primary);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.ctaButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 @media (max-width: 768px) {

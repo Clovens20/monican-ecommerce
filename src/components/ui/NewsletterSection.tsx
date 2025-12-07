@@ -9,14 +9,40 @@ export default function NewsletterSection() {
     const { t } = useLanguage();
     const [email, setEmail] = useState('');
     const [submitted, setSubmitted] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSubmitted(true);
-        setTimeout(() => {
-            setEmail('');
-            setSubmitted(false);
-        }, 3000);
+        setError(null);
+        setLoading(true);
+
+        try {
+            const response = await fetch('/api/newsletter/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setSubmitted(true);
+                setEmail('');
+                setTimeout(() => {
+                    setSubmitted(false);
+                }, 5000);
+            } else {
+                setError(data.error || 'Une erreur est survenue');
+            }
+        } catch (err) {
+            console.error('Error subscribing to newsletter:', err);
+            setError('Erreur de connexion. Veuillez réessayer.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -38,17 +64,30 @@ export default function NewsletterSection() {
                                 type="email"
                                 placeholder={t('newsletterPlaceholder')}
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    setError(null);
+                                }}
                                 className={styles.input}
                                 required
+                                disabled={loading}
                             />
-                            <button type="submit" className={styles.submitBtn}>
-                                {submitted ? t('newsletterSubscribed') : t('newsletterSubscribe')}
+                            <button 
+                                type="submit" 
+                                className={styles.submitBtn}
+                                disabled={loading || submitted}
+                            >
+                                {loading ? '⏳' : submitted ? t('newsletterSubscribed') : t('newsletterSubscribe')}
                             </button>
                         </form>
                         {submitted && (
                             <p className={styles.successMessage}>
                                 {t('newsletterThankYou')}
+                            </p>
+                        )}
+                        {error && (
+                            <p className={styles.errorMessage}>
+                                {error}
                             </p>
                         )}
                     </div>

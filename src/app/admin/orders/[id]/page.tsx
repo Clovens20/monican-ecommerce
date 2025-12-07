@@ -1,23 +1,106 @@
 'use client';
 
-import { useState, use } from 'react';
-import { mockOrders, OrderStatus } from '@/lib/orders';
+import { useState, useEffect, use } from 'react';
+import { OrderStatus } from '@/lib/types';
 import styles from './page.module.css';
 import { notFound } from 'next/navigation';
 
+interface Order {
+    id: string;
+    orderNumber: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone: string;
+    date: string;
+    status: string;
+    total: number;
+    currency: string;
+    items: Array<{
+        id: string;
+        name: string;
+        size?: string;
+        quantity: number;
+        price: number;
+    }>;
+    shippingAddress: {
+        street: string;
+        city: string;
+        state: string;
+        zip: string;
+        country: string;
+    };
+    trackingNumber?: string;
+    subtotal: number;
+    shippingCost: number;
+    tax: number;
+}
+
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
-    const order = mockOrders.find((o) => o.id === id);
+    const [order, setOrder] = useState<Order | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [status, setStatus] = useState<OrderStatus>('pending');
+    const [tracking, setTracking] = useState('');
 
-    const [status, setStatus] = useState<OrderStatus>(order?.status || 'pending');
-    const [tracking, setTracking] = useState(order?.trackingNumber || '');
+    useEffect(() => {
+        async function fetchOrder() {
+            try {
+                const response = await fetch(`/api/admin/orders/${id}`);
+                const data = await response.json();
+                
+                if (data.success && data.order) {
+                    setOrder(data.order);
+                    setStatus(data.order.status as OrderStatus);
+                    setTracking(data.order.trackingNumber || '');
+                } else {
+                    setOrder(null);
+                }
+            } catch (err) {
+                console.error('Error fetching order:', err);
+                setOrder(null);
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        fetchOrder();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div style={{ padding: '3rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                <p>Chargement de la commande...</p>
+            </div>
+        );
+    }
 
     if (!order) return notFound();
 
-    const handleStatusChange = (newStatus: OrderStatus) => {
-        setStatus(newStatus);
-        alert(`Statut mis à jour: ${newStatus}`);
-        // Here we would call Supabase update
+    const handleStatusChange = async (newStatus: OrderStatus) => {
+        try {
+            const response = await fetch(`/api/admin/orders/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ status: newStatus }),
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setStatus(newStatus);
+                if (order) {
+                    setOrder({ ...order, status: newStatus });
+                }
+            } else {
+                alert(`Erreur: ${data.error || 'Impossible de mettre à jour le statut'}`);
+            }
+        } catch (err) {
+            console.error('Error updating status:', err);
+            alert('Erreur lors de la mise à jour du statut');
+        }
     };
 
     const handleGenerateLabel = () => {
@@ -25,10 +108,36 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         // Simulate label generation
     };
 
-    const handleSaveTracking = () => {
+    const handleSaveTracking = async () => {
         if (!tracking) return alert('Veuillez entrer un numéro de suivi');
-        handleStatusChange('shipped');
-        alert('Numéro de suivi enregistré et client notifié');
+        
+        try {
+            const response = await fetch(`/api/admin/orders/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    status: 'shipped',
+                    trackingNumber: tracking 
+                }),
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setStatus('shipped');
+                if (order) {
+                    setOrder({ ...order, status: 'shipped', trackingNumber: tracking });
+                }
+                alert('Numéro de suivi enregistré et statut mis à jour');
+            } else {
+                alert(`Erreur: ${data.error || 'Impossible de sauvegarder le numéro de suivi'}`);
+            }
+        } catch (err) {
+            console.error('Error saving tracking:', err);
+            alert('Erreur lors de la sauvegarde du numéro de suivi');
+        }
     };
 
     return (
@@ -63,12 +172,53 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                                             </div>
                                         </div>
                                     </div>
-                                    <div style={{ fontWeight: 600 }}>${item.price.toFixed(2)}</div>
+                                    <div style={{ fontWeight: 600 }}>
+                                        {new Intl.NumberFormat('fr-FR', {
+                                            style: 'currency',
+                                            currency: order.currency || 'USD'
+                                        }).format(item.price)}
+                                    </div>
                                 </div>
                             ))}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb', fontWeight: 'bold' }}>
-                                <span>Total</span>
-                                <span>${order.total.toFixed(2)}</span>
+                            <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <span>Sous-total</span>
+                                    <span>
+                                        {new Intl.NumberFormat('fr-FR', {
+                                            style: 'currency',
+                                            currency: order.currency || 'USD'
+                                        }).format(order.subtotal)}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                    <span>Livraison</span>
+                                    <span>
+                                        {new Intl.NumberFormat('fr-FR', {
+                                            style: 'currency',
+                                            currency: order.currency || 'USD'
+                                        }).format(order.shippingCost)}
+                                    </span>
+                                </div>
+                                {order.tax > 0 && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                        <span>Taxes</span>
+                                        <span>
+                                            {new Intl.NumberFormat('fr-FR', {
+                                                style: 'currency',
+                                                currency: order.currency || 'USD'
+                                            }).format(order.tax)}
+                                        </span>
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid #e5e7eb', fontWeight: 'bold' }}>
+                                    <span>Total</span>
+                                    <span>
+                                        {new Intl.NumberFormat('fr-FR', {
+                                            style: 'currency',
+                                            currency: order.currency || 'USD'
+                                        }).format(order.total)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>

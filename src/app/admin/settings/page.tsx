@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getCurrentUser } from '@/lib/auth';
 import SquareConnectButton from '@/components/admin/SquareConnectButton';
 import styles from './page.module.css';
 
-export default function SettingsPage() {
+function SettingsPageContent() {
     const searchParams = useSearchParams();
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -126,5 +126,13 @@ export default function SettingsPage() {
                 {/* Autres sections peuvent être ajoutées ici */}
             </div>
         </div>
+    );
+}
+
+export default function SettingsPage() {
+    return (
+        <Suspense fallback={<div className={styles.container}><div className={styles.loading}>Chargement...</div></div>}>
+            <SettingsPageContent />
+        </Suspense>
     );
 }

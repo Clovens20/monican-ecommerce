@@ -101,28 +101,21 @@ export default function ContactPage() {
                             <div className={styles.contactIcon}>📧</div>
                             <div>
                                 <h3>{t('email')}</h3>
-                                <p>contact@monican.com</p>
+                                <p>support@monican.com</p>
                             </div>
                         </div>
                         <div className={styles.contactItem}>
                             <div className={styles.contactIcon}>📞</div>
                             <div>
                                 <h3>{t('phone')}</h3>
-                                <p>+1 (555) 123-4567</p>
-                            </div>
-                        </div>
-                        <div className={styles.contactItem}>
-                            <div className={styles.contactIcon}>📍</div>
-                            <div>
-                                <h3>{t('address')}</h3>
-                                <p>123 Fashion Street<br />New York, NY 10001<br />États-Unis</p>
+                                <p>717-880-1479</p>
                             </div>
                         </div>
                         <div className={styles.contactItem}>
                             <div className={styles.contactIcon}>🕒</div>
                             <div>
                                 <h3>{t('openingHours')}</h3>
-                                <p>{t('monFri')}<br />{t('satSun')}</p>
+                                <p>24/7</p>
                             </div>
                         </div>
                     </div>
