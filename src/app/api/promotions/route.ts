@@ -7,6 +7,16 @@ import { supabaseAdmin } from '@/lib/supabase';
  */
 export async function GET(request: NextRequest) {
   try {
+    // Vérifier que supabaseAdmin est configuré
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-role-key') {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY n\'est pas configuré');
+      // Retourner un tableau vide au lieu d'une erreur pour ne pas bloquer l'affichage
+      return NextResponse.json({
+        success: true,
+        promotions: [],
+      });
+    }
+
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('productId');
     const category = searchParams.get('category');
@@ -22,12 +32,22 @@ export async function GET(request: NextRequest) {
       .gte('end_date', now)
       .order('priority', { ascending: false });
 
+    // Si la table n'existe pas, retourner un tableau vide
+    if (error && error.code === '42P01') {
+      console.warn('⚠️ Table promotions n\'existe pas encore:', error.message);
+      return NextResponse.json({
+        success: true,
+        promotions: [],
+      });
+    }
+
     if (error) {
       console.error('Error fetching promotions:', error);
-      return NextResponse.json(
-        { error: 'Erreur lors de la récupération des promotions', details: error.message },
-        { status: 500 }
-      );
+      // Retourner un tableau vide au lieu d'une erreur pour ne pas bloquer l'affichage
+      return NextResponse.json({
+        success: true,
+        promotions: [],
+      });
     }
 
     if (!data || data.length === 0) {
@@ -80,10 +100,11 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Error in promotions GET API:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur', details: process.env.NODE_ENV === 'development' ? error.message : undefined },
-      { status: 500 }
-    );
+    // Retourner un tableau vide au lieu d'une erreur pour ne pas bloquer l'affichage
+    return NextResponse.json({
+      success: true,
+      promotions: [],
+    });
   }
 }
 

@@ -3,18 +3,25 @@ import { getAllProducts, getProductsByCategory } from '@/lib/products-db';
 
 /**
  * Route pour récupérer tous les produits ou filtrer par catégorie
- * GET /api/products?category=tennis
+ * GET /api/products?category=tennis&limit=4
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam ? parseInt(limitParam, 10) : undefined;
     
     let products;
     if (category) {
       products = await getProductsByCategory(category);
     } else {
       products = await getAllProducts();
+    }
+    
+    // Appliquer la limite si fournie
+    if (limit && limit > 0) {
+      products = products.slice(0, limit);
     }
     
     return NextResponse.json({

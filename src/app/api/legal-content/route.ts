@@ -22,14 +22,38 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('page_id', pageId)
       .eq('language', language)
-      .single();
+      .maybeSingle();
+
+    // Si la table n'existe pas, retourner null sans erreur
+    if (error && error.code === '42P01') {
+      console.warn('⚠️ Table legal_content n\'existe pas encore:', error.message);
+      return NextResponse.json({
+        success: true,
+        content: null,
+        message: 'Aucun contenu trouvé',
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
+    }
 
     if (error && error.code !== 'PGRST116') {
       console.error('Error fetching legal content:', error);
-      return NextResponse.json(
-        { error: 'Erreur lors de la récupération du contenu' },
-        { status: 500 }
-      );
+      // Retourner null sans erreur pour ne pas bloquer l'affichage
+      return NextResponse.json({
+        success: true,
+        content: null,
+        message: 'Aucun contenu trouvé',
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+        },
+      });
     }
 
     if (!data) {
@@ -59,10 +83,12 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error in legal-content GET API:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur' },
-      { status: 500 }
-    );
+    // Retourner null sans erreur pour ne pas bloquer l'affichage
+    return NextResponse.json({
+      success: true,
+      content: null,
+      message: 'Aucun contenu trouvé',
+    });
   }
 }
 

@@ -1,22 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Product } from '@/lib/types';
 import ProductCard from '@/components/product/ProductCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import styles from './page.module.css';
+import { useRouter } from 'next/navigation';
 
 type SortOption = 'newest' | 'price-asc' | 'price-desc' | 'popular';
 type Category = 'all' | 'tennis' | 'chemises' | 'jeans' | 'maillots' | 'accessoires' | 'chaussures';
 
-export default function CatalogPage() {
+function CatalogPageContent() {
   const { t } = useLanguage();
-  const [selectedCategory, setSelectedCategory] = useState<Category>('all');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  // Lire le paramètre category depuis l'URL
+  const categoryFromUrl = searchParams.get('category') || 'all';
+  const [selectedCategory, setSelectedCategory] = useState<Category>(
+    (categoryFromUrl as Category) || 'all'
+  );
   const [sortBy, setSortBy] = useState<SortOption>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Mettre à jour selectedCategory quand l'URL change
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategory(categoryParam as Category);
+    } else {
+      setSelectedCategory('all');
+    }
+  }, [searchParams]);
 
   // Charger les produits depuis l'API
   useEffect(() => {
@@ -128,6 +147,17 @@ export default function CatalogPage() {
     fetchAllProducts();
   }, []);
 
+  // Fonction pour changer de catégorie et mettre à jour l'URL
+  const handleCategoryChange = (category: Category) => {
+    setSelectedCategory(category);
+    // Mettre à jour l'URL avec Next.js router
+    if (category === 'all') {
+      router.push('/catalog');
+    } else {
+      router.push(`/catalog?category=${category}`);
+    }
+  };
+
   return (
     <div className={styles.page}>
       {/* Hero Section */}
@@ -166,7 +196,7 @@ export default function CatalogPage() {
             {categories.map(cat => (
               <button
                 key={cat.id}
-                onClick={() => setSelectedCategory(cat.id as Category)}
+                onClick={() => handleCategoryChange(cat.id as Category)}
                 className={`${styles.categoryPill} ${selectedCategory === cat.id ? styles.active : ''}`}
               >
                 <span className={styles.categoryIcon}>{cat.icon}</span>
@@ -273,7 +303,7 @@ export default function CatalogPage() {
               {t('tryAnotherCategory')}
             </p>
             <button 
-              onClick={() => setSelectedCategory('all')}
+              onClick={() => handleCategoryChange('all')}
               className={styles.emptyBtn}
             >
               {t('viewAll')}
@@ -282,5 +312,21 @@ export default function CatalogPage() {
         )}
       </div>
     </div>
+  );
+}
+
+// Wrapper avec Suspense pour useSearchParams
+export default function CatalogPage() {
+  return (
+    <Suspense fallback={
+      <div className={styles.page}>
+        <div className="container" style={{ padding: '3rem', textAlign: 'center' }}>
+          <div className={styles.loadingSpinner}></div>
+          <p>Chargement...</p>
+        </div>
+      </div>
+    }>
+      <CatalogPageContent />
+    </Suspense>
   );
 }

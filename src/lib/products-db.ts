@@ -244,20 +244,18 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 
         if (error) {
             console.error('Error fetching featured products:', error);
-            // Fallback vers données mockées si Supabase échoue
-            return getMockFeaturedProducts();
+            return [];
         }
 
         // Si aucun produit dans Supabase, utiliser les données mockées
         if (!data || data.length === 0) {
-            return getMockFeaturedProducts();
+            return [];
         }
 
         return data.map(convertSupabaseToProduct);
     } catch (error) {
         console.error('Error in getFeaturedProducts:', error);
-        // Fallback vers données mockées
-        return getMockFeaturedProducts();
+        return [];
     }
 }
 
@@ -330,7 +328,7 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
             const featured = await getFeaturedProducts();
             // Si même les featured sont vides, utiliser les mock
             if (featured.length === 0) {
-                return getMockFeaturedProducts().slice(0, limit);
+                return [];
             }
             return featured.slice(0, limit);
         }
@@ -352,7 +350,7 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
             console.error('Error fetching best selling products:', productsError);
             const featured = await getFeaturedProducts();
             if (featured.length === 0) {
-                return getMockFeaturedProducts().slice(0, limit);
+                return [];
             }
             return featured.slice(0, limit);
         }
@@ -371,7 +369,7 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
         // Fallback: retourner les produits featured en cas d'erreur
         const featured = await getFeaturedProducts();
         if (featured.length === 0) {
-            return getMockFeaturedProducts().slice(0, limit);
+            return [];
         }
         return featured.slice(0, limit);
     }

@@ -14,6 +14,22 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,
+    // Ajouter les domaines Supabase pour les images
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+      // Pattern spécifique pour votre projet Supabase
+      {
+        protocol: 'https',
+        hostname: 'ujyjdqmqormbjyfuuwgq.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+    // Alternative: utiliser domains (déprécié mais fonctionne)
+    // domains: ['ujyjdqmqormbjyfuuwgq.supabase.co'],
   },
   
   // Headers de sécurité

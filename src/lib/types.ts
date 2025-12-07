@@ -7,6 +7,7 @@ export interface ProductImage {
     url: string;
     alt: string;
     isPrimary: boolean;
+    type?: 'image' | 'video'; // Nouveau: type de média
 }
 
 export interface ProductVariant {

@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import styles from './ProductForm.module.css';
 
 interface ProductImage {
-    id?: string;
+    id: string;
     url: string;
     alt: string;
     isPrimary: boolean;
-    file?: File;
+    type?: 'image' | 'video'; // Nouveau: type de média
 }
 
 interface ProductVariant {
@@ -806,6 +806,9 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                                             >
                                                 ⭐ Définir principale
                                             </button>
+                                        )}
+                                        {image.type === 'video' && (
+                                            <span className={styles.videoBadge}>🎥 Vidéo</span>
                                         )}
                                         {index > 0 && (
                                             <button

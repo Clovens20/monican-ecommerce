@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 /**
  * Génère l'URL OAuth Square côté serveur pour éviter les problèmes de configuration côté client.
@@ -20,7 +21,9 @@ export async function POST(request: NextRequest) {
     const redirectUri =
       process.env.NEXT_PUBLIC_SQUARE_REDIRECT_URI ||
       process.env.SQUARE_REDIRECT_URI ||
-      'https://www.monican.shop/oauth/callback';
+      (process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:3000/api/oauth/callback'
+        : 'https://www.monican.shop/api/oauth/callback');
 
     if (!clientId) {
       console.error('Square Client ID not configured');
@@ -34,10 +37,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Permissions demandées
     const scope = 'PAYMENTS_WRITE MERCHANT_PROFILE_READ';
-    const state = `${userId}-${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}`;
+
+    // Générer un state sécurisé avec userId inclus
+    const timestamp = Date.now();
+    const randomBytes = crypto.randomBytes(16).toString('hex');
+    const state = `${userId}-${timestamp}-${randomBytes}`;
 
     const oauthUrl = `https://connect.squareup.com/oauth2/authorize?client_id=${clientId}&scope=${encodeURIComponent(
       scope
@@ -58,5 +64,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-

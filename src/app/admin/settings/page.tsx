@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getCurrentUser } from '@/lib/auth';
 import SquareConnectButton from '@/components/admin/SquareConnectButton';
 import styles from './page.module.css';
 
@@ -39,23 +38,41 @@ function SettingsPageContent() {
 
         async function loadUser() {
             try {
-                const currentUser = await getCurrentUser();
-                setUser(currentUser);
+                console.log('🔍 Chargement de l\'utilisateur...');
                 
-                // Vérifier si Square est connecté
-                if (currentUser) {
-                    try {
-                        const response = await fetch(`/api/admin/square-status?userId=${currentUser.id}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            setSquareConnected(data.connected || false);
+                // Utiliser une route API pour récupérer l'utilisateur actuel
+                const response = await fetch('/api/admin/me');
+                console.log('📡 Réponse /api/admin/me:', {
+                    status: response.status,
+                    ok: response.ok
+                });
+                
+                if (response.ok) {
+                    const userData = await response.json();
+                    console.log('👤 Utilisateur récupéré:', userData);
+                    console.log('🆔 User ID:', userData?.id);
+                    
+                    setUser(userData);
+                    
+                    // Vérifier si Square est connecté
+                    if (userData?.id) {
+                        try {
+                            const squareResponse = await fetch(`/api/admin/square-status?userId=${userData.id}`);
+                            if (squareResponse.ok) {
+                                const squareData = await squareResponse.json();
+                                setSquareConnected(squareData.connected || false);
+                            }
+                        } catch (err) {
+                            console.error('Error checking Square status:', err);
                         }
-                    } catch (err) {
-                        console.error('Error checking Square status:', err);
                     }
+                } else {
+                    console.warn('⚠️ Impossible de récupérer l\'utilisateur, status:', response.status);
+                    const errorData = await response.json().catch(() => ({}));
+                    console.warn('Erreur:', errorData);
                 }
             } catch (error) {
-                console.error('Error loading user:', error);
+                console.error('❌ Error loading user:', error);
             } finally {
                 setLoading(false);
             }

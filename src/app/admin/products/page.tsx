@@ -6,6 +6,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import styles from './products.module.css';
+import { filterVariantsByCategory } from '@/lib/product-utils';
 
 interface Product {
   id: string;
@@ -245,7 +246,7 @@ export default function ProductsPage() {
 
               {product.variants && Array.isArray(product.variants) && product.variants.length > 0 && (
                 <div className={styles.productSizes}>
-                  {product.variants.map((v, idx) => (
+                  {filterVariantsByCategory(product.variants, product.category).map((v, idx) => (
                     <span key={v.sku || idx} className={styles.sizeTag}>
                       {v.size || 'N/A'}
                     </span>

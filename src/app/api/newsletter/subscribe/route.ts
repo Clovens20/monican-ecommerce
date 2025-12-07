@@ -11,6 +11,15 @@ const SubscribeSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    // Vérifier que supabaseAdmin est configuré
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-role-key') {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY n\'est pas configuré');
+      return NextResponse.json(
+        { error: 'Configuration serveur manquante. Veuillez contacter le support.' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     
     const validationResult = SubscribeSchema.safeParse(body);
@@ -26,11 +35,28 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Vérifier si l'email existe déjà
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: checkError } = await supabaseAdmin
       .from('newsletter_subscribers')
       .select('id, status')
       .eq('email', normalizedEmail)
-      .single();
+      .maybeSingle();
+
+    // Si la table n'existe pas, retourner une erreur claire
+    if (checkError && checkError.code === '42P01') {
+      console.error('❌ Table newsletter_subscribers n\'existe pas:', checkError);
+      return NextResponse.json(
+        { error: 'Service temporairement indisponible. Veuillez réessayer plus tard.' },
+        { status: 503 }
+      );
+    }
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing subscriber:', checkError);
+      return NextResponse.json(
+        { error: 'Erreur lors de la vérification' },
+        { status: 500 }
+      );
+    }
 
     if (existing) {
       // Si déjà inscrit et actif
@@ -54,6 +80,7 @@ export async function POST(request: NextRequest) {
           .eq('id', existing.id);
 
         if (updateError) {
+          console.error('Error reactivating subscription:', updateError);
           throw updateError;
         }
 
@@ -86,9 +113,18 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Si la table n'existe pas
+      if (error.code === '42P01') {
+        console.error('❌ Table newsletter_subscribers n\'existe pas:', error);
+        return NextResponse.json(
+          { error: 'Service temporairement indisponible. Veuillez réessayer plus tard.' },
+          { status: 503 }
+        );
+      }
+
       console.error('Error subscribing to newsletter:', error);
       return NextResponse.json(
-        { error: 'Erreur lors de l\'inscription' },
+        { error: 'Erreur lors de l\'inscription. Veuillez réessayer.' },
         { status: 500 }
       );
     }
@@ -102,10 +138,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in newsletter subscribe API:', error);
+    
+    // Gérer les erreurs de parsing JSON
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { error: 'Format de données invalide' },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { error: 'Erreur serveur. Veuillez réessayer plus tard.' },
       { status: 500 }
     );
   }

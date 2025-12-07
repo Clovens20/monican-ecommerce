@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { mockProducts } from '@/lib/products';
+import { Product } from '@/lib/types';
 import { useCountry } from '@/lib/country';
 import styles from './SearchModal.module.css';
 
@@ -13,10 +13,28 @@ interface SearchModalProps {
 
 export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [products, setProducts] = useState<Product[]>([]);
     const { formatPrice } = useCountry();
 
+    useEffect(() => {
+        async function fetchProducts() {
+            try {
+                const response = await fetch('/api/products');
+                if (response.ok) {
+                    const data = await response.json();
+                    setProducts(data.products || []);
+                }
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            }
+        }
+        if (isOpen) {
+            fetchProducts();
+        }
+    }, [isOpen]);
+
     const filteredProducts = searchQuery.trim()
-        ? mockProducts.filter(product =>
+        ? products.filter(product =>
             product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
             product.description.toLowerCase().includes(searchQuery.toLowerCase())

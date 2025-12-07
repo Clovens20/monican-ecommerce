@@ -10,6 +10,7 @@ import styles from './ProductCard.module.css';
 import { useCountry } from '@/lib/country';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { findBestPromotion, calculateDiscountedPrice, Promotion } from '@/lib/promotions';
+import { filterVariantsByCategory } from '@/lib/product-utils';
 
 interface ProductCardProps {
   product: Product;
@@ -60,6 +61,8 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
 
   // Get primary image or use placeholder
   const primaryImage = product.images?.find(img => img.isPrimary) || product.images?.[0];
+  const hasMedia = primaryImage && primaryImage.url;
+  const isVideo = primaryImage?.type === 'video';
 
   if (viewMode === 'list') {
     return (
@@ -71,9 +74,32 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
         onMouseLeave={() => setIsHovered(false)}
       >
         <div className={styles.imageWrapperList}>
-          <div className={styles.imagePlaceholder}>
-            <span className={styles.placeholderIcon}>📦</span>
-          </div>
+          {hasMedia ? (
+            isVideo ? (
+              <video
+                src={primaryImage.url}
+                className={styles.productImage}
+                muted
+                loop
+                playsInline
+                onMouseEnter={(e) => e.currentTarget.play()}
+                onMouseLeave={(e) => {
+                  e.currentTarget.pause();
+                  e.currentTarget.currentTime = 0;
+                }}
+              />
+            ) : (
+              <img 
+                src={primaryImage.url} 
+                alt={primaryImage.alt || product.name}
+                className={styles.productImage}
+              />
+            )
+          ) : (
+            <div className={styles.imagePlaceholder}>
+              <span className={styles.placeholderIcon}>📦</span>
+            </div>
+          )}
           {product.isNew && (
             <div className={styles.badgeNew}>{t('new')}</div>
           )}
@@ -121,11 +147,11 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
             </div>
 
             <div className={styles.sizes}>
-              {product.variants.slice(0, 4).map(v => (
+              {filterVariantsByCategory(product.variants, product.category).slice(0, 4).map(v => (
                 <span key={v.sku} className={styles.sizeTag}>{v.size}</span>
               ))}
-              {product.variants.length > 4 && (
-                <span className={styles.sizeTag}>+{product.variants.length - 4}</span>
+              {filterVariantsByCategory(product.variants, product.category).length > 4 && (
+                <span className={styles.sizeTag}>+{filterVariantsByCategory(product.variants, product.category).length - 4}</span>
               )}
             </div>
           </div>
@@ -143,11 +169,34 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
       onMouseLeave={() => setIsHovered(false)}
     >
       <div className={styles.imageWrapper}>
-        {/* Image Placeholder */}
-        <div className={styles.imagePlaceholder}>
-          <span className={styles.placeholderIcon}>📦</span>
-          <span className={styles.placeholderText}>{product.name}</span>
-        </div>
+        {/* Afficher l'image ou la vidéo réelle */}
+        {hasMedia ? (
+          isVideo ? (
+            <video
+              src={primaryImage.url}
+              className={styles.productImage}
+              muted
+              loop
+              playsInline
+              onMouseEnter={(e) => e.currentTarget.play()}
+              onMouseLeave={(e) => {
+                e.currentTarget.pause();
+                e.currentTarget.currentTime = 0;
+              }}
+            />
+          ) : (
+            <img 
+              src={primaryImage.url} 
+              alt={primaryImage.alt || product.name}
+              className={styles.productImage}
+            />
+          )
+        ) : (
+          <div className={styles.imagePlaceholder}>
+            <span className={styles.placeholderIcon}>📦</span>
+            <span className={styles.placeholderText}>{product.name}</span>
+          </div>
+        )}
 
         {/* Badges */}
         <div className={styles.badges}>
@@ -239,11 +288,11 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
 
         {/* Sizes */}
         <div className={styles.sizes}>
-          {product.variants.slice(0, 5).map(v => (
+          {filterVariantsByCategory(product.variants, product.category).slice(0, 5).map(v => (
             <span key={v.sku} className={styles.sizeTag}>{v.size}</span>
           ))}
-          {product.variants.length > 5 && (
-            <span className={styles.sizeTag}>+{product.variants.length - 5}</span>
+          {filterVariantsByCategory(product.variants, product.category).length > 5 && (
+            <span className={styles.sizeTag}>+{filterVariantsByCategory(product.variants, product.category).length - 5}</span>
           )}
         </div>
 

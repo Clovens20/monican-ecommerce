@@ -5,6 +5,7 @@ import { useCountry } from '@/lib/country';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Product } from '@/lib/types';
 import styles from './page.module.css';
+import { filterVariantsByCategory } from '@/lib/product-utils';
 
 interface WholesaleItem {
     productId: string;
@@ -331,7 +332,7 @@ export default function WholesalePage() {
                                         onChange={(e) => setSelectedSize(e.target.value)}
                                     >
                                         <option value="">{t('selectSize')}</option>
-                                        {selectedProductData.variants.map(variant => (
+                                        {filterVariantsByCategory(selectedProductData.variants, selectedProductData.category).map(variant => (
                                             <option key={variant.size} value={variant.size}>
                                                 {variant.size} (Stock: {variant.stock})
                                             </option>

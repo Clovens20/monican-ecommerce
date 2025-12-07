@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, use, useEffect } from 'react';
+import { useState, use, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/lib/types';
@@ -19,6 +19,7 @@ import { useCountry } from '@/lib/country';
 import { useWishlist } from '@/lib/wishlist';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { findBestPromotion, calculateDiscountedPrice, Promotion } from '@/lib/promotions';
+import { filterVariantsByCategory } from '@/lib/product-utils';
 
 type TabType = 'description' | 'features' | 'shipping';
 
@@ -37,6 +38,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<TabType>('description');
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [isZoomed, setIsZoomed] = useState(false);
+    const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+    const imageContainerRef = useRef<HTMLDivElement>(null);
+    const [showLightbox, setShowLightbox] = useState(false);
     
     // Modal states
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -45,8 +50,18 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     const [sizeGuideModalOpen, setSizeGuideModalOpen] = useState(false);
     const [promotion, setPromotion] = useState<Promotion | null>(null);
     
+    // Touch handlers states
+    const [pinchDistance, setPinchDistance] = useState(1);
+    const [lastTouchDistance, setLastTouchDistance] = useState(0);
+    
     // Real-time viewer count
     const viewerCount = useProductViewers({ productId: product?.id || '' });
+
+    // Filtrer les variants selon la catégorie (DOIT être avant les returns conditionnels)
+    const filteredVariants = useMemo(() => {
+        if (!product) return [];
+        return filterVariantsByCategory(product.variants, product.category);
+    }, [product?.variants, product?.category]);
 
     // Charger le produit depuis l'API
     useEffect(() => {
@@ -112,6 +127,80 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         }
     }, [product]);
 
+    // Fonction pour gérer le zoom au survol
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!imageContainerRef.current || !isZoomed) return;
+        
+        const rect = imageContainerRef.current.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        
+        setZoomPosition({ x, y });
+    };
+
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (e.touches.length === 2) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const distance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            setLastTouchDistance(distance);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (e.touches.length === 2 && lastTouchDistance > 0) {
+            const touch1 = e.touches[0];
+            const touch2 = e.touches[1];
+            const distance = Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+            );
+            const scale = Math.min(Math.max(distance / lastTouchDistance, 1), 3);
+            setPinchDistance(scale);
+        }
+    };
+
+    const handleTouchEnd = () => {
+        if (pinchDistance > 1.5) {
+            setShowLightbox(true);
+        }
+        setPinchDistance(1);
+        setLastTouchDistance(0);
+    };
+
+    // Calculs qui dépendent de product (après les hooks mais avant les returns)
+    const isWishlisted = product ? isInWishlist(product.id) : false;
+    const selectedVariant = product ? product.variants.find(v => v.size === selectedSize) : null;
+    const totalStock = product ? product.variants.reduce((sum, v) => sum + v.stock, 0) : 0;
+    const maxQuantity = selectedVariant ? selectedVariant.stock : 1;
+
+    const getStockStatus = () => {
+        if (totalStock === 0) return { text: t('outOfStock'), class: 'outOfStock' };
+        if (totalStock < 10) return { text: `${t('onlyLeft')} ${totalStock} ${t('leftInStock')}`, class: 'lowStock' };
+        return { text: t('inStock'), class: '' };
+    };
+
+    const stockStatus = getStockStatus();
+
+    const handleAddToCart = () => {
+        if (!product) return;
+        if (!selectedSize) {
+            alert(t('pleaseSelectSize'));
+            return;
+        }
+
+        // Add to cart with the selected quantity
+        for (let i = 0; i < quantity; i++) {
+            addItem(product, selectedSize);
+        }
+
+        alert(`${quantity} ${t('addedToCart')}`);
+    };
+
+    // MAINTENANT les returns conditionnels peuvent être utilisés
     if (loading) {
         return (
             <div className={styles.container}>
@@ -157,35 +246,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         );
     }
     
-    const isWishlisted = isInWishlist(product.id);
-
-    // Calculate total stock for selected size
-    const selectedVariant = product.variants.find(v => v.size === selectedSize);
-    const totalStock = product.variants.reduce((sum, v) => sum + v.stock, 0);
-    const maxQuantity = selectedVariant ? selectedVariant.stock : 1;
-
-    const handleAddToCart = () => {
-        if (!selectedSize) {
-            alert(t('pleaseSelectSize'));
-            return;
-        }
-
-        // Add to cart with the selected quantity
-        for (let i = 0; i < quantity; i++) {
-            addItem(product, selectedSize);
-        }
-
-        alert(`${quantity} ${t('addedToCart')}`);
-    };
-
-    const getStockStatus = () => {
-        if (totalStock === 0) return { text: t('outOfStock'), class: 'outOfStock' };
-        if (totalStock < 10) return { text: `${t('onlyLeft')} ${totalStock} ${t('leftInStock')}`, class: 'lowStock' };
-        return { text: t('inStock'), class: '' };
-    };
-
-    const stockStatus = getStockStatus();
-
     return (
         <div className={styles.container}>
             {/* Breadcrumb */}
@@ -205,15 +265,61 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     <div className={styles.gallery}>
                         <div className={styles.mainImageWrapper}>
                             {product.isNew && <div className={styles.newBadge}>{t('new')}</div>}
-                            <div className={styles.mainImageContainer}>
+                            <div 
+                                className={styles.mainImageContainer}
+                                ref={imageContainerRef}
+                                onMouseEnter={() => {
+                                    if (product.images?.[selectedImageIndex]?.type !== 'video') {
+                                        setIsZoomed(true);
+                                    }
+                                }}
+                                onMouseLeave={() => setIsZoomed(false)}
+                                onMouseMove={handleMouseMove}
+                                onClick={() => {
+                                    if (product.images?.[selectedImageIndex]?.type !== 'video') {
+                                        setShowLightbox(true);
+                                    }
+                                }}
+                                onTouchStart={handleTouchStart}
+                                onTouchMove={handleTouchMove}
+                                onTouchEnd={handleTouchEnd}
+                                style={{
+                                    transform: pinchDistance > 1 ? `scale(${pinchDistance})` : 'none',
+                                }}
+                            >
                                 {product.images && product.images.length > 0 && product.images[selectedImageIndex] ? (
-                                    <Image
-                                        src={product.images[selectedImageIndex].url}
-                                        alt={product.images[selectedImageIndex].alt || product.name}
-                                        fill
-                                        className={styles.mainImage}
-                                        priority
-                                    />
+                                    product.images[selectedImageIndex].type === 'video' ? (
+                                        <video
+                                            src={product.images[selectedImageIndex].url}
+                                            className={styles.mainImage}
+                                            controls
+                                            autoPlay
+                                            loop
+                                            playsInline
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                    ) : (
+                                        <>
+                                            <Image
+                                                src={product.images[selectedImageIndex].url}
+                                                alt={product.images[selectedImageIndex].alt || product.name}
+                                                fill
+                                                className={styles.mainImage}
+                                                priority
+                                                style={{
+                                                    transform: isZoomed 
+                                                        ? `scale(2) translate(${-zoomPosition.x + 50}%, ${-zoomPosition.y + 50}%)`
+                                                        : 'scale(1)',
+                                                    transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                                                }}
+                                            />
+                                            {isZoomed && (
+                                                <div className={styles.zoomIndicator}>
+                                                    🔍 {t('zoom') || 'Zoom actif'} - {t('clickToFullscreen') || 'Cliquez pour plein écran'}
+                                                </div>
+                                            )}
+                                        </>
+                                    )
                                 ) : (
                                     <div style={{
                                         width: '100%',
@@ -241,22 +347,29 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                                         className={`${styles.thumbnail} ${selectedImageIndex === index ? styles.active : ''}`}
                                         onClick={() => setSelectedImageIndex(index)}
                                     >
-                                        {img.url ? (
+                                        {img.type === 'video' ? (
+                                            <video
+                                                src={img.url}
+                                                className={styles.thumbnailImage}
+                                                muted
+                                                playsInline
+                                                onMouseEnter={(e) => e.currentTarget.play()}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.pause();
+                                                    e.currentTarget.currentTime = 0;
+                                                }}
+                                            />
+                                        ) : (
                                             <Image
                                                 src={img.url}
                                                 alt={img.alt || `${product.name} - Vue ${index + 1}`}
                                                 fill
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                                 className={styles.thumbnailImage}
-                                                loading={index < 4 ? "eager" : "lazy"}
                                             />
-                                        ) : (
-                                            <div style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                background: `linear-gradient(135deg, ${index % 2 === 0 ? '#3B82F6' : '#10B981'} ${index * 20}%, ${index % 2 === 0 ? '#1E40AF' : '#059669'} 100%)`,
-                                                borderRadius: '0.5rem',
-                                                transition: 'all 0.2s'
-                                            }} />
+                                        )}
+                                        {img.type === 'video' && (
+                                            <div className={styles.videoIndicator}>▶️</div>
                                         )}
                                     </div>
                                 ))}
@@ -302,7 +415,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     <div className={styles.section}>
                         <span className={styles.sectionTitle}>Taille</span>
                         <div className={styles.sizeGrid}>
-                            {product.variants.map((variant) => (
+                            {filteredVariants.map((variant) => (
                                 <button
                                     key={variant.size}
                                     className={`${styles.sizeBtn} ${selectedSize === variant.size ? styles.selected : ''}`}
@@ -370,13 +483,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                                 <div className={styles.features}>
                                     {product.features && product.features.length > 0 ? (
                                         product.features.map((feature, index) => (
-                                            <div key={index} className={styles.feature}>
+                                            <div key={`feature-${index}-${feature.name}`} className={styles.feature}>
                                                 <span className={styles.featureName}>{feature.name}</span>
                                                 <span className={styles.featureValue}>{feature.value}</span>
                                             </div>
                                         ))
                                     ) : (
-                                        <p className={styles.description}>Aucune caractéristique disponible</p>
+                                        <p className={styles.noFeatures}>Aucune caractéristique disponible.</p>
                                     )}
                                 </div>
                             )}
@@ -477,7 +590,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             )}
 
             {/* Reviews Section */}
-            <ProductReviews />
+            <ProductReviews productId={product.id} />
 
             {/* Modals */}
             <PaymentSecurityModal 
@@ -497,6 +610,67 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 isOpen={sizeGuideModalOpen} 
                 onClose={() => setSizeGuideModalOpen(false)} 
             />
+
+            {/* Lightbox Modal */}
+            {showLightbox && product.images && product.images[selectedImageIndex] && (
+                <div 
+                    className={styles.lightbox}
+                    onClick={() => setShowLightbox(false)}
+                >
+                    <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
+                        <button 
+                            className={styles.lightboxClose}
+                            onClick={() => setShowLightbox(false)}
+                            aria-label="Fermer"
+                        >
+                            ✕
+                        </button>
+                        {product.images[selectedImageIndex].type === 'video' ? (
+                            <video
+                                src={product.images[selectedImageIndex].url}
+                                controls
+                                autoPlay
+                                loop
+                                className={styles.lightboxImage}
+                            />
+                        ) : (
+                            <Image
+                                src={product.images[selectedImageIndex].url}
+                                alt={product.images[selectedImageIndex].alt || product.name}
+                                width={1920}
+                                height={1920}
+                                className={styles.lightboxImage}
+                                quality={100}
+                            />
+                        )}
+                        {product.images.length > 1 && (
+                            <>
+                                <button
+                                    className={styles.lightboxPrev}
+                                    onClick={() => setSelectedImageIndex((prev) => 
+                                        prev > 0 ? prev - 1 : product.images.length - 1
+                                    )}
+                                    aria-label="Image précédente"
+                                >
+                                    ‹
+                                </button>
+                                <button
+                                    className={styles.lightboxNext}
+                                    onClick={() => setSelectedImageIndex((prev) => 
+                                        prev < product.images.length - 1 ? prev + 1 : 0
+                                    )}
+                                    aria-label="Image suivante"
+                                >
+                                    ›
+                                </button>
+                            </>
+                        )}
+                        <div className={styles.lightboxCounter}>
+                            {selectedImageIndex + 1} / {product.images.length}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
