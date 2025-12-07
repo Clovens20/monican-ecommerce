@@ -46,7 +46,26 @@ export const supabaseAdmin = createClient(
 // Client pour le côté client (avec anon key)
 export const supabase = createClient(
   supabaseUrl,
-  supabaseAnonKey
+  supabaseAnonKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+      heartbeatIntervalMs: 30000, // 30 secondes
+      reconnectAfterMs: (tries: number) => Math.min(tries * 1000, 30000),
+    },
+    global: {
+      headers: {
+        'x-client-info': 'monican-ecommerce',
+      },
+    },
+  }
 );
 
 // ============================================================================

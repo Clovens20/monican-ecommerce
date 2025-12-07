@@ -158,9 +158,14 @@
   transition: all 0.2s;
 }
 
-.logoutBtn:hover {
+.logoutBtn:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.2);
   transform: translateX(4px);
+}
+
+.logoutBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Main Content */

@@ -34,10 +34,19 @@ export function middleware(request: NextRequest) {
       response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
     
-    // CSP amélioré (retirer unsafe-* en production si possible)
-    const csp = process.env.NODE_ENV === 'production'
-      ? "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://connect.squareup.com https://connect.squareupsandbox.com;"
-      : "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://connect.squareup.com https://connect.squareupsandbox.com;";
+    // CSP adapté pour Next.js (autorise scripts inline nécessaires)
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https: blob:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.squareup.com",
+      "frame-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ');
     
     response.headers.set('Content-Security-Policy', csp);
 

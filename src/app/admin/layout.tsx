@@ -5,7 +5,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import styles from './admin.module.css';
 
 interface AdminLayoutProps {
@@ -27,53 +27,116 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     totalNotifications: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchRef = useRef<number>(0);
 
   // Don't show layout on login page or sousadmin page
   if (pathname === '/admin/login' || pathname === '/admin/sousadmin') {
     return <>{children}</>;
   }
 
-  // Fonction pour récupérer les compteurs en temps réel
-  const fetchCounters = async () => {
+  // Fonction pour récupérer les compteurs en temps réel (optimisée avec debounce)
+  const fetchCounters = useCallback(async (force = false) => {
+    const now = Date.now();
+    const timeSinceLastFetch = now - lastFetchRef.current;
+    
+    // Éviter les appels trop fréquents (minimum 5 secondes entre les appels)
+    if (!force && timeSinceLastFetch < 5000) {
+      return;
+    }
+
     try {
-      const response = await fetch('/api/admin/counters');
+      const response = await fetch('/api/admin/counters', {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       const data = await response.json();
       
       if (data.success && data.counters) {
         setCounters(data.counters);
+        lastFetchRef.current = Date.now();
       }
     } catch (error) {
       console.error('Error fetching counters:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Charger les compteurs au montage
   useEffect(() => {
-    fetchCounters();
-  }, []);
+    fetchCounters(true);
+  }, [fetchCounters]);
 
-  // Mettre à jour en temps réel toutes les 10 secondes
+  // Mettre à jour en temps réel toutes les 15 secondes (optimisé de 10 à 15)
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchCounters();
-    }, 10000); // Mise à jour toutes les 10 secondes
+      fetchCounters(false);
+    }, 15000); // Mise à jour toutes les 15 secondes
 
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchCounters]);
 
-  // Réactualiser aussi quand on change de page (en cas de modification)
+  // Réactualiser avec debounce quand on change de page
   useEffect(() => {
-    fetchCounters();
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    
+    fetchTimeoutRef.current = setTimeout(() => {
+      fetchCounters(true);
+    }, 500); // Debounce de 500ms
+
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, [pathname, fetchCounters]);
+
+  // Fonction de déconnexion améliorée avec API
+  const handleLogout = useCallback(async () => {
+    if (isLoggingOut) return;
+    
+    setIsLoggingOut(true);
+    
+    try {
+      // Appeler l'API de déconnexion
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        // Nettoyer le cookie côté client aussi (pour sécurité)
+        document.cookie = 'admin_token=; path=/; max-age=0; SameSite=Lax';
+        
+        // Rediriger vers la page de login
+        router.push('/admin/login');
+        router.refresh();
+      } else {
+        console.error('Erreur lors de la déconnexion');
+        // Même en cas d'erreur, rediriger vers login
+        document.cookie = 'admin_token=; path=/; max-age=0; SameSite=Lax';
+        router.push('/admin/login');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion:', error);
+      // Même en cas d'erreur, rediriger vers login
+      document.cookie = 'admin_token=; path=/; max-age=0; SameSite=Lax';
+      router.push('/admin/login');
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [router, isLoggingOut]);
+
+  // Mémoiser la fonction isActive pour éviter les recalculs
+  const isActive = useCallback((path: string) => {
+    return pathname === path || pathname.startsWith(path + '/');
   }, [pathname]);
-
-  const handleLogout = () => {
-    document.cookie = 'admin_token=; path=/; max-age=0';
-    router.push('/admin/login');
-  };
-
-  const isActive = (path: string) => pathname === path || pathname.startsWith(path + '/');
 
   return (
     <div className={styles.adminLayout}>
@@ -203,9 +266,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
 
         <div className={styles.sidebarFooter}>
-          <button onClick={handleLogout} className={styles.logoutBtn}>
+          <button 
+            onClick={handleLogout} 
+            className={styles.logoutBtn}
+            disabled={isLoggingOut}
+            aria-label="Déconnexion"
+          >
             <span className={styles.navIcon}>🚪</span>
-            <span>Déconnexion</span>
+            <span>{isLoggingOut ? 'Déconnexion...' : 'Déconnexion'}</span>
           </button>
         </div>
       </aside>
