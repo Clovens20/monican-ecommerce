@@ -70,9 +70,9 @@ export async function POST(request: NextRequest) {
           { 
             success: false, 
             error: `Erreur lors de l'upload de ${file.name}: ${error.message || 'Erreur inconnue'}`,
+            // ✅ FIX: Suppression de statusCode qui n'existe pas sur StorageError
             details: process.env.NODE_ENV === 'development' ? {
               message: error.message,
-              statusCode: error.statusCode,
               error: error
             } : undefined
           },
@@ -112,4 +112,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
