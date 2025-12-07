@@ -144,9 +144,11 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
 
     // Obtenir les tailles prédéfinies selon la catégorie
     const getAvailableSizes = useCallback(() => {
-        if (formData.category === 'chaussures') {
+        // Les tennis et chaussures utilisent des numéros (35-45)
+        if (formData.category === 'tennis' || formData.category === 'chaussures') {
             return SHOES_SIZES;
         } else if (CATEGORIES_WITH_SIZES.includes(formData.category)) {
+            // Les autres catégories (chemises, jeans, maillots) utilisent XS, S, M, L, XL, XXL
             return CLOTHING_SIZES;
         }
         return [];
@@ -248,11 +250,13 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     images: [...formData.images, ...newImages],
                 });
             } else {
-                setError(data.error || 'Erreur lors de l\'upload des images');
+                const errorMessage = data.error || 'Erreur lors de l\'upload des images';
+                console.error('Upload error details:', data);
+                setError(errorMessage + (data.details ? ` (${JSON.stringify(data.details)})` : ''));
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error('Error uploading images:', err);
-            setError('Erreur lors de l\'upload des images');
+            setError(`Erreur lors de l'upload des images: ${err.message || 'Erreur de connexion au serveur'}`);
         } finally {
             setUploading(false);
         }
@@ -568,7 +572,16 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                             <select
                                 className={styles.input}
                                 value={formData.category}
-                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                                onChange={(e) => {
+                                    const newCategory = e.target.value;
+                                    // Réinitialiser les variants quand on change de catégorie
+                                    // car les tailles disponibles peuvent être différentes
+                                    setFormData({ 
+                                        ...formData, 
+                                        category: newCategory,
+                                        variants: [] // Réinitialiser les variants
+                                    });
+                                }}
                                 required
                             >
                                 {activeCategories.length > 0 ? (

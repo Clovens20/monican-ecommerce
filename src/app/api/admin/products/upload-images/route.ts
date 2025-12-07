@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { verifyAuth } from '@/lib/auth';
 
 /**
  * POST /api/admin/products/upload-images
@@ -7,6 +8,15 @@ import { supabaseAdmin } from '@/lib/supabase';
  */
 export async function POST(request: NextRequest) {
   try {
+    // Vérifier l'authentification admin
+    const authResult = await verifyAuth(request);
+    if (authResult.status !== 200 || authResult.user?.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: 'Non autorisé. Vous devez être administrateur.' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
     const files = formData.getAll('images') as File[];
 
@@ -57,7 +67,15 @@ export async function POST(request: NextRequest) {
       if (error) {
         console.error('Error uploading to Supabase Storage:', error);
         return NextResponse.json(
-          { success: false, error: `Erreur lors de l'upload de ${file.name}` },
+          { 
+            success: false, 
+            error: `Erreur lors de l'upload de ${file.name}: ${error.message || 'Erreur inconnue'}`,
+            details: process.env.NODE_ENV === 'development' ? {
+              message: error.message,
+              statusCode: error.statusCode,
+              error: error
+            } : undefined
+          },
           { status: 500 }
         );
       }
@@ -82,10 +100,14 @@ export async function POST(request: NextRequest) {
       success: true,
       urls: uploadedUrls,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unexpected error in image upload:', error);
     return NextResponse.json(
-      { success: false, error: 'Erreur serveur lors de l\'upload des images' },
+      { 
+        success: false, 
+        error: 'Erreur serveur lors de l\'upload des images',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
