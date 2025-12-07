@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './Header.module.css';
@@ -36,7 +36,7 @@ export default function Header() {
                         width={120}
                         height={40}
                         priority
-                        style={{ objectFit: 'contain' }}
+                        style={{ objectFit: 'contain', height: 'auto' }}
                     />
                 </Link>
 
@@ -57,11 +57,11 @@ export default function Header() {
                 {/* Desktop Navigation */}
                 <nav className={styles.nav}>
                     <ul className={styles.navLinks}>
-                        <li><Link href="/" className={styles.navLink} prefetch={true}>{t('home')}</Link></li>
-                        <li><Link href="/catalog" className={styles.navLink} prefetch={true}>{t('catalog')}</Link></li>
-                        <li><Link href="/wholesale" className={`${styles.navLink} ${styles.wholesaleLink}`} prefetch={true}>{t('wholesale')}</Link></li>
-                        <li><Link href="/about" className={styles.navLink} prefetch={true}>{t('about')}</Link></li>
-                        <li><Link href="/contact" className={styles.navLink} prefetch={true}>{t('contact')}</Link></li>
+                        <li><Link href="/" className={styles.navLink} prefetch={true} suppressHydrationWarning>{t('home')}</Link></li>
+                        <li><Link href="/catalog" className={styles.navLink} prefetch={true} suppressHydrationWarning>{t('catalog')}</Link></li>
+                        <li><Link href="/wholesale" className={`${styles.navLink} ${styles.wholesaleLink}`} prefetch={true} suppressHydrationWarning>{t('wholesale')}</Link></li>
+                        <li><Link href="/about" className={styles.navLink} prefetch={true} suppressHydrationWarning>{t('about')}</Link></li>
+                        <li><Link href="/contact" className={styles.navLink} prefetch={true} suppressHydrationWarning>{t('contact')}</Link></li>
                     </ul>
                 </nav>
 
@@ -122,27 +122,27 @@ export default function Header() {
                 >
                     <ul className={styles.mobileNavLinks}>
                         <li>
-                            <Link href="/" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                            <Link href="/" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu} suppressHydrationWarning>
                                 {t('home')}
                             </Link>
                         </li>
                         <li>
-                            <Link href="/catalog" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                            <Link href="/catalog" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu} suppressHydrationWarning>
                                 {t('catalog')}
                             </Link>
                         </li>
                         <li>
-                            <Link href="/wholesale" className={`${styles.mobileNavLink} ${styles.wholesaleLink}`} prefetch={true} onClick={closeMobileMenu}>
+                            <Link href="/wholesale" className={`${styles.mobileNavLink} ${styles.wholesaleLink}`} prefetch={true} onClick={closeMobileMenu} suppressHydrationWarning>
                                 {t('wholesale')} 💰
                             </Link>
                         </li>
                         <li>
-                            <Link href="/about" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                            <Link href="/about" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu} suppressHydrationWarning>
                                 {t('about')}
                             </Link>
                         </li>
                         <li>
-                            <Link href="/contact" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu}>
+                            <Link href="/contact" className={styles.mobileNavLink} prefetch={true} onClick={closeMobileMenu} suppressHydrationWarning>
                                 {t('contact')}
                             </Link>
                         </li>

@@ -7,27 +7,33 @@ import { translations } from '../translations.mjs';
 const LanguageContext = createContext();
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState(() => {
-    // Vérifier si on est côté client avant d'accéder à localStorage
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('language') || 'en';
-    }
-    return 'en';
-  });
+  const [language, setLanguage] = useState('en');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Sauvegarder dans localStorage uniquement côté client
-    if (typeof window !== 'undefined') {
+    // Charger la langue depuis localStorage uniquement côté client
+    const storedLanguage = localStorage.getItem('language') || 'en';
+    setLanguage(storedLanguage);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Sauvegarder dans localStorage uniquement après le montage
+    if (mounted) {
       localStorage.setItem('language', language);
     }
-  }, [language]);
+  }, [language, mounted]);
 
   const t = (key) => {
+    if (!mounted) {
+      // Pendant le SSR et l'hydratation, retourner la traduction anglaise
+      return translations['en'][key] || key;
+    }
     return translations[language][key] || key;
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, mounted }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -122,6 +122,30 @@ export default function UsersPage() {
         }
     };
 
+    const handleDeleteSubAdmin = async (id: string, name: string, code: string | null) => {
+        if (!confirm(`Êtes-vous sûr de vouloir supprimer définitivement le sous-admin "${name}" (${code || 'sans code'}) ?\n\nCette action est irréversible.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/users/${id}`, {
+                method: 'DELETE',
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message || 'Sous-admin supprimé avec succès');
+                fetchUsers(); // Rafraîchir la liste
+            } else {
+                alert(data.error || 'Erreur lors de la suppression');
+            }
+        } catch (err) {
+            console.error('Error deleting subadmin:', err);
+            alert('Erreur de connexion au serveur');
+        }
+    };
+
     if (loading) {
         return (
             <div className={styles.container}>
@@ -276,12 +300,21 @@ export default function UsersPage() {
                                     </td>
                                     <td className={styles.td}>{user.ordersProcessed}</td>
                                     <td className={styles.td}>
-                                        <button
-                                            className={styles.actionBtn}
-                                            onClick={() => toggleStatus(user.id, user.active)}
-                                        >
-                                            {user.active ? 'Désactiver' : 'Activer'}
-                                        </button>
+                                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                            <button
+                                                className={styles.actionBtn}
+                                                onClick={() => toggleStatus(user.id, user.active)}
+                                            >
+                                                {user.active ? 'Désactiver' : 'Activer'}
+                                            </button>
+                                            <button
+                                                className={userStyles.deleteBtn}
+                                                onClick={() => handleDeleteSubAdmin(user.id, user.name, user.code)}
+                                                title="Supprimer définitivement"
+                                            >
+                                                🗑️ Supprimer
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
