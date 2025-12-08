@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('🔄 OAuth Callback - Début du traitement pour userId:', userId);
+
     // 3. Récupérer les credentials Square depuis les variables d'environnement
     const clientId = process.env.SQUARE_CLIENT_ID || process.env.NEXT_PUBLIC_SQUARE_CLIENT_ID;
     const clientSecret = process.env.SQUARE_CLIENT_SECRET;
@@ -53,6 +55,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 4. Échanger le code contre un access_token
+    console.log('🔄 Échange du code OAuth contre un access token...');
     const params = new URLSearchParams();
     params.append('client_id', clientId);
     params.append('client_secret', clientSecret);
@@ -87,10 +90,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('✅ Access token reçu, merchant_id:', merchant_id || 'non fourni');
+
     // 5. Récupérer le merchant_id si non fourni
     let finalMerchantId = merchant_id;
     if (!finalMerchantId) {
       try {
+        console.log('🔄 Récupération du merchant_id depuis l\'API Square...');
         const merchantResponse = await fetch('https://connect.squareup.com/v2/merchants/me', {
           headers: {
             Authorization: `Bearer ${access_token}`,
@@ -102,6 +108,7 @@ export async function GET(request: NextRequest) {
           const merchantData = await merchantResponse.json();
           if (merchantData.merchant && merchantData.merchant.length > 0) {
             finalMerchantId = merchantData.merchant[0].id;
+            console.log('✅ Merchant ID récupéré:', finalMerchantId);
           }
         }
       } catch (err) {
@@ -119,53 +126,101 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 7. Vérifier que les colonnes existent avant de sauvegarder
-    try {
-      // Tester si les colonnes existent
-      const { error: testError } = await supabaseAdmin
-        .from('user_profiles')
-        .select('square_access_token')
-        .limit(1);
+    // 7. Vérifier que l'utilisateur existe avant de sauvegarder
+    console.log('🔍 Vérification de l\'existence de l\'utilisateur...');
+    const { data: userExists, error: userCheckError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id')
+      .eq('id', userId)
+      .single();
 
-      if (testError && (testError.code === '42703' || testError.code === '42P01')) {
-        console.error('❌ Colonnes Square non disponibles dans user_profiles');
-        console.error('Détails:', testError.message);
-        console.error('Code erreur:', testError.code);
-        return NextResponse.redirect(
-          new URL('/admin/settings?error=database_error&details=columns_missing', request.url)
-        );
-      }
-
-      // Stocker l'access_token en base Supabase
-      const { error: dbError } = await supabaseAdmin
-        .from('user_profiles')
-        .update({
-          square_access_token: access_token,
-          square_access_token_expires_at: expiresAtDate,
-          square_merchant_id: finalMerchantId || null,
-          square_connected_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
-
-      if (dbError) {
-        console.error('❌ Error saving Square token to database:', dbError);
-        return NextResponse.redirect(
-          new URL('/admin/settings?error=database_error', request.url)
-        );
-      }
-    } catch (dbErr: any) {
-      console.error('❌ Database error:', dbErr);
+    if (userCheckError || !userExists) {
+      console.error('❌ Utilisateur non trouvé:', userId);
+      console.error('Erreur:', userCheckError);
       return NextResponse.redirect(
-        new URL('/admin/settings?error=database_error', request.url)
+        new URL('/admin/settings?error=database_error&details=user_not_found', request.url)
       );
     }
 
-    // 8. Rediriger vers la page des paramètres avec succès
+    console.log('✅ Utilisateur trouvé, sauvegarde du token Square...');
+
+    // 8. Stocker l'access_token en base Supabase
+    const updateData = {
+      square_access_token: access_token,
+      square_access_token_expires_at: expiresAtDate,
+      square_merchant_id: finalMerchantId || null,
+      square_connected_at: new Date().toISOString(),
+    };
+
+    console.log('📝 Données à sauvegarder:', {
+      hasAccessToken: !!updateData.square_access_token,
+      hasExpiresAt: !!updateData.square_access_token_expires_at,
+      merchantId: updateData.square_merchant_id,
+      connectedAt: updateData.square_connected_at,
+      userId: userId,
+    });
+
+    // Vérifier que supabaseAdmin est bien configuré
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-role-key') {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY n\'est pas configuré');
+      return NextResponse.redirect(
+        new URL('/admin/settings?error=server_config&details=supabase_not_configured', request.url)
+      );
+    }
+
+    const { data: updatedUser, error: dbError } = await supabaseAdmin
+      .from('user_profiles')
+      .update(updateData)
+      .eq('id', userId)
+      .select();
+
+    if (dbError) {
+      console.error('❌ Error saving Square token to database:');
+      console.error('Code:', dbError.code);
+      console.error('Message:', dbError.message);
+      console.error('Details:', dbError.details);
+      console.error('Hint:', dbError.hint);
+      console.error('Full error:', JSON.stringify(dbError, null, 2));
+      
+      // Retourner une erreur plus spécifique
+      let errorType = 'database_error';
+      if (dbError.code === '23503') {
+        errorType = 'database_error&details=foreign_key_violation';
+      } else if (dbError.code === '23505') {
+        errorType = 'database_error&details=unique_violation';
+      } else if (dbError.code === '42501') {
+        errorType = 'database_error&details=permission_denied';
+      } else if (dbError.code === '42703') {
+        errorType = 'database_error&details=column_not_found';
+      }
+      
+      return NextResponse.redirect(
+        new URL(`/admin/settings?error=${errorType}`, request.url)
+      );
+    }
+
+    if (!updatedUser || updatedUser.length === 0) {
+      console.error('❌ Aucune ligne mise à jour');
+      return NextResponse.redirect(
+        new URL('/admin/settings?error=database_error&details=no_rows_updated', request.url)
+      );
+    }
+
+    console.log('✅ Square token sauvegardé avec succès!');
+    console.log('Utilisateur mis à jour:', updatedUser[0]?.id);
+    console.log('Token sauvegardé:', !!updatedUser[0]?.square_access_token);
+    console.log('Merchant ID sauvegardé:', updatedUser[0]?.square_merchant_id);
+
+    // 9. Rediriger vers la page des paramètres avec succès
     return NextResponse.redirect(
       new URL('/admin/settings?success=square_connected', request.url)
     );
   } catch (error) {
     console.error('❌ Error in OAuth callback:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.redirect(
       new URL('/admin/settings?error=unexpected_error', request.url)
     );
