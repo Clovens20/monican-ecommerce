@@ -6,12 +6,31 @@ import { supabaseAdmin } from '@/lib/supabase';
  */
 export async function GET(request: NextRequest) {
     try {
+        // Vérifier que supabaseAdmin est configuré
+        if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-role-key') {
+            console.error('❌ SUPABASE_SERVICE_ROLE_KEY n\'est pas configuré');
+            return NextResponse.json(
+                { 
+                    connected: false,
+                    error: 'Configuration serveur manquante',
+                    merchantId: null,
+                    connectedAt: null
+                },
+                { status: 200 } // Retourner 200 pour ne pas bloquer l'interface
+            );
+        }
+
         const searchParams = request.nextUrl.searchParams;
         const userId = searchParams.get('userId');
 
         if (!userId) {
             return NextResponse.json(
-                { error: 'User ID required' },
+                { 
+                    connected: false,
+                    error: 'User ID required',
+                    merchantId: null,
+                    connectedAt: null
+                },
                 { status: 400 }
             );
         }
@@ -21,14 +40,51 @@ export async function GET(request: NextRequest) {
             .from('user_profiles')
             .select('square_access_token, square_merchant_id, square_connected_at')
             .eq('id', userId)
-            .single();
+            .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter les erreurs si l'utilisateur n'existe pas
 
+        // Si la table n'existe pas ou les colonnes n'existent pas
         if (error) {
-            console.error('Error fetching user profile:', error);
+            // Erreur de colonne manquante (42P01 = table n'existe pas, 42703 = colonne n'existe pas)
+            if (error.code === '42P01' || error.code === '42703') {
+                console.warn('⚠️ Colonnes Square non disponibles dans user_profiles:', error.message);
+                return NextResponse.json({
+                    connected: false,
+                    merchantId: null,
+                    connectedAt: null,
+                    error: 'Square columns not available'
+                }, { status: 200 }); // Retourner 200 pour ne pas bloquer l'interface
+            }
+
+            // Erreur si l'utilisateur n'existe pas (PGRST116)
+            if (error.code === 'PGRST116') {
+                console.warn('⚠️ Utilisateur non trouvé:', userId);
+                return NextResponse.json({
+                    connected: false,
+                    merchantId: null,
+                    connectedAt: null,
+                    error: 'User not found'
+                }, { status: 200 }); // Retourner 200 pour ne pas bloquer l'interface
+            }
+
+            console.error('❌ Error fetching user profile:', error);
             return NextResponse.json(
-                { error: 'Database error' },
-                { status: 500 }
+                { 
+                    connected: false,
+                    error: 'Database error',
+                    merchantId: null,
+                    connectedAt: null
+                },
+                { status: 200 } // Retourner 200 pour ne pas bloquer l'interface
             );
+        }
+
+        // Si le profil n'existe pas
+        if (!profile) {
+            return NextResponse.json({
+                connected: false,
+                merchantId: null,
+                connectedAt: null,
+            }, { status: 200 });
         }
 
         const connected = !!(profile?.square_access_token && profile?.square_merchant_id);
@@ -39,11 +95,16 @@ export async function GET(request: NextRequest) {
             connectedAt: profile?.square_connected_at || null,
         });
 
-    } catch (error) {
-        console.error('Error in square-status route:', error);
+    } catch (error: any) {
+        console.error('❌ Error in square-status route:', error);
         return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
+            { 
+                connected: false,
+                error: 'Internal server error',
+                merchantId: null,
+                connectedAt: null
+            },
+            { status: 200 } // Retourner 200 pour ne pas bloquer l'interface
         );
     }
 }

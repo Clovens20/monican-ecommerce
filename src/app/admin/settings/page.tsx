@@ -11,6 +11,7 @@ function SettingsPageContent() {
     const [loading, setLoading] = useState(true);
     const [squareConnected, setSquareConnected] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [configError, setConfigError] = useState<string | null>(null);
 
     useEffect(() => {
         // Vérifier les paramètres d'URL pour les messages
@@ -58,12 +59,22 @@ function SettingsPageContent() {
                     if (userData?.id) {
                         try {
                             const squareResponse = await fetch(`/api/admin/square-status?userId=${userData.id}`);
+                            const squareData = await squareResponse.json();
+                            
                             if (squareResponse.ok) {
-                                const squareData = await squareResponse.json();
                                 setSquareConnected(squareData.connected || false);
+                                
+                                // Si erreur de configuration, l'afficher
+                                if (squareData.error === 'Configuration serveur manquante' || 
+                                    squareData.error === 'Square columns not available') {
+                                    setConfigError('Configuration serveur incomplète. Les colonnes Square ne sont pas disponibles dans la base de données.');
+                                }
+                            } else {
+                                console.error('❌ Erreur lors de la vérification du statut Square:', squareData);
                             }
                         } catch (err) {
-                            console.error('Error checking Square status:', err);
+                            console.error('❌ Error checking Square status:', err);
+                            // Ne pas bloquer l'interface en cas d'erreur
                         }
                     }
                 } else {
@@ -111,6 +122,14 @@ function SettingsPageContent() {
                                 {message.type === 'success' ? '✓' : '✗'} {message.text}
                             </div>
                         )}
+                        
+                        {/* Afficher l'erreur de configuration si présente */}
+                        {configError && (
+                            <div className={`${styles.message} ${styles.error}`}>
+                                ✗ {configError}
+                            </div>
+                        )}
+
                         <div className={styles.paymentCard}>
                             <div className={styles.paymentInfo}>
                                 <div className={styles.paymentIcon}>💳</div>
