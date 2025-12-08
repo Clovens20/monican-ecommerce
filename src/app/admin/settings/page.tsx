@@ -27,14 +27,27 @@ function SettingsPageContent() {
     const checkSquareStatus = async (userId: string) => {
         try {
             setCheckingStatus(true);
+            console.log('🔍 Vérification du statut Square pour userId:', userId);
             const squareResponse = await fetch(`/api/admin/square-status?userId=${userId}`);
             const squareData = await squareResponse.json();
+            
+            console.log('📡 Réponse square-status:', {
+                status: squareResponse.status,
+                ok: squareResponse.ok,
+                connected: squareData.connected,
+                hasMerchantId: !!squareData.merchantId,
+                hasConnectedAt: !!squareData.connectedAt
+            });
             
             if (squareResponse.ok) {
                 setSquareStatus({
                     connected: squareData.connected || false,
                     merchantId: squareData.merchantId || null,
                     connectedAt: squareData.connectedAt || null,
+                });
+                console.log('✅ Statut Square mis à jour:', {
+                    connected: squareData.connected,
+                    merchantId: squareData.merchantId
                 });
             } else {
                 console.error('❌ Erreur lors de la vérification du statut Square:', squareData);
