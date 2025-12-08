@@ -93,6 +93,8 @@ export async function GET(request: NextRequest) {
             connected,
             merchantId: profile?.square_merchant_id || null,
             connectedAt: profile?.square_connected_at || null,
+            hasAccessToken: !!profile?.square_access_token,
+            hasMerchantId: !!profile?.square_merchant_id,
         });
 
     } catch (error: any) {

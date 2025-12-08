@@ -3,13 +3,6 @@ import { supabaseAdmin } from '@/lib/supabase';
 
 /**
  * Route de callback OAuth Square
- *
- * Étapes :
- * 1. Récupère le code d'autorisation depuis Square
- * 2. Échange le code contre un access_token
- * 3. Récupère le merchant_id si nécessaire
- * 4. Stocke l'access_token et les infos en base de données
- * 5. Redirige vers la page des paramètres avec succès ou erreur
  */
 export async function GET(request: NextRequest) {
   try {
@@ -42,7 +35,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Récupérer les credentials Square depuis les variables d'environnement
-    const clientId = process.env.SQUARE_CLIENT_ID;
+    const clientId = process.env.SQUARE_CLIENT_ID || process.env.NEXT_PUBLIC_SQUARE_CLIENT_ID;
     const clientSecret = process.env.SQUARE_CLIENT_SECRET;
     const redirectUri =
       process.env.SQUARE_REDIRECT_URI || 
@@ -51,7 +44,9 @@ export async function GET(request: NextRequest) {
         : 'https://www.monican.shop/api/oauth/callback');
 
     if (!clientId || !clientSecret) {
-      console.error('Square credentials not configured');
+      console.error('❌ Square credentials not configured');
+      console.error('SQUARE_CLIENT_ID:', clientId ? '✅ Configuré' : '❌ Manquant');
+      console.error('SQUARE_CLIENT_SECRET:', clientSecret ? '✅ Configuré' : '❌ Manquant');
       return NextResponse.redirect(
         new URL('/admin/settings?error=server_config', request.url)
       );
@@ -76,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.text();
-      console.error('Square token exchange error:', errorData);
+      console.error('❌ Square token exchange error:', errorData);
       return NextResponse.redirect(
         new URL('/admin/settings?error=token_exchange_failed', request.url)
       );
@@ -86,7 +81,7 @@ export async function GET(request: NextRequest) {
     const { access_token, expires_at, merchant_id } = tokenData;
 
     if (!access_token) {
-      console.error('No access token in response:', tokenData);
+      console.error('❌ No access token in response:', tokenData);
       return NextResponse.redirect(
         new URL('/admin/settings?error=no_token', request.url)
       );
@@ -110,7 +105,7 @@ export async function GET(request: NextRequest) {
           }
         }
       } catch (err) {
-        console.warn('Could not fetch merchant ID, continuing without it:', err);
+        console.warn('⚠️ Could not fetch merchant ID, continuing without it:', err);
       }
     }
 
@@ -124,19 +119,40 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 7. Stocker l'access_token en base Supabase
-    const { error: dbError } = await supabaseAdmin
-      .from('user_profiles')
-      .update({
-        square_access_token: access_token,
-        square_access_token_expires_at: expiresAtDate,
-        square_merchant_id: finalMerchantId || null,
-        square_connected_at: new Date().toISOString(),
-      })
-      .eq('id', userId);
+    // 7. Vérifier que les colonnes existent avant de sauvegarder
+    try {
+      // Tester si les colonnes existent
+      const { error: testError } = await supabaseAdmin
+        .from('user_profiles')
+        .select('square_access_token')
+        .limit(1);
 
-    if (dbError) {
-      console.error('Error saving Square token to database:', dbError);
+      if (testError && (testError.code === '42703' || testError.code === '42P01')) {
+        console.error('❌ Colonnes Square non disponibles dans user_profiles');
+        return NextResponse.redirect(
+          new URL('/admin/settings?error=database_error', request.url)
+        );
+      }
+
+      // Stocker l'access_token en base Supabase
+      const { error: dbError } = await supabaseAdmin
+        .from('user_profiles')
+        .update({
+          square_access_token: access_token,
+          square_access_token_expires_at: expiresAtDate,
+          square_merchant_id: finalMerchantId || null,
+          square_connected_at: new Date().toISOString(),
+        })
+        .eq('id', userId);
+
+      if (dbError) {
+        console.error('❌ Error saving Square token to database:', dbError);
+        return NextResponse.redirect(
+          new URL('/admin/settings?error=database_error', request.url)
+        );
+      }
+    } catch (dbErr: any) {
+      console.error('❌ Database error:', dbErr);
       return NextResponse.redirect(
         new URL('/admin/settings?error=database_error', request.url)
       );
@@ -147,7 +163,7 @@ export async function GET(request: NextRequest) {
       new URL('/admin/settings?success=square_connected', request.url)
     );
   } catch (error) {
-    console.error('Error in OAuth callback:', error);
+    console.error('❌ Error in OAuth callback:', error);
     return NextResponse.redirect(
       new URL('/admin/settings?error=unexpected_error', request.url)
     );
