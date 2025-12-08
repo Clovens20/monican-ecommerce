@@ -129,8 +129,10 @@ export async function GET(request: NextRequest) {
 
       if (testError && (testError.code === '42703' || testError.code === '42P01')) {
         console.error('❌ Colonnes Square non disponibles dans user_profiles');
+        console.error('Détails:', testError.message);
+        console.error('Code erreur:', testError.code);
         return NextResponse.redirect(
-          new URL('/admin/settings?error=database_error', request.url)
+          new URL('/admin/settings?error=database_error&details=columns_missing', request.url)
         );
       }
 
