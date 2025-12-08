@@ -34,7 +34,7 @@ export default function HomePageClient({ bestSellers, featuredProductsWithSales 
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
               <p>{t('noProductsAvailable')}</p>
               <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-                {t('runSeedCommand')} <code>npm run seed:products</code> {t('toAddTestProducts')}
+                {t('checkBackSoon')}
               </p>
             </div>
           )}
@@ -42,7 +42,7 @@ export default function HomePageClient({ bestSellers, featuredProductsWithSales 
       </section>
 
       <section className={`container ${styles.productsSection}`}>
-        <AnimatedSection direction="up" delay={100}>
+        <AnimatedSection direction="up" delay={200}>
           <div className={styles.sectionHeader}>
             <h2 className={styles.sectionTitle}>{t('featuredProducts')}</h2>
             <p className={styles.sectionSubtitle}>{t('featuredProductsSubtitle')}</p>
@@ -59,7 +59,7 @@ export default function HomePageClient({ bestSellers, featuredProductsWithSales 
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
               <p>{t('noProductsAvailable')}</p>
               <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-                {t('runSeedCommand')} <code>npm run seed:products</code> {t('toAddTestProducts')}
+                {t('checkBackSoon')}
               </p>
             </div>
           )}

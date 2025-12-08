@@ -96,6 +96,7 @@ export const translations = {
       featuredProducts: 'Featured Products',
       featuredProductsSubtitle: 'Our special selections for you',
       noProductsAvailable: 'No products available at the moment.',
+      checkBackSoon: 'New products are coming soon. Please check back later!',
       runSeedCommand: 'Run',
       toAddTestProducts: 'to add test products.',
       
@@ -428,6 +429,7 @@ export const translations = {
       featuredProducts: 'Produits Vedettes',
       featuredProductsSubtitle: 'Nos sélections spéciales pour vous',
       noProductsAvailable: 'Aucun produit disponible pour le moment.',
+      checkBackSoon: 'De nouveaux produits arrivent bientôt. Revenez nous voir !',
       runSeedCommand: 'Exécutez',
       toAddTestProducts: 'pour ajouter des produits de test.',
       
@@ -1069,6 +1071,7 @@ export const translations = {
       featuredProducts: 'Pwodui Vedèt',
       featuredProductsSubtitle: 'Seleksyon espesyal nou pou ou',
       noProductsAvailable: 'Pa gen pwodui disponib pou moman sa a.',
+      checkBackSoon: 'Nouvo pwodui pral vin souvan an. Tanpri tcheke lè l sèlman.',
       runSeedCommand: 'Egzekite',
       toAddTestProducts: 'pou ajoute pwodui tès.',
       
