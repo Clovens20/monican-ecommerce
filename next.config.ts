@@ -1,27 +1,21 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Mode strict pour la production
   reactStrictMode: true,
-  
-  // Optimisations pour la production
   compress: true,
   
-  // Optimisation des images
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,
-    // Ajouter les domaines Supabase pour les images
     remotePatterns: [
       {
         protocol: 'https',
         hostname: '**.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
-      // Pattern spécifique pour votre projet Supabase
       {
         protocol: 'https',
         hostname: 'ujyjdqmqormbjyfuuwgq.supabase.co',
@@ -30,7 +24,6 @@ const nextConfig: NextConfig = {
     ],
   },
   
-  // Headers de sécurité
   async headers() {
     const baseHeaders = [
       {
@@ -57,7 +50,6 @@ const nextConfig: NextConfig = {
 
     return [
       {
-        // Routes admin - CSP permissive pour Next.js
         source: '/admin/:path*',
         headers: [
           ...baseHeaders,
@@ -80,7 +72,6 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Toutes les autres routes SAUF admin - CSP avec support Square
         source: '/((?!admin).)*',
         headers: [
           ...baseHeaders,
@@ -92,14 +83,11 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              // ✅ AJOUT: Support pour Square Payment SDK
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://web.squarecdn.com https://sandbox.web.squarecdn.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              // ✅ AJOUT: Connexions vers les APIs Square
               "connect-src 'self' https: wss: https://*.squareup.com https://*.squareupsandbox.com",
-              // ✅ AJOUT: iFrames Square pour le formulaire de paiement
               "frame-src 'self' https://web.squarecdn.com https://sandbox.web.squarecdn.com",
               "object-src 'none'",
               "base-uri 'self'",
@@ -113,7 +101,6 @@ const nextConfig: NextConfig = {
     ];
   },
   
-  // Configuration Turbopack (pour éviter le warning)
   turbopack: {
     root: process.cwd(),
   },
