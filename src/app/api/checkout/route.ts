@@ -1,5 +1,5 @@
 // ============================================================================
-// ✅ CORRECTION 2: API Checkout avec transactions complètes et rollback
+// ✅ CORRECTION: API Checkout avec gestion d'erreur path corrigée
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -79,14 +79,22 @@ export async function POST(request: NextRequest) {
         }
       });
       
+      // ✅ CORRECTION: Gestion sécurisée de issue.path
       return NextResponse.json(
         { 
           error: 'Données invalides', 
-          details: validationResult.error.issues.map(issue => ({
-            path: issue.path.join('.'),
-            message: issue.message,
-            code: issue.code,
-          }))
+          details: validationResult.error.issues.map(issue => {
+            // Convertir path en string de manière sécurisée
+            const pathString = Array.isArray(issue.path) 
+              ? issue.path.join('.') 
+              : String(issue.path || 'général');
+            
+            return {
+              path: pathString,
+              message: issue.message,
+              code: issue.code,
+            };
+          })
         },
         { status: 400 }
       );
@@ -357,7 +365,6 @@ async function sendAlertToAdmin(alert: any) {
   console.error('🚨 ALERTE ADMIN:', alert);
 
   // TODO: Implémenter l'envoi d'alerte réel (email, webhook, etc.)
-  // Pour l'instant, on log simplement
   try {
     // Optionnel: Envoyer à un endpoint d'alertes
     // await fetch('/api/admin/alerts', {
@@ -369,4 +376,3 @@ async function sendAlertToAdmin(alert: any) {
     console.error('Impossible d\'envoyer l\'alerte:', err);
   }
 }
-
