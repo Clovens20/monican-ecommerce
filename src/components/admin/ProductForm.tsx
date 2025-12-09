@@ -67,21 +67,41 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
     const [autoSaveStatus, setAutoSaveStatus] = useState<string>('');
     const [showPreview, setShowPreview] = useState(false);
     
-    const [formData, setFormData] = useState<ProductFormData>(initialData || {
-        name: '',
-        category: 'tennis',
-        price: 0,
-        comparePrice: null,
-        sku: '',
-        description: '',
-        detailedDescription: '',
-        brand: '',
-        images: [],
-        variants: [],
-        features: [],
-        colors: [],
-        isNew: false,
-        isFeatured: false,
+    const [formData, setFormData] = useState<ProductFormData>(() => {
+        if (initialData) {
+            return {
+                name: initialData.name || '',
+                category: initialData.category || 'tennis',
+                price: initialData.price || 0,
+                comparePrice: initialData.comparePrice || null,
+                sku: initialData.sku || '',
+                description: initialData.description || '',
+                detailedDescription: initialData.detailedDescription || '',
+                brand: initialData.brand || '',
+                images: initialData.images || [],
+                variants: initialData.variants || [],
+                features: initialData.features || [],
+                colors: initialData.colors || [],
+                isNew: initialData.isNew || false,
+                isFeatured: initialData.isFeatured || false,
+            };
+        }
+        return {
+            name: '',
+            category: 'tennis',
+            price: 0,
+            comparePrice: null,
+            sku: '',
+            description: '',
+            detailedDescription: '',
+            brand: '',
+            images: [],
+            variants: [],
+            features: [],
+            colors: [],
+            isNew: false,
+            isFeatured: false,
+        };
     });
 
     // Charger les catégories disponibles
@@ -486,8 +506,13 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 isDraft: isDraft,
             };
 
-            const response = await fetch('/api/admin/products', {
-                method: 'POST',
+            // Déterminer si c'est une création ou une mise à jour
+            const isEdit = initialData?.id;
+            const url = isEdit ? `/api/admin/products/${initialData.id}` : '/api/admin/products';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const response = await fetch(url, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -504,7 +529,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     router.push('/admin/products');
                 }, 1500);
             } else {
-                setError(data.error || 'Erreur lors de la sauvegarde du produit');
+                setError(data.error || `Erreur lors de la ${isEdit ? 'mise à jour' : 'sauvegarde'} du produit`);
             }
         } catch (err) {
             console.error('Error saving product:', err);
@@ -530,7 +555,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
 
                 {success && (
                     <div className={styles.successMessage}>
-                        ✓ Produit créé avec succès ! Redirection...
+                        ✓ Produit {initialData?.id ? 'modifié' : 'créé'} avec succès ! Redirection...
                     </div>
                 )}
 
@@ -1106,7 +1131,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                         className={styles.submitButton}
                         disabled={loading}
                     >
-                        {loading ? 'Sauvegarde...' : '✅ Enregistrer le produit'}
+                        {loading ? 'Sauvegarde...' : initialData?.id ? '✅ Mettre à jour le produit' : '✅ Enregistrer le produit'}
                     </button>
                 </div>
             </form>

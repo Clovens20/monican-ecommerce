@@ -170,7 +170,8 @@ export async function getAllProductsPaginated(
  */
 export async function getProductById(id: string): Promise<Product | null> {
     try {
-        const { data, error } = await supabase
+        // Utiliser supabaseAdmin pour bypasser RLS (cette fonction est appelée côté serveur)
+        const { data, error } = await supabaseAdmin
             .from('products')
             .select('*')
             .eq('id', id)
@@ -179,6 +180,10 @@ export async function getProductById(id: string): Promise<Product | null> {
 
         if (error) {
             console.error('Error fetching product:', error);
+            return null;
+        }
+
+        if (!data) {
             return null;
         }
 
@@ -191,10 +196,12 @@ export async function getProductById(id: string): Promise<Product | null> {
 
 /**
  * Récupère les produits par catégorie
+ * Utilise supabaseAdmin pour bypasser RLS côté serveur
  */
 export async function getProductsByCategory(category: string): Promise<Product[]> {
     try {
-        const { data, error } = await supabase
+        // Utiliser supabaseAdmin pour bypasser RLS (cette fonction est appelée côté serveur)
+        const { data, error } = await supabaseAdmin
             .from('products')
             .select('*')
             .eq('category', category)
@@ -203,6 +210,10 @@ export async function getProductsByCategory(category: string): Promise<Product[]
 
         if (error) {
             console.error('Error fetching products by category:', error);
+            return [];
+        }
+
+        if (!data || data.length === 0) {
             return [];
         }
 
@@ -289,10 +300,12 @@ async function getFallbackProducts(limit: number): Promise<Product[]> {
 
 /**
  * Récupère les nouveaux produits
+ * Utilise supabaseAdmin pour bypasser RLS côté serveur
  */
 export async function getNewProducts(): Promise<Product[]> {
     try {
-        const { data, error } = await supabase
+        // Utiliser supabaseAdmin pour bypasser RLS (cette fonction est appelée côté serveur)
+        const { data, error } = await supabaseAdmin
             .from('products')
             .select('*')
             .eq('is_new', true)
@@ -302,6 +315,10 @@ export async function getNewProducts(): Promise<Product[]> {
 
         if (error) {
             console.error('Error fetching new products:', error);
+            return [];
+        }
+
+        if (!data || data.length === 0) {
             return [];
         }
 

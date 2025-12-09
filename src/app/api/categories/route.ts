@@ -10,7 +10,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const includeInactive = searchParams.get('includeInactive') === 'true';
 
-    let query = supabase
+    // Utiliser supabaseAdmin pour bypasser RLS (cette route est server-side)
+    let query = supabaseAdmin
       .from('categories')
       .select('*')
       .order('display_order', { ascending: true });
