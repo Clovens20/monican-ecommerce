@@ -141,6 +141,7 @@ export default function CheckoutPage() {
     };
 
     const handlePaymentError = (error: string) => {
+        console.error('Square Payment Error:', error);
         setPaymentError(error);
         setLoading(false);
     };
