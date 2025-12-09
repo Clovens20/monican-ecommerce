@@ -26,7 +26,7 @@ const CheckoutSchema = z.object({
     city: z.string().min(1, 'La ville est requise'),
     state: z.string().min(1, 'L\'état/province est requis'),
     zip: z.string().min(1, 'Le code postal est requis'),
-    country: z.enum(['US', 'CA', 'MX'], { errorMap: () => ({ message: 'Pays invalide' }) }),
+    country: z.enum(['US', 'CA', 'MX'], { message: 'Pays invalide' }),
   }),
   items: z.array(z.object({
     productId: z.string().min(1, 'ID produit requis'),
@@ -37,7 +37,7 @@ const CheckoutSchema = z.object({
     image: z.string().optional(),
   })).min(1, 'Au moins un article est requis'),
   paymentSourceId: z.string().min(1, 'Token de paiement requis'),
-  currency: z.enum(['USD', 'CAD', 'MXN'], { errorMap: () => ({ message: 'Devise invalide' }) }),
+  currency: z.enum(['USD', 'CAD', 'MXN'], { message: 'Devise invalide' }),
   subtotal: z.number().positive('Sous-total doit être positif'),
   shippingCost: z.number().min(0, 'Frais de livraison invalides'),
   tax: z.number().min(0, 'Taxes invalides'),
