@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Vérifier la signature du webhook
-    const signature = request.headers.get('x-square-signature');
+    // ✅ CORRECTION: Utiliser le bon nom de header
+    const signature = request.headers.get('x-square-hmacsha256-signature');
     const webhookSignatureKey = process.env.SQUARE_WEBHOOK_SIGNATURE_KEY;
 
     if (!signature || !webhookSignatureKey) {
@@ -38,11 +39,12 @@ export async function POST(request: NextRequest) {
     // Lire le body brut pour la vérification
     const body = await request.text();
     
-    // Vérifier la signature HMAC
+    // ✅ CORRECTION: Ajouter l'URL dans la vérification
     const isValid = verifySquareWebhookSignature(
       body,
       signature,
-      webhookSignatureKey
+      webhookSignatureKey,
+      request.url
     );
 
     if (!isValid) {
@@ -85,31 +87,24 @@ export async function POST(request: NextRequest) {
 }
 
 /**
- * Vérifie la signature HMAC du webhook Square
+ * ✅ CORRECTION: Vérifie la signature HMAC du webhook Square
+ * Square utilise: HMAC-SHA256(url + body) encodé en base64
  */
 function verifySquareWebhookSignature(
   body: string,
   signature: string,
-  secret: string
+  secret: string,
+  url: string
 ): boolean {
   try {
-    // Square envoie la signature au format: sha256=HASH
-    const signatureParts = signature.split('=');
-    if (signatureParts.length !== 2 || signatureParts[0] !== 'sha256') {
-      return false;
-    }
-
-    const receivedHash = signatureParts[1];
-    
-    // Calculer le hash attendu
-    const expectedHash = crypto
-      .createHmac('sha256', secret)
-      .update(body)
-      .digest('hex');
+    // Square signe l'URL complète + le body
+    const hmac = crypto.createHmac('sha256', secret);
+    hmac.update(url + body);
+    const expectedHash = hmac.digest('base64');
 
     // Comparaison sécurisée (timing-safe)
     return crypto.timingSafeEqual(
-      Buffer.from(receivedHash),
+      Buffer.from(signature),
       Buffer.from(expectedHash)
     );
   } catch (error) {
@@ -148,7 +143,7 @@ async function handleSquareWebhookEvent(event: any): Promise<void> {
 
 /**
  * Gère l'événement payment.updated
- * ✅ CORRECTION 6: Utilise la fonction SQL update_order_payment_status et libère le stock en cas d'échec
+ * Utilise la fonction SQL update_order_payment_status et libère le stock en cas d'échec
  */
 async function handlePaymentUpdated(paymentData: any): Promise<void> {
   try {
@@ -183,8 +178,6 @@ async function handlePaymentUpdated(paymentData: any): Promise<void> {
       }
 
       // Ajouter à l'historique
-      // Le statut de la commande est déjà mis à jour par la fonction SQL update_order_payment_status
-      // On n'a pas besoin de le mettre à jour à nouveau ici, mais on peut ajouter un historique si nécessaire
       const newOrderStatus: OrderStatus = paymentStatus === 'COMPLETED' ? 'processing' : 
                             (paymentStatus === 'FAILED' || paymentStatus === 'CANCELED' ? 'cancelled' : 'pending');
 
@@ -315,4 +308,3 @@ export async function GET() {
     timestamp: new Date().toISOString(),
   });
 }
-

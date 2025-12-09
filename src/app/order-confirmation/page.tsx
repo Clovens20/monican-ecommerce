@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCountry } from '@/lib/country';
@@ -36,7 +36,7 @@ interface Order {
     tax: number;
 }
 
-export default function OrderConfirmationPage() {
+function OrderConfirmationContent() {
     const { t } = useLanguage();
     const { formatPrice } = useCountry();
     const searchParams = useSearchParams();
@@ -333,6 +333,19 @@ export default function OrderConfirmationPage() {
                 </Link>
             </div>
         </div>
+    );
+}
+
+export default function OrderConfirmationPage() {
+    return (
+        <Suspense fallback={
+            <div className="container" style={{ padding: '4rem 0', textAlign: 'center' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⏳</div>
+                <p style={{ fontSize: '1.1rem', color: '#6b7280' }}>Chargement...</p>
+            </div>
+        }>
+            <OrderConfirmationContent />
+        </Suspense>
     );
 }
 
