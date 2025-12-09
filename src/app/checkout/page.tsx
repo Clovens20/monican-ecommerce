@@ -167,7 +167,7 @@ export default function CheckoutPage() {
             const checkoutData = {
                 customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
                 customerEmail: customerInfo.email,
-                customerPhone: customerInfo.phone,
+                customerPhone: customerInfo.phone || undefined, // Optionnel selon le schéma
                 shippingAddress: {
                     street: shippingAddress.street,
                     city: shippingAddress.city,
@@ -178,18 +178,24 @@ export default function CheckoutPage() {
                 items: items.map(item => ({
                     productId: item.id,
                     name: item.name,
-                    quantity: item.quantity,
-                    price: item.price,
+                    quantity: Number(item.quantity), // S'assurer que c'est un nombre
+                    price: Number(item.price), // S'assurer que c'est un nombre
                     size: item.selectedSize,
                     image: item.images?.[0] || '',
                 })),
                 paymentSourceId: token,
                 currency: currency,
-                subtotal: total,
-                shippingCost: selectedShippingOption.cost / (settings.exchangeRate || 1),
-                tax: taxAmount / settings.exchangeRate,
-                total: totalUSD,
+                subtotal: Number(total),
+                shippingCost: Number(selectedShippingOption.cost / (settings.exchangeRate || 1)),
+                tax: Number(taxAmount / settings.exchangeRate),
+                total: Number(totalUSD),
             };
+
+            console.log('[Checkout] Données envoyées:', {
+                ...checkoutData,
+                paymentSourceId: token ? `${token.substring(0, 20)}...` : 'MANQUANT',
+                itemsCount: checkoutData.items.length,
+            });
 
             // Appeler l'API checkout
             const response = await fetch('/api/checkout', {
@@ -203,7 +209,16 @@ export default function CheckoutPage() {
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Erreur lors du traitement de la commande');
+                // Afficher les détails de validation si disponibles
+                let errorMessage = data.error || 'Erreur lors du traitement de la commande';
+                if (data.details && Array.isArray(data.details)) {
+                    const validationErrors = data.details.map((issue: any) => 
+                        `${issue.path?.join('.') || 'Champ'}: ${issue.message}`
+                    ).join(', ');
+                    errorMessage = `${errorMessage} - ${validationErrors}`;
+                }
+                console.error('Erreur checkout - détails:', data);
+                throw new Error(errorMessage);
             }
 
             // Succès - rediriger vers la page de confirmation

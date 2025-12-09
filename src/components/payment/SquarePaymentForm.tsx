@@ -206,7 +206,7 @@ export default function SquarePaymentForm({
 
     // Callback ref qui se déclenche quand l'élément est monté dans le DOM
     const setCardContainerRef = useCallback((element: HTMLDivElement | null) => {
-        if (element) {
+        if (element && !containerReadyRef.current) {
             cardContainerRef.current = element;
             containerReadyRef.current = true;
             console.log('[Square] Conteneur monté dans le DOM, initialisation...');
@@ -216,22 +216,6 @@ export default function SquarePaymentForm({
                     initializeSquare();
                 }
             }, 100);
-        }
-    }, [initializeSquare]);
-
-    // Fallback: si le callback ref ne fonctionne pas, essayer avec useEffect
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        
-        // Si le conteneur est déjà prêt mais l'initialisation n'a pas été tentée
-        if (cardContainerRef.current && !initAttemptedRef.current && containerReadyRef.current) {
-            console.log('[Square] useEffect fallback: conteneur disponible');
-            const timer = setTimeout(() => {
-                if (cardContainerRef.current && !initAttemptedRef.current) {
-                    initializeSquare();
-                }
-            }, 200);
-            return () => clearTimeout(timer);
         }
     }, [initializeSquare]);
 

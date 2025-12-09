@@ -17,31 +17,31 @@ import { validateAndSanitize } from '@/lib/validation';
 import { supabaseAdmin } from '@/lib/supabase';
 
 const CheckoutSchema = z.object({
-  customerName: z.string().min(1),
-  customerEmail: z.string().email(),
-  customerPhone: z.string().optional(),
+  customerName: z.string().min(1, 'Le nom du client est requis'),
+  customerEmail: z.string().email('Email invalide'),
+  customerPhone: z.string().optional().or(z.literal('')),
   customerId: z.string().optional(),
   shippingAddress: z.object({
-    street: z.string().min(1),
-    city: z.string().min(1),
-    state: z.string().min(1),
-    zip: z.string().min(1),
-    country: z.enum(['US', 'CA', 'MX']),
+    street: z.string().min(1, 'L\'adresse est requise'),
+    city: z.string().min(1, 'La ville est requise'),
+    state: z.string().min(1, 'L\'état/province est requis'),
+    zip: z.string().min(1, 'Le code postal est requis'),
+    country: z.enum(['US', 'CA', 'MX'], { errorMap: () => ({ message: 'Pays invalide' }) }),
   }),
   items: z.array(z.object({
-    productId: z.string(),
-    name: z.string(),
-    quantity: z.number().int().positive(),
-    price: z.number().positive(),
-    size: z.string(),
+    productId: z.string().min(1, 'ID produit requis'),
+    name: z.string().min(1, 'Nom produit requis'),
+    quantity: z.number().int().positive('Quantité doit être un entier positif'),
+    price: z.number().positive('Prix doit être positif'),
+    size: z.string().min(1, 'Taille requise'),
     image: z.string().optional(),
-  })),
-  paymentSourceId: z.string(), // Token Square
-  currency: z.enum(['USD', 'CAD', 'MXN']),
-  subtotal: z.number().positive(),
-  shippingCost: z.number().min(0),
-  tax: z.number().min(0),
-  total: z.number().positive(),
+  })).min(1, 'Au moins un article est requis'),
+  paymentSourceId: z.string().min(1, 'Token de paiement requis'),
+  currency: z.enum(['USD', 'CAD', 'MXN'], { errorMap: () => ({ message: 'Devise invalide' }) }),
+  subtotal: z.number().positive('Sous-total doit être positif'),
+  shippingCost: z.number().min(0, 'Frais de livraison invalides'),
+  tax: z.number().min(0, 'Taxes invalides'),
+  total: z.number().positive('Total doit être positif'),
 });
 
 interface ReservedItem {
@@ -67,8 +67,27 @@ export async function POST(request: NextRequest) {
     const validationResult = validateAndSanitize(CheckoutSchema, body);
     
     if (!validationResult.success) {
+      console.error('❌ Erreur validation checkout:', {
+        issues: validationResult.error.issues,
+        receivedData: {
+          customerName: body.customerName,
+          customerEmail: body.customerEmail,
+          itemsCount: body.items?.length,
+          paymentSourceId: body.paymentSourceId ? 'présent' : 'manquant',
+          currency: body.currency,
+          total: body.total,
+        }
+      });
+      
       return NextResponse.json(
-        { error: 'Données invalides', details: validationResult.error.issues },
+        { 
+          error: 'Données invalides', 
+          details: validationResult.error.issues.map(issue => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+            code: issue.code,
+          }))
+        },
         { status: 400 }
       );
     }
