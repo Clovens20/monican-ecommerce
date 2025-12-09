@@ -28,8 +28,6 @@ const nextConfig: NextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    // Alternative: utiliser domains (déprécié mais fonctionne)
-    // domains: ['ujyjdqmqormbjyfuuwgq.supabase.co'],
   },
   
   // Headers de sécurité
@@ -67,12 +65,12 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://web.squarecdn.com https://sandbox.web.squarecdn.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https: wss:",
-              "frame-src 'self'",
+              "connect-src 'self' https: wss: https://*.squareup.com https://*.squareupsandbox.com",
+              "frame-src 'self' https://web.squarecdn.com https://sandbox.web.squarecdn.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
@@ -82,7 +80,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Toutes les autres routes SAUF admin - CSP standard
+        // Toutes les autres routes SAUF admin - CSP avec support Square
         source: '/((?!admin).)*',
         headers: [
           ...baseHeaders,
@@ -94,12 +92,15 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com",
+              // ✅ AJOUT: Support pour Square Payment SDK
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://web.squarecdn.com https://sandbox.web.squarecdn.com",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https: blob:",
               "font-src 'self' data:",
-              "connect-src 'self' https: wss:",
-              "frame-src 'self'",
+              // ✅ AJOUT: Connexions vers les APIs Square
+              "connect-src 'self' https: wss: https://*.squareup.com https://*.squareupsandbox.com",
+              // ✅ AJOUT: iFrames Square pour le formulaire de paiement
+              "frame-src 'self' https://web.squarecdn.com https://sandbox.web.squarecdn.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
