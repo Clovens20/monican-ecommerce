@@ -231,10 +231,12 @@ function getMockFeaturedProducts(): Product[] {
 
 /**
  * Récupère les produits mis en avant depuis Supabase
+ * Utilise supabaseAdmin pour bypasser RLS côté serveur
  */
 export async function getFeaturedProducts(): Promise<Product[]> {
     try {
-        const { data, error } = await supabase
+        // Utiliser supabaseAdmin pour bypasser RLS (cette fonction est appelée côté serveur)
+        const { data, error } = await supabaseAdmin
             .from('products')
             .select('*')
             .eq('is_featured', true)
@@ -244,17 +246,43 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 
         if (error) {
             console.error('Error fetching featured products:', error);
-            return [];
+            // Fallback: récupérer les premiers produits actifs
+            return await getFallbackProducts(10);
         }
 
-        // Si aucun produit dans Supabase, utiliser les données mockées
+        // Si aucun produit featured, récupérer les premiers produits actifs
         if (!data || data.length === 0) {
-            return [];
+            return await getFallbackProducts(10);
         }
 
         return data.map(convertSupabaseToProduct);
     } catch (error) {
         console.error('Error in getFeaturedProducts:', error);
+        // Fallback final
+        return await getFallbackProducts(10);
+    }
+}
+
+/**
+ * Fonction helper pour récupérer des produits actifs en fallback
+ */
+async function getFallbackProducts(limit: number): Promise<Product[]> {
+    try {
+        const { data, error } = await supabaseAdmin
+            .from('products')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+        if (error || !data || data.length === 0) {
+            console.error('Error fetching fallback products:', error);
+            return [];
+        }
+
+        return data.map(convertSupabaseToProduct);
+    } catch (error) {
+        console.error('Error in getFallbackProducts:', error);
         return [];
     }
 }
@@ -318,6 +346,7 @@ async function getProductSalesStats(): Promise<Record<string, number>> {
 /**
  * Récupère les meilleures ventes (produits les plus commandés)
  * Basé sur le nombre de commandes dans order_items
+ * Utilise supabaseAdmin pour bypasser RLS côté serveur
  */
 export async function getBestSellingProducts(limit: number = 4): Promise<Product[]> {
     try {
@@ -326,9 +355,9 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
         // Si aucun produit n'a été vendu, retourner les produits featured
         if (Object.keys(productSales).length === 0) {
             const featured = await getFeaturedProducts();
-            // Si même les featured sont vides, utiliser les mock
+            // Si même les featured sont vides, utiliser le fallback
             if (featured.length === 0) {
-                return [];
+                return await getFallbackProducts(limit);
             }
             return featured.slice(0, limit);
         }
@@ -339,8 +368,8 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
             .slice(0, limit)
             .map(([productId]) => productId);
 
-        // Récupérer les détails des produits
-        const { data: productsData, error: productsError } = await supabase
+        // Récupérer les détails des produits avec supabaseAdmin pour bypasser RLS
+        const { data: productsData, error: productsError } = await supabaseAdmin
             .from('products')
             .select('*')
             .in('id', sortedProductIds)
@@ -350,7 +379,7 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
             console.error('Error fetching best selling products:', productsError);
             const featured = await getFeaturedProducts();
             if (featured.length === 0) {
-                return [];
+                return await getFallbackProducts(limit);
             }
             return featured.slice(0, limit);
         }
@@ -367,11 +396,16 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
     } catch (error) {
         console.error('Error in getBestSellingProducts:', error);
         // Fallback: retourner les produits featured en cas d'erreur
-        const featured = await getFeaturedProducts();
-        if (featured.length === 0) {
-            return [];
+        try {
+            const featured = await getFeaturedProducts();
+            if (featured.length === 0) {
+                return await getFallbackProducts(limit);
+            }
+            return featured.slice(0, limit);
+        } catch (fallbackError) {
+            console.error('Fallback error in getBestSellingProducts:', fallbackError);
+            return await getFallbackProducts(limit);
         }
-        return featured.slice(0, limit);
     }
 }
 
@@ -387,8 +421,9 @@ export async function getFeaturedProductsWithSales(limit: number = 5): Promise<A
         if (Object.keys(productSales).length === 0) {
             const featured = await getFeaturedProducts();
             if (featured.length === 0) {
-                const mock = getMockFeaturedProducts();
-                return mock.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
+                // Fallback: récupérer les premiers produits actifs
+                const fallback = await getFallbackProducts(limit);
+                return fallback.map(p => ({ ...p, salesCount: 0 }));
             }
             return featured.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
         }
@@ -404,15 +439,15 @@ export async function getFeaturedProductsWithSales(limit: number = 5): Promise<A
         if (sortedProductIds.length === 0) {
             const featured = await getFeaturedProducts();
             if (featured.length === 0) {
-                const mock = getMockFeaturedProducts();
-                return mock.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
+                const fallback = await getFallbackProducts(limit);
+                return fallback.map(p => ({ ...p, salesCount: 0 }));
             }
             return featured.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
         }
 
-        // Récupérer les détails des produits
+        // Récupérer les détails des produits avec supabaseAdmin pour bypasser RLS
         const productIds = sortedProductIds.map(item => item.productId);
-        const { data: productsData, error: productsError } = await supabase
+        const { data: productsData, error: productsError } = await supabaseAdmin
             .from('products')
             .select('*')
             .in('id', productIds)
@@ -422,8 +457,8 @@ export async function getFeaturedProductsWithSales(limit: number = 5): Promise<A
             console.error('Error fetching featured products:', productsError);
             const featured = await getFeaturedProducts();
             if (featured.length === 0) {
-                const mock = getMockFeaturedProducts();
-                return mock.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
+                const fallback = await getFallbackProducts(limit);
+                return fallback.map(p => ({ ...p, salesCount: 0 }));
             }
             return featured.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
         }
@@ -450,12 +485,18 @@ export async function getFeaturedProductsWithSales(limit: number = 5): Promise<A
     } catch (error) {
         console.error('Error in getFeaturedProductsWithSales:', error);
         // Fallback: retourner les produits featured sans quantité
-        const featured = await getFeaturedProducts();
-        if (featured.length === 0) {
-            const mock = getMockFeaturedProducts();
-            return mock.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
+        try {
+            const featured = await getFeaturedProducts();
+            if (featured.length === 0) {
+                const fallback = await getFallbackProducts(limit);
+                return fallback.map(p => ({ ...p, salesCount: 0 }));
+            }
+            return featured.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
+        } catch (fallbackError) {
+            console.error('Fallback error in getFeaturedProductsWithSales:', fallbackError);
+            const fallback = await getFallbackProducts(limit);
+            return fallback.map(p => ({ ...p, salesCount: 0 }));
         }
-        return featured.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
     }
 }
 

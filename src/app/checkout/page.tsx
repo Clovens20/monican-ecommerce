@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCart } from '@/lib/cart';
 import { useCountry, CountryCode } from '@/lib/country';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShippingOption } from '@/lib/shipping-calculator';
+import SquarePaymentForm from '@/components/payment/SquarePaymentForm';
 import styles from './page.module.css';
 
 interface ShippingAddress {
@@ -15,6 +16,13 @@ interface ShippingAddress {
     country: CountryCode;
 }
 
+interface CustomerInfo {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+}
+
 export default function CheckoutPage() {
     const { t } = useLanguage();
     const { items, total, clearCart } = useCart();
@@ -23,6 +31,17 @@ export default function CheckoutPage() {
     const [step, setStep] = useState<'shipping' | 'payment'>('shipping');
     const [loading, setLoading] = useState(false);
     const [calculatingShipping, setCalculatingShipping] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [paymentToken, setPaymentToken] = useState<string | null>(null);
+    const paymentFormRef = useRef<{ submit: () => void } | null>(null);
+    
+    // Customer information
+    const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+    });
     
     // Shipping address form
     const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
@@ -113,15 +132,101 @@ export default function CheckoutPage() {
         setStep('payment');
     };
 
-    const handlePaymentSubmit = () => {
+    const handlePaymentTokenReceived = async (token: string) => {
+        setPaymentToken(token);
+        setPaymentError(null);
+        
+        // Procéder au checkout avec le token
+        await processCheckout(token);
+    };
+
+    const handlePaymentError = (error: string) => {
+        setPaymentError(error);
+        setLoading(false);
+    };
+
+    const processCheckout = async (token: string) => {
         setLoading(true);
-        // Simulate Square payment processing
-        setTimeout(() => {
-            setLoading(false);
-            alert(t('orderConfirmed'));
+        setPaymentError(null);
+
+        try {
+            // Vérifier que toutes les informations sont présentes
+            if (!customerInfo.firstName || !customerInfo.lastName || !customerInfo.email || !customerInfo.phone) {
+                throw new Error('Veuillez remplir tous les champs du formulaire de livraison');
+            }
+
+            if (!selectedShippingOption) {
+                throw new Error('Veuillez sélectionner une option de livraison');
+            }
+
+            const currency = shippingAddress.country === 'US' ? 'USD' : 
+                            shippingAddress.country === 'CA' ? 'CAD' : 'MXN';
+
+            // Préparer les données pour l'API checkout
+            const checkoutData = {
+                customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
+                customerEmail: customerInfo.email,
+                customerPhone: customerInfo.phone,
+                shippingAddress: {
+                    street: shippingAddress.street,
+                    city: shippingAddress.city,
+                    state: shippingAddress.state,
+                    zip: shippingAddress.zip,
+                    country: shippingAddress.country,
+                },
+                items: items.map(item => ({
+                    productId: item.productId,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    size: item.size,
+                    image: item.image,
+                })),
+                paymentSourceId: token,
+                currency: currency,
+                subtotal: total,
+                shippingCost: selectedShippingOption.cost / (settings.exchangeRate || 1),
+                tax: taxAmount / settings.exchangeRate,
+                total: totalUSD,
+            };
+
+            // Appeler l'API checkout
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(checkoutData),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors du traitement de la commande');
+            }
+
+            // Succès - rediriger vers la page de confirmation
             clearCart();
-            window.location.href = '/';
-        }, 2000);
+            window.location.href = `/order-confirmation?orderId=${data.order?.id || data.order?.orderNumber}`;
+        } catch (error: any) {
+            console.error('Erreur checkout:', error);
+            setPaymentError(error.message || 'Erreur lors du traitement de la commande');
+            setLoading(false);
+        }
+    };
+
+    const handlePaymentSubmit = () => {
+        if (!paymentToken) {
+            // Si pas de token, déclencher la tokenisation
+            if (typeof window !== 'undefined' && (window as any).__squarePaymentFormSubmit) {
+                (window as any).__squarePaymentFormSubmit();
+            } else {
+                setPaymentError('Le formulaire de paiement n\'est pas encore prêt. Veuillez patienter.');
+            }
+        } else {
+            // Si token déjà reçu, procéder directement
+            processCheckout(paymentToken);
+        }
     };
 
     // Tax calculation state
@@ -236,12 +341,35 @@ export default function CheckoutPage() {
 
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>{t('firstName')}</label>
-                                <input type="text" className={styles.input} required />
+                                <input 
+                                    type="text" 
+                                    className={styles.input} 
+                                    required 
+                                    value={customerInfo.firstName}
+                                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, firstName: e.target.value }))}
+                                />
                             </div>
 
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>{t('lastName')}</label>
-                                <input type="text" className={styles.input} required />
+                                <input 
+                                    type="text" 
+                                    className={styles.input} 
+                                    required 
+                                    value={customerInfo.lastName}
+                                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, lastName: e.target.value }))}
+                                />
+                            </div>
+
+                            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
+                                <label className={styles.label}>Email</label>
+                                <input 
+                                    type="email" 
+                                    className={styles.input} 
+                                    required 
+                                    value={customerInfo.email}
+                                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, email: e.target.value }))}
+                                />
                             </div>
 
                             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
@@ -290,7 +418,13 @@ export default function CheckoutPage() {
 
                             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
                                 <label className={styles.label}>{t('phone')}</label>
-                                <input type="tel" className={styles.input} required />
+                                <input 
+                                    type="tel" 
+                                    className={styles.input} 
+                                    required 
+                                    value={customerInfo.phone}
+                                    onChange={(e) => setCustomerInfo(prev => ({ ...prev, phone: e.target.value }))}
+                                />
                             </div>
 
                             {/* Shipping Options */}
@@ -367,17 +501,52 @@ export default function CheckoutPage() {
                         </form>
                     ) : (
                         <div>
-                            <div className={styles.paymentPlaceholder}>
-                                <h3>Square Payment Integration</h3>
-                                <p>{t('creditCardForm')}</p>
-                                <div style={{ margin: '20px 0', fontSize: '2rem' }}>💳 🔒</div>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+                                    Informations de paiement
+                                </h3>
+                                <p style={{ fontSize: '0.9rem', color: '#6b7280', marginBottom: '1rem' }}>
+                                    Entrez les informations de votre carte de crédit. Le paiement est sécurisé par Square.
+                                </p>
+                                
+                                <SquarePaymentForm
+                                    onTokenReceived={handlePaymentTokenReceived}
+                                    onError={handlePaymentError}
+                                    amount={Math.round(totalUSD * 100)}
+                                    currency={shippingAddress.country === 'US' ? 'USD' : 
+                                             shippingAddress.country === 'CA' ? 'CAD' : 'MXN'}
+                                    disabled={loading}
+                                />
+
+                                {paymentError && (
+                                    <div style={{ 
+                                        marginTop: '1rem',
+                                        padding: '1rem', 
+                                        background: '#fee2e2', 
+                                        borderRadius: '0.5rem',
+                                        color: '#991b1b',
+                                        fontSize: '0.9rem'
+                                    }}>
+                                        ⚠️ {paymentError}
+                                    </div>
+                                )}
                             </div>
-                            <button onClick={handlePaymentSubmit} className={styles.submitBtn} disabled={loading}>
+
+                            <button 
+                                onClick={handlePaymentSubmit} 
+                                className={styles.submitBtn} 
+                                disabled={loading}
+                                style={{ width: '100%' }}
+                            >
                                 {loading ? t('processing') : `${t('pay')} ${formatPrice(totalUSD)}`}
                             </button>
                             <button
-                                onClick={() => setStep('shipping')}
-                                style={{ marginTop: '1rem', textDecoration: 'underline', width: '100%', textAlign: 'center', cursor: 'pointer' }}
+                                onClick={() => {
+                                    setStep('shipping');
+                                    setPaymentError(null);
+                                    setPaymentToken(null);
+                                }}
+                                style={{ marginTop: '1rem', textDecoration: 'underline', width: '100%', textAlign: 'center', cursor: 'pointer', background: 'none', border: 'none', color: '#6b7280' }}
                             >
                                 {t('back')}
                             </button>
