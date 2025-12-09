@@ -5,7 +5,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 interface SquarePaymentFormProps {
     onTokenReceived: (token: string) => void;
     onError: (error: string) => void;
-    amount: number;
+    amount: number; // En centimes
     currency: 'USD' | 'CAD' | 'MXN';
     disabled?: boolean;
 }
@@ -14,10 +14,7 @@ declare global {
     interface Window {
         Square?: {
             payments: (applicationId: string, locationId: string) => {
-                card: () => {
-                    attach: (element: HTMLElement) => Promise<any>;
-                    tokenize: () => Promise<any>;
-                };
+                card: () => Promise<any>;
             };
         };
     }
@@ -41,37 +38,42 @@ export default function SquarePaymentForm({
 
     // Fonction pour initialiser Square
     const initializeSquare = useCallback(async () => {
-        console.log('[Square] Tentative d\'initialisation...');
-        console.log('[Square] cardContainerRef.current:', cardContainerRef.current);
-        console.log('[Square] initAttemptedRef.current:', initAttemptedRef.current);
+        console.log('🔧 [Square] Tentative d\'initialisation...');
         
         // Éviter les initialisations multiples
         if (initAttemptedRef.current) {
-            console.log('[Square] Initialisation déjà tentée, abandon');
+            console.log('⚠️ [Square] Initialisation déjà tentée, abandon');
             return;
         }
 
         if (!cardContainerRef.current) {
-            console.log('[Square] Conteneur pas encore prêt, réessai dans 200ms');
+            console.log('⏳ [Square] Conteneur pas encore prêt, réessai dans 200ms');
             setTimeout(() => initializeSquare(), 200);
             return;
         }
 
         initAttemptedRef.current = true;
 
+        // ✅ Récupérer la configuration depuis les variables d'environnement
         const applicationId = process.env.NEXT_PUBLIC_SQUARE_APPLICATION_ID;
         const locationId = process.env.NEXT_PUBLIC_SQUARE_LOCATION_ID;
         const environment = process.env.NEXT_PUBLIC_SQUARE_ENVIRONMENT || 'sandbox';
 
-        console.log('[Square] Configuration:', {
+        console.log('🔍 [Square] Configuration:', {
             hasApplicationId: !!applicationId,
             hasLocationId: !!locationId,
             environment,
-            applicationIdPrefix: applicationId?.substring(0, 10) + '...',
+            applicationIdPrefix: applicationId?.substring(0, 15) + '...',
+            locationIdPrefix: locationId?.substring(0, 10) + '...',
         });
 
+        // Validation de la configuration
         if (!applicationId || !locationId) {
-            const errorMsg = 'Configuration Square manquante. Veuillez configurer NEXT_PUBLIC_SQUARE_APPLICATION_ID et NEXT_PUBLIC_SQUARE_LOCATION_ID dans votre fichier .env.local';
+            const errorMsg = '❌ Configuration Square manquante.\n\n' +
+                            'Veuillez ajouter dans votre fichier .env.local:\n' +
+                            'NEXT_PUBLIC_SQUARE_APPLICATION_ID=...\n' +
+                            'NEXT_PUBLIC_SQUARE_LOCATION_ID=...\n' +
+                            'NEXT_PUBLIC_SQUARE_ENVIRONMENT=sandbox';
             console.error('[Square]', errorMsg);
             onError(errorMsg);
             setIsLoading(false);
@@ -80,7 +82,7 @@ export default function SquarePaymentForm({
 
         // Vérifier si le SDK est déjà chargé
         if (window.Square && cardContainerRef.current) {
-            console.log('[Square] SDK déjà chargé, initialisation directe');
+            console.log('✅ [Square] SDK déjà chargé, initialisation directe');
             try {
                 const payments = window.Square.payments(applicationId, locationId);
                 const card = await payments.card();
@@ -88,11 +90,11 @@ export default function SquarePaymentForm({
                 setCardInstance(card);
                 setIsReady(true);
                 setIsLoading(false);
-                console.log('[Square] Initialisation réussie (SDK déjà chargé)');
+                console.log('✅ [Square] Formulaire de carte initialisé avec succès');
                 return;
             } catch (error: any) {
-                console.error('[Square] Erreur initialisation (SDK déjà chargé):', error);
-                onError(error.message || 'Erreur lors de l\'initialisation du formulaire de paiement');
+                console.error('❌ [Square] Erreur initialisation:', error);
+                onError(`Erreur d'initialisation: ${error.message}`);
                 setIsLoading(false);
                 initAttemptedRef.current = false;
                 return;
@@ -108,12 +110,13 @@ export default function SquarePaymentForm({
                 ? 'https://web.squarecdn.com/v1/square.js'
                 : 'https://sandbox.web.squarecdn.com/v1/square.js';
 
-            console.log('[Square] Chargement du SDK depuis:', sdkUrl);
+            console.log('📥 [Square] Chargement du SDK depuis:', sdkUrl);
 
             // Vérifier si le script existe déjà
             const existingScript = document.querySelector(`script[src="${sdkUrl}"]`);
             if (existingScript) {
-                console.log('[Square] Script déjà présent, attente du SDK...');
+                console.log('⚠️ [Square] Script déjà présent, attente du SDK...');
+                
                 // Attendre que le SDK soit disponible
                 let attempts = 0;
                 const maxAttempts = 100; // 10 secondes max
@@ -121,7 +124,7 @@ export default function SquarePaymentForm({
                     attempts++;
                     if (window.Square && cardContainerRef.current) {
                         clearInterval(checkSquare);
-                        console.log('[Square] SDK disponible après', attempts * 100, 'ms');
+                        console.log(`✅ [Square] SDK disponible après ${attempts * 100}ms`);
                         try {
                             const payments = window.Square.payments(applicationId, locationId);
                             const card = await payments.card();
@@ -129,17 +132,17 @@ export default function SquarePaymentForm({
                             setCardInstance(card);
                             setIsReady(true);
                             setIsLoading(false);
-                            console.log('[Square] Initialisation réussie (script existant)');
+                            console.log('✅ [Square] Formulaire initialisé (script existant)');
                         } catch (error: any) {
-                            console.error('[Square] Erreur initialisation (script existant):', error);
-                            onError(error.message || 'Erreur lors de l\'initialisation du formulaire de paiement');
+                            console.error('❌ [Square] Erreur initialisation:', error);
+                            onError(`Erreur: ${error.message}`);
                             setIsLoading(false);
                             initAttemptedRef.current = false;
                         }
                     } else if (attempts >= maxAttempts) {
                         clearInterval(checkSquare);
-                        console.error('[Square] Timeout: SDK non disponible après 10 secondes');
-                        onError('Timeout: Le SDK Square n\'a pas pu être chargé');
+                        console.error('❌ [Square] Timeout: SDK non disponible après 10s');
+                        onError('Le SDK Square n\'a pas pu être chargé. Veuillez rafraîchir la page.');
                         setIsLoading(false);
                         initAttemptedRef.current = false;
                     }
@@ -150,26 +153,27 @@ export default function SquarePaymentForm({
 
             // Charger le script Square Web Payments SDK
             const script = document.createElement('script');
-            script.src = sdkUrl; // IMPORTANT: Définir src AVANT d'ajouter au DOM
+            script.src = sdkUrl;
             script.type = 'text/javascript';
             script.async = true;
             script.id = 'square-payment-sdk';
 
             script.onload = async () => {
-                console.log('[Square] Script chargé avec succès');
+                console.log('✅ [Square] Script chargé avec succès');
                 try {
                     // Attendre un peu pour que le SDK soit complètement initialisé
                     await new Promise(resolve => setTimeout(resolve, 200));
 
                     if (!window.Square) {
-                        throw new Error('Square SDK non chargé après le chargement du script');
+                        throw new Error('SDK Square non disponible après chargement');
                     }
 
                     if (!cardContainerRef.current) {
                         throw new Error('Conteneur de carte non trouvé');
                     }
 
-                    console.log('[Square] Initialisation du formulaire de carte...');
+                    console.log('🔧 [Square] Initialisation du formulaire de carte...');
+                    
                     // Initialiser Square Payments
                     const payments = window.Square.payments(applicationId, locationId);
                     
@@ -182,25 +186,25 @@ export default function SquarePaymentForm({
                     setCardInstance(card);
                     setIsReady(true);
                     setIsLoading(false);
-                    console.log('[Square] ✅ Formulaire de paiement initialisé avec succès');
+                    console.log('✅ [Square] Formulaire de paiement prêt!');
                 } catch (error: any) {
-                    console.error('[Square] Erreur initialisation:', error);
-                    onError(error.message || 'Erreur lors de l\'initialisation du formulaire de paiement');
+                    console.error('❌ [Square] Erreur initialisation:', error);
+                    onError(`Erreur: ${error.message}`);
                     setIsLoading(false);
-                    initAttemptedRef.current = false; // Permettre de réessayer
+                    initAttemptedRef.current = false;
                 }
             };
 
             script.onerror = (error) => {
-                console.error('[Square] Erreur chargement script:', error);
-                onError('Impossible de charger le SDK Square. Vérifiez votre connexion internet et que les variables d\'environnement NEXT_PUBLIC_SQUARE_APPLICATION_ID et NEXT_PUBLIC_SQUARE_LOCATION_ID sont correctement configurées.');
+                console.error('❌ [Square] Erreur chargement script:', error);
+                onError('Impossible de charger le SDK Square. Vérifiez votre connexion internet.');
                 setIsLoading(false);
-                scriptLoadedRef.current = false; // Permettre de réessayer
+                scriptLoadedRef.current = false;
                 initAttemptedRef.current = false;
             };
 
             document.head.appendChild(script);
-            console.log('[Square] Script ajouté au DOM');
+            console.log('📤 [Square] Script ajouté au DOM');
         }
     }, [onError]);
 
@@ -209,7 +213,8 @@ export default function SquarePaymentForm({
         if (element && !containerReadyRef.current) {
             cardContainerRef.current = element;
             containerReadyRef.current = true;
-            console.log('[Square] Conteneur monté dans le DOM, initialisation...');
+            console.log('✅ [Square] Conteneur monté dans le DOM');
+            
             // Attendre un peu pour s'assurer que l'élément est complètement rendu
             setTimeout(() => {
                 if (cardContainerRef.current && !initAttemptedRef.current) {
@@ -219,47 +224,62 @@ export default function SquarePaymentForm({
         }
     }, [initializeSquare]);
 
+    // ✅ Fonction de tokenisation
     const handleSubmit = useCallback(async () => {
         if (!cardInstance || !isReady || isProcessing || disabled) {
             if (!isReady) {
+                console.warn('⚠️ [Square] Formulaire pas encore prêt');
                 onError('Le formulaire de paiement n\'est pas encore prêt. Veuillez patienter.');
             }
             return;
         }
 
+        console.log('🔒 [Square] Début de la tokenisation...');
         setIsProcessing(true);
 
         try {
-            // Tokeniser la carte
+            // ✅ Tokeniser la carte
             const tokenResult = await cardInstance.tokenize();
             
+            console.log('📥 [Square] Résultat tokenisation:', {
+                status: tokenResult.status,
+                hasToken: !!tokenResult.token,
+                hasErrors: !!tokenResult.errors,
+            });
+
             if (tokenResult.status === 'OK') {
+                console.log('✅ [Square] Token généré:', tokenResult.token.substring(0, 20) + '...');
                 onTokenReceived(tokenResult.token);
             } else {
-                let errorMessage = 'Erreur lors du traitement de la carte';
+                let errorMessage = 'Erreur lors de la validation de la carte';
                 
                 if (tokenResult.errors && tokenResult.errors.length > 0) {
-                    errorMessage = tokenResult.errors[0].message || errorMessage;
+                    errorMessage = tokenResult.errors
+                        .map((e: any) => e.message || e.detail || 'Erreur inconnue')
+                        .join(', ');
                 }
                 
+                console.error('❌ [Square] Erreur tokenisation:', errorMessage);
                 onError(errorMessage);
                 setIsProcessing(false);
             }
         } catch (error: any) {
-            console.error('Erreur tokenisation:', error);
-            onError(error.message || 'Erreur lors du traitement de la carte');
+            console.error('❌ [Square] Exception lors de la tokenisation:', error);
+            onError(error.message || 'Une erreur est survenue lors du traitement de la carte');
             setIsProcessing(false);
         }
     }, [cardInstance, isReady, isProcessing, disabled, onTokenReceived, onError]);
 
-    // Exposer la fonction handleSubmit via un effet pour qu'elle soit accessible depuis le parent
+    // ✅ Exposer la fonction handleSubmit via window pour l'appeler depuis le parent
     useEffect(() => {
         if (typeof window !== 'undefined') {
             (window as any).__squarePaymentFormSubmit = handleSubmit;
+            console.log('✅ [Square] Fonction de tokenisation exposée');
         }
         return () => {
             if (typeof window !== 'undefined') {
                 delete (window as any).__squarePaymentFormSubmit;
+                console.log('🧹 [Square] Fonction de tokenisation nettoyée');
             }
         };
     }, [handleSubmit]);
@@ -275,14 +295,17 @@ export default function SquarePaymentForm({
                     border: '1px dashed #d1d5db',
                     marginBottom: '1rem'
                 }}>
-                    <div style={{ marginBottom: '1rem' }}>🔄</div>
+                    <div style={{ marginBottom: '1rem', fontSize: '2rem' }}>🔄</div>
                     <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
                         Chargement du formulaire de paiement sécurisé...
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+                        Cela peut prendre quelques secondes
                     </div>
                 </div>
             )}
             
-            {/* Toujours rendre le conteneur, même pendant le chargement */}
+            {/* ✅ Toujours rendre le conteneur, même pendant le chargement */}
             <div 
                 ref={setCardContainerRef}
                 id="square-card-container"
@@ -303,10 +326,25 @@ export default function SquarePaymentForm({
                     fontSize: '0.9rem',
                     marginBottom: '1rem'
                 }}>
-                    ⚠️ Le formulaire de paiement n'est pas encore prêt. Veuillez patienter quelques instants.
+                    ⚠️ Le formulaire de paiement n'a pas pu être chargé. Veuillez vérifier votre configuration Square ou rafraîchir la page.
+                </div>
+            )}
+
+            {isReady && !isLoading && (
+                <div style={{
+                    padding: '0.75rem',
+                    background: '#d1fae5',
+                    borderRadius: '0.5rem',
+                    color: '#065f46',
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                }}>
+                    <span>✓</span>
+                    <span>Formulaire de paiement prêt</span>
                 </div>
             )}
         </div>
     );
 }
-

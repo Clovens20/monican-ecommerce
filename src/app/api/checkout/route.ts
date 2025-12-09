@@ -1,5 +1,5 @@
 // ============================================================================
-// ✅ CORRECTION: API Checkout avec gestion d'erreur path corrigée
+// ✅ API CHECKOUT - Version Corrigée avec Logs Détaillés
 // ============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -14,18 +14,21 @@ import {
 } from '@/lib/inventory';
 import { rateLimitMiddleware, RATE_LIMITS } from '@/lib/rate-limit';
 import { validateAndSanitize } from '@/lib/validation';
-import { supabaseAdmin } from '@/lib/supabase';
+
+// ============================================================================
+// SCHEMA DE VALIDATION
+// ============================================================================
 
 const CheckoutSchema = z.object({
-  customerName: z.string().min(1, 'Le nom du client est requis'),
-  customerEmail: z.string().email('Email invalide'),
-  customerPhone: z.string().optional().or(z.literal('')),
+  customerName: z.string().min(1, 'Le nom du client est requis').max(100),
+  customerEmail: z.string().email('Email invalide').max(255),
+  customerPhone: z.string().min(1, 'Le téléphone est requis').max(50),
   customerId: z.string().optional(),
   shippingAddress: z.object({
-    street: z.string().min(1, 'L\'adresse est requise'),
-    city: z.string().min(1, 'La ville est requise'),
-    state: z.string().min(1, 'L\'état/province est requis'),
-    zip: z.string().min(1, 'Le code postal est requis'),
+    street: z.string().min(1, 'L\'adresse est requise').max(255),
+    city: z.string().min(1, 'La ville est requise').max(100),
+    state: z.string().min(1, 'L\'état/province est requis').max(100),
+    zip: z.string().min(1, 'Le code postal est requis').max(20),
     country: z.enum(['US', 'CA', 'MX'], { message: 'Pays invalide' }),
   }),
   items: z.array(z.object({
@@ -36,7 +39,7 @@ const CheckoutSchema = z.object({
     size: z.string().min(1, 'Taille requise'),
     image: z.string().optional(),
   })).min(1, 'Au moins un article est requis'),
-  paymentSourceId: z.string().min(1, 'Token de paiement requis'),
+  paymentSourceId: z.string().min(10, 'Token de paiement requis'),
   currency: z.enum(['USD', 'CAD', 'MXN'], { message: 'Devise invalide' }),
   subtotal: z.number().positive('Sous-total doit être positif'),
   shippingCost: z.number().min(0, 'Frais de livraison invalides'),
@@ -50,95 +53,108 @@ interface ReservedItem {
   quantity: number;
 }
 
+// ============================================================================
+// HANDLER POST
+// ============================================================================
+
 export async function POST(request: NextRequest) {
   let paymentId: string | null = null;
   let reservedItems: ReservedItem[] = [];
+  const startTime = Date.now();
+
+  console.log('\n' + '='.repeat(80));
+  console.log('🎯 [CHECKOUT] DÉBUT DU PROCESSUS');
+  console.log('='.repeat(80));
 
   try {
-    // Rate limiting pour le checkout
+    // ===== 0️⃣ RATE LIMITING =====
+    console.log('🚦 [CHECKOUT] Vérification rate limiting...');
     const rateLimitResponse = rateLimitMiddleware(request, RATE_LIMITS.checkout);
     if (rateLimitResponse) {
+      console.log('❌ [CHECKOUT] Rate limit dépassé');
       return rateLimitResponse;
     }
+    console.log('✅ [CHECKOUT] Rate limit OK');
 
+    // ===== 1️⃣ LECTURE ET VALIDATION DES DONNÉES =====
+    console.log('\n📥 [CHECKOUT] Lecture du body...');
     const body = await request.json();
     
-    // Validation et sanitization
+    console.log('📋 [CHECKOUT] Données reçues:', {
+      customerName: body.customerName,
+      customerEmail: body.customerEmail,
+      hasPhone: !!body.customerPhone,
+      itemsCount: body.items?.length,
+      paymentSourceIdLength: body.paymentSourceId?.length,
+      paymentSourceIdPrefix: body.paymentSourceId?.substring(0, 20) + '...',
+      currency: body.currency,
+      total: body.total,
+      subtotal: body.subtotal,
+      shipping: body.shippingCost,
+      tax: body.tax,
+    });
+    
+    // Validation avec Zod
+    console.log('\n🔍 [CHECKOUT] Validation des données...');
     const validationResult = validateAndSanitize(CheckoutSchema, body);
     
     if (!validationResult.success) {
-      console.error('❌ Erreur validation checkout:', {
-        issues: validationResult.error.issues,
-        receivedData: {
-          customerName: body.customerName,
-          customerEmail: body.customerEmail,
-          itemsCount: body.items?.length,
-          paymentSourceId: body.paymentSourceId ? 'présent' : 'manquant',
-          currency: body.currency,
-          total: body.total,
-        }
-      });
+      console.error('❌ [CHECKOUT] Erreur validation:', validationResult.error.issues);
       
-      // ✅ CORRECTION: Gestion sécurisée de issue.path
       return NextResponse.json(
         { 
           error: 'Données invalides', 
-          details: validationResult.error.issues.map(issue => {
-            // Convertir path en string de manière sécurisée
-            const pathString = Array.isArray(issue.path) 
-              ? issue.path.join('.') 
-              : String(issue.path || 'général');
-            
-            return {
-              path: pathString,
-              message: issue.message,
-              code: issue.code,
-            };
-          })
+          details: validationResult.error.issues.map(issue => ({
+            path: Array.isArray(issue.path) ? issue.path.join('.') : String(issue.path || 'général'),
+            message: issue.message,
+            code: issue.code,
+          }))
         },
         { status: 400 }
       );
     }
 
     const data = validationResult.data;
+    console.log('✅ [CHECKOUT] Validation réussie');
 
-    // Générer un orderId unique pour l'idempotency
+    // Générer un orderId unique
     const orderId = `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    console.log('🆔 [CHECKOUT] Order ID généré:', orderId);
 
-    // ============================================================================
-    // 1️⃣ RÉSERVATION DU STOCK (atomique avec FOR UPDATE via RPC)
-    // ============================================================================
-    console.log('🔒 Phase 1: Réservation du stock...');
+    // ===== 2️⃣ RÉSERVATION DU STOCK =====
+    console.log('\n🔒 [CHECKOUT] Phase 1: Réservation du stock...');
 
-    const stockChecks = await Promise.all(
-      data.items.map(async (item) => {
-        const isAvailable = await checkProductAvailability(
-          item.productId,
-          item.size,
-          item.quantity
-        );
+    for (const item of data.items) {
+      console.log(`  📦 Vérification stock: ${item.name} (${item.size}) x${item.quantity}`);
+      
+      const isAvailable = await checkProductAvailability(
+        item.productId,
+        item.size,
+        item.quantity
+      );
 
-        if (!isAvailable) {
-          throw new Error(`Le produit ${item.name} (taille ${item.size}) n'est plus disponible en quantité suffisante`);
-        }
+      if (!isAvailable) {
+        const errorMsg = `Le produit "${item.name}" (taille ${item.size}) n'est plus disponible en quantité suffisante`;
+        console.error(`  ❌ ${errorMsg}`);
+        throw new Error(errorMsg);
+      }
 
-        // Stock réservé avec succès
-        reservedItems.push({
-          productId: item.productId,
-          size: item.size,
-          quantity: item.quantity,
-        });
+      reservedItems.push({
+        productId: item.productId,
+        size: item.size,
+        quantity: item.quantity,
+      });
+      
+      console.log(`  ✅ Stock réservé: ${item.name}`);
+    }
 
-        return true;
-      })
-    );
+    console.log(`✅ [CHECKOUT] Stock réservé pour ${reservedItems.length} items`);
 
-    console.log(`✅ Stock réservé pour ${reservedItems.length} items`);
-
-    // ============================================================================
-    // 2️⃣ TRAITEMENT DU PAIEMENT
-    // ============================================================================
-    console.log('💳 Phase 2: Traitement du paiement...');
+    // ===== 3️⃣ TRAITEMENT DU PAIEMENT =====
+    console.log('\n💳 [CHECKOUT] Phase 2: Traitement du paiement...');
+    console.log('  💰 Montant:', Math.round(data.total * 100), 'centimes');
+    console.log('  💵 Devise:', data.currency);
+    console.log('  🔑 Token:', data.paymentSourceId.substring(0, 20) + '...');
 
     const paymentResult = await processPayment({
       amount: Math.round(data.total * 100), // Convertir en centimes
@@ -150,17 +166,24 @@ export async function POST(request: NextRequest) {
       shippingAddress: data.shippingAddress,
     });
 
+    console.log('📥 [CHECKOUT] Résultat paiement:', {
+      success: paymentResult.success,
+      paymentId: paymentResult.paymentId,
+      error: paymentResult.error,
+      errorCode: paymentResult.errorCode,
+    });
+
     if (!paymentResult.success || !paymentResult.paymentId) {
-      throw new Error(paymentResult.error || 'Erreur lors du traitement du paiement');
+      const errorMsg = paymentResult.error || 'Erreur lors du traitement du paiement';
+      console.error('❌ [CHECKOUT] Paiement échoué:', errorMsg);
+      throw new Error(errorMsg);
     }
 
     paymentId = paymentResult.paymentId;
-    console.log(`✅ Paiement traité: ${paymentId}`);
+    console.log(`✅ [CHECKOUT] Paiement traité: ${paymentId}`);
 
-    // ============================================================================
-    // 3️⃣ CRÉATION DE LA COMMANDE
-    // ============================================================================
-    console.log('📦 Phase 3: Création de la commande...');
+    // ===== 4️⃣ CRÉATION DE LA COMMANDE =====
+    console.log('\n📦 [CHECKOUT] Phase 3: Création de la commande...');
 
     const order = await createOrder({
       customerId: data.customerId,
@@ -188,15 +211,14 @@ export async function POST(request: NextRequest) {
     });
 
     if (!order) {
+      console.error('❌ [CHECKOUT] Échec création commande');
       throw new Error('Erreur lors de la création de la commande');
     }
 
-    console.log(`✅ Commande créée: ${order.id}`);
+    console.log(`✅ [CHECKOUT] Commande créée: ${order.id}`);
 
-    // ============================================================================
-    // 4️⃣ CONFIRMATION DU STOCK (réduction définitive)
-    // ============================================================================
-    console.log('✔️ Phase 4: Confirmation du stock...');
+    // ===== 5️⃣ CONFIRMATION DU STOCK =====
+    console.log('\n✔️ [CHECKOUT] Phase 4: Confirmation du stock...');
 
     const stockConfirmations = await Promise.all(
       data.items.map((item) =>
@@ -210,15 +232,14 @@ export async function POST(request: NextRequest) {
 
     const failedConfirmations = stockConfirmations.filter(result => !result);
     if (failedConfirmations.length > 0) {
-      console.error('⚠️ Certaines réductions de stock ont échoué');
-      // Log mais ne fait pas échouer la commande (stock déjà réservé)
+      console.warn(`⚠️ [CHECKOUT] ${failedConfirmations.length} confirmations de stock ont échoué`);
+    } else {
+      console.log('✅ [CHECKOUT] Stock confirmé et réduit');
     }
 
-    console.log('✅ Stock confirmé et réduit');
-
-    // ============================================================================
-    // 5️⃣ ENVOI DE L'EMAIL DE CONFIRMATION (non bloquant)
-    // ============================================================================
+    // ===== 6️⃣ ENVOI EMAIL DE CONFIRMATION =====
+    console.log('\n📧 [CHECKOUT] Phase 5: Envoi email de confirmation...');
+    
     try {
       await sendOrderConfirmation({
         orderNumber: order.id,
@@ -233,13 +254,16 @@ export async function POST(request: NextRequest) {
         currency: data.currency,
         shippingAddress: data.shippingAddress,
       });
-      console.log('✅ Email de confirmation envoyé');
+      console.log('✅ [CHECKOUT] Email de confirmation envoyé');
     } catch (emailError) {
-      // Ne pas faire échouer la commande si l'email échoue
-      console.error('⚠️ Erreur envoi email (non bloquant):', emailError);
+      console.warn('⚠️ [CHECKOUT] Erreur envoi email (non bloquant):', emailError);
     }
 
-    console.log('✅ Checkout complété avec succès');
+    // ===== SUCCÈS =====
+    const duration = Date.now() - startTime;
+    console.log('\n' + '='.repeat(80));
+    console.log(`✅ [CHECKOUT] PROCESSUS TERMINÉ AVEC SUCCÈS (${duration}ms)`);
+    console.log('='.repeat(80) + '\n');
 
     return NextResponse.json({
       success: true,
@@ -253,11 +277,12 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('❌ Erreur checkout:', error);
+    const duration = Date.now() - startTime;
+    console.error('\n' + '='.repeat(80));
+    console.error(`❌ [CHECKOUT] ERREUR (après ${duration}ms):`, error.message);
+    console.error('='.repeat(80));
 
-    // ============================================================================
-    // 🔄 ROLLBACK AUTOMATIQUE
-    // ============================================================================
+    // ===== ROLLBACK =====
     await rollbackCheckout({
       paymentId,
       reservedItems,
@@ -269,14 +294,15 @@ export async function POST(request: NextRequest) {
         error: error.message || 'Erreur serveur lors du checkout',
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       },
-      { status: error.message?.includes('Stock') ? 400 : 500 }
+      { status: error.message?.includes('Stock') || error.message?.includes('disponible') ? 400 : 500 }
     );
   }
 }
 
-/**
- * Fonction de rollback automatique en cas d'échec
- */
+// ============================================================================
+// FONCTION DE ROLLBACK
+// ============================================================================
+
 async function rollbackCheckout({
   paymentId,
   reservedItems,
@@ -286,16 +312,16 @@ async function rollbackCheckout({
   reservedItems: ReservedItem[];
   error: string;
 }) {
-  console.log('🔄 Rollback checkout...', { 
-    paymentId, 
-    itemsCount: reservedItems.length,
-    error 
-  });
+  console.log('\n🔄 [ROLLBACK] Début du rollback...');
+  console.log('  💳 Payment ID:', paymentId || 'N/A');
+  console.log('  📦 Items réservés:', reservedItems.length);
+  console.log('  ❌ Raison:', error);
 
   try {
     // 1. Rembourser le paiement si effectué
     if (paymentId) {
-      console.log(`💰 Tentative de remboursement: ${paymentId}`);
+      console.log(`💰 [ROLLBACK] Tentative de remboursement: ${paymentId}`);
+      
       const refundResult = await refundPayment(
         paymentId,
         undefined,
@@ -303,8 +329,7 @@ async function rollbackCheckout({
       );
 
       if (!refundResult.success) {
-        console.error('❌ Échec remboursement:', refundResult.error);
-        // Envoyer une alerte pour intervention manuelle
+        console.error('❌ [ROLLBACK] Échec remboursement:', refundResult.error);
         await sendAlertToAdmin({
           type: 'REFUND_FAILED',
           paymentId,
@@ -312,13 +337,13 @@ async function rollbackCheckout({
           originalError: error,
         });
       } else {
-        console.log(`✅ Remboursement réussi: ${refundResult.refundId}`);
+        console.log(`✅ [ROLLBACK] Remboursement réussi: ${refundResult.refundId}`);
       }
     }
 
     // 2. Libérer le stock réservé
     if (reservedItems.length > 0) {
-      console.log(`📦 Libération du stock pour ${reservedItems.length} items...`);
+      console.log(`📦 [ROLLBACK] Libération du stock pour ${reservedItems.length} items...`);
 
       const releaseResults = await Promise.all(
         reservedItems.map((item) =>
@@ -332,7 +357,7 @@ async function rollbackCheckout({
 
       const failedReleases = releaseResults.filter(result => !result);
       if (failedReleases.length > 0) {
-        console.error(`❌ ${failedReleases.length} libérations de stock ont échoué`);
+        console.error(`❌ [ROLLBACK] ${failedReleases.length} libérations de stock ont échoué`);
         await sendAlertToAdmin({
           type: 'STOCK_RELEASE_FAILED',
           reservedItems,
@@ -340,14 +365,15 @@ async function rollbackCheckout({
           originalError: error,
         });
       } else {
-        console.log('✅ Stock libéré avec succès');
+        console.log('✅ [ROLLBACK] Stock libéré avec succès');
       }
     }
 
+    console.log('✅ [ROLLBACK] Rollback terminé\n');
+
   } catch (rollbackError: any) {
-    console.error('❌ Erreur lors du rollback:', rollbackError);
+    console.error('❌ [ROLLBACK] Erreur lors du rollback:', rollbackError);
     
-    // Alerte critique pour intervention manuelle
     await sendAlertToAdmin({
       type: 'ROLLBACK_FAILED',
       paymentId,
@@ -358,21 +384,15 @@ async function rollbackCheckout({
   }
 }
 
-/**
- * Envoie une alerte aux administrateurs
- */
-async function sendAlertToAdmin(alert: any) {
-  console.error('🚨 ALERTE ADMIN:', alert);
+// ============================================================================
+// ALERTES ADMIN
+// ============================================================================
 
-  // TODO: Implémenter l'envoi d'alerte réel (email, webhook, etc.)
-  try {
-    // Optionnel: Envoyer à un endpoint d'alertes
-    // await fetch('/api/admin/alerts', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(alert),
-    // });
-  } catch (err) {
-    console.error('Impossible d\'envoyer l\'alerte:', err);
-  }
+async function sendAlertToAdmin(alert: any) {
+  console.error('🚨 [ALERT] ALERTE ADMIN:', JSON.stringify(alert, null, 2));
+
+  // TODO: Implémenter l'envoi d'alerte réel
+  // - Email aux administrateurs
+  // - Webhook Slack/Discord
+  // - Log dans système de monitoring (Sentry, etc.)
 }
