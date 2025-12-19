@@ -137,8 +137,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             {/* Section destinataire - Grande et lisible */}
             <div className={styles.recipientSection}>
                 <div className={styles.sectionHeader}>
-                    <div className={styles.headerIcon}>📦</div>
-                    <div className={styles.headerTitle}>DESTINATAIRE</div>
+                    <div className={styles.headerTitle}>SHIP TO:</div>
                 </div>
                 <div className={styles.recipientBox}>
                     <div className={styles.recipientNameRow}>
@@ -173,7 +172,6 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                     )}
                     {order.customerPhone && (
                         <div className={styles.contactLine}>
-                            <span className={styles.phoneIcon}>📞</span>
                             <span className={styles.phoneNumber}>{order.customerPhone}</span>
                         </div>
                     )}
@@ -195,7 +193,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             <div className={styles.trackingSection}>
                 {order.trackingNumber && (
                     <div className={styles.trackingBox}>
-                        <div className={styles.trackingLabel}>NUMÉRO DE SUIVI</div>
+                        <div className={styles.trackingLabel}>TRACKING #:</div>
                         <div className={styles.trackingNumber}>{order.trackingNumber}</div>
                         <div className={styles.trackingBarcode}>
                             {Array.from({ length: 60 }).map((_, i) => (
