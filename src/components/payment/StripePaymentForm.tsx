@@ -51,7 +51,15 @@ function PaymentForm({
         setError(null);
 
         try {
-            // Confirmer le paiement avec le clientSecret existant
+            // ✅ CORRECTION: Appeler elements.submit() AVANT confirmPayment()
+            // Cela valide le formulaire et prépare le PaymentMethod
+            const { error: submitError } = await elements.submit();
+            
+            if (submitError) {
+                throw new Error(submitError.message || 'Erreur de validation du formulaire');
+            }
+
+            // Maintenant on peut confirmer le paiement
             const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
                 elements,
                 clientSecret,
