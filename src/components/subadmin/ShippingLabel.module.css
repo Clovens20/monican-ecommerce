@@ -34,8 +34,8 @@
 }
 
 .logoContainer {
-    width: 0.4in;
-    height: 0.4in;
+    width: 0.45in;
+    height: 0.45in;
     border: 1px solid #000;
     display: flex;
     align-items: center;
@@ -55,7 +55,7 @@
     width: 80%;
     height: 80%;
     object-fit: contain;
-    filter: invert(1); /* Logo blanc sur fond noir */
+    filter: invert(1);
 }
 
 .companyInfo {
@@ -84,19 +84,10 @@
     font-weight: 900;
     font-size: 0.1in;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
-}
-
-.badgeIcon {
-    display: none; /* Pas d'emoji dans ce format */
-}
-
-.badgeText {
-    font-weight: 900;
 }
 
 /* =========================
-   BARRE COMMANDE - Horizontale avec séparateurs
+   BARRE COMMANDE
 ========================= */
 .orderBar {
     display: flex;
@@ -137,25 +128,14 @@
     display: flex;
     flex-direction: column;
     gap: 0.06in;
-    min-height: 0;
 }
 
 .sectionHeader {
-    display: flex;
-    align-items: center;
     font-weight: 900;
     font-size: 0.11in;
     text-transform: uppercase;
     letter-spacing: 0.02em;
     margin-bottom: 0.06in;
-}
-
-.headerIcon {
-    display: none; /* Pas d'emoji */
-}
-
-.headerTitle {
-    font-weight: 900;
 }
 
 .recipientBox {
@@ -164,13 +144,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.08in;
-    flex: 1;
-    min-height: 0;
 }
 
-/* =========================
-   LIGNE NOM + QR CODE (même ligne)
-========================= */
+/* Ligne nom + QR */
 .recipientNameRow {
     display: flex;
     justify-content: space-between;
@@ -179,13 +155,13 @@
     margin-bottom: 0.08in;
     padding-bottom: 0.08in;
     border-bottom: 1px solid #000;
+    width: 100%;
 }
 
 .recipientName {
     font-size: 0.18in;
     font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.02em;
     line-height: 1.2;
     flex: 1;
     min-width: 0;
@@ -195,32 +171,31 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
+    margin-left: auto;
 }
 
 .qrCodeImage {
-    width: 0.7in;
-    height: 0.7in;
+    width: 0.65in;
+    height: 0.65in;
+    max-width: 0.65in;
+    max-height: 0.65in;
     border: 1px solid #000;
     padding: 0.02in;
     background: #fff;
     object-fit: contain;
+    display: block;
 }
 
-/* =========================
-   ADRESSE
-========================= */
+/* Adresse */
 .addressLines {
     display: flex;
     flex-direction: column;
     gap: 0.04in;
-    flex: 1;
-    min-height: 0;
 }
 
 .addressLine {
     font-size: 0.1in;
-    font-weight: 400;
     line-height: 1.4;
 }
 
@@ -231,9 +206,7 @@
     margin-top: 0.04in;
 }
 
-/* =========================
-   CONTACT - Téléphone
-========================= */
+/* Contact */
 .contactLine {
     display: flex;
     align-items: center;
@@ -244,18 +217,7 @@
     font-size: 0.1in;
 }
 
-.phoneIcon {
-    display: none; /* Pas d'emoji */
-}
-
-.phoneNumber {
-    font-weight: 400;
-    font-family: monospace;
-}
-
-/* =========================
-   EXPÉDITEUR - FROM
-========================= */
+/* Expéditeur */
 .senderSection {
     border: 1px solid #000;
     padding: 0.08in;
@@ -276,30 +238,12 @@
     gap: 0.04in;
 }
 
-.senderName {
-    font-weight: 700;
-    font-size: 0.1in;
-}
-
-.senderContact {
-    font-size: 0.09in;
-    font-weight: 400;
-}
-
-/* =========================
-   TRACKING - Numéro de suivi
-========================= */
+/* Tracking */
 .trackingSection {
     border: 1px solid #000;
     padding: 0.08in;
     margin-top: 0.08in;
     text-align: center;
-}
-
-.trackingBox {
-    display: flex;
-    flex-direction: column;
-    gap: 0.06in;
 }
 
 .trackingLabel {
@@ -316,13 +260,7 @@
     letter-spacing: 0.05em;
 }
 
-.trackingBarcode {
-    display: none; /* Pas de code-barres dans ce format */
-}
-
-/* =========================
-   FOOTER - Informations supplémentaires
-========================= */
+/* Footer items */
 .labelFooter {
     border-top: 1px solid #000;
     padding-top: 0.06in;
@@ -331,78 +269,39 @@
     text-align: center;
 }
 
-.itemsBadge {
-    font-weight: 400;
-}
-
-.itemsIcon {
-    display: none; /* Pas d'emoji */
-}
-
-.itemsText {
-    font-weight: 400;
-}
-
-.printWarning {
-    display: none;
-}
-
-/* =========================
-   IMPRESSION
-========================= */
+/* Impression */
 @media print {
-    @page {
-        size: 4in 6in;
-        margin: 0;
-    }
-
-    body {
-        margin: 0;
-        padding: 0;
-    }
-
-    .shippingLabel {
-        width: 4in !important;
-        height: 6in !important;
-        max-width: 4in !important;
-        max-height: 6in !important;
-        padding: 0.12in !important;
-        border: 1px solid #000 !important;
-        box-shadow: none !important;
-        overflow: hidden !important;
-        page-break-after: avoid !important;
-        page-break-inside: avoid !important;
-    }
-
-    .shippingLabel * {
-        visibility: visible !important;
-        color: #000 !important;
-    }
-
+    @page { size: 4in 6in; margin: 0; }
+    body { margin: 0; padding: 0; }
+    .shippingLabel { width: 4in !important; height: 6in !important; padding: 0.12in !important; }
+    .shippingLabel * { visibility: visible !important; color: #000 !important; }
+    
     .recipientNameRow {
         display: flex !important;
         flex-direction: row !important;
         justify-content: space-between !important;
         align-items: center !important;
+        width: 100% !important;
     }
-
+    
     .recipientName {
         flex: 1 !important;
+        min-width: 0 !important;
     }
-
+    
     .qrCodeInline {
         flex-shrink: 0 !important;
+        margin-left: auto !important;
+        display: flex !important;
+        justify-content: flex-end !important;
     }
-
+    
     .qrCodeImage {
-        width: 0.7in !important;
-        height: 0.7in !important;
-        max-width: 0.7in !important;
-        max-height: 0.7in !important;
-    }
-
-    .printWarning {
-        display: none !important;
+        width: 0.65in !important;
+        height: 0.65in !important;
+        max-width: 0.65in !important;
+        max-height: 0.65in !important;
+        display: block !important;
+        visibility: visible !important;
     }
 }
-  

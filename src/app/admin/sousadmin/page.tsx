@@ -424,8 +424,22 @@ export default function SubAdminPage() {
                     onStatusUpdate={async (orderId, newStatus, trackingNumber) => {
                         // Rafraîchir les données depuis la base de données
                         await fetchOrders();
-                        // Fermer le modal
-                        setSelectedOrder(null);
+                        
+                        // Ne fermer le modal QUE si la commande est expédiée (shipped)
+                        // Pour les autres statuts, laisser le modal ouvert pour continuer le workflow
+                        if (newStatus === 'shipped') {
+                            setSelectedOrder(null);
+                        }
+                        // Sinon, mettre à jour l'ordre sélectionné avec le nouveau statut
+                        else if (selectedOrder) {
+                            const updatedOrder = orders.find(o => o.id === orderId);
+                            if (updatedOrder) {
+                                setSelectedOrder({
+                                    ...selectedOrder,
+                                    status: newStatus
+                                });
+                            }
+                        }
                     }}
                 />
             )}

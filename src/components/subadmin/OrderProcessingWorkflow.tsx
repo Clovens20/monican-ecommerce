@@ -65,19 +65,40 @@ export default function OrderProcessingWorkflow({
     };
 
     const handleFinalize = () => {
-        if (currentStep === 'ship' && !trackingNumber.trim()) {
-            alert('Veuillez entrer le numéro de suivi USPS avant de finaliser l\'expédition');
-            return;
-        }
-
         if (currentStep === 'ship') {
+            // Dernière étape : finaliser l'expédition
+            if (!trackingNumber.trim()) {
+                alert('Veuillez entrer le numéro de suivi USPS avant de finaliser l\'expédition');
+                return;
+            }
             onStatusUpdate(order.id, 'shipped', trackingNumber);
             alert(`Commande ${order.orderNumber || order.id} expédiée avec succès!\nNuméro de suivi: ${trackingNumber}`);
             onClose();
         } else {
-            const nextStatus = currentStep === 'verify' ? 'processing' : order.status;
-            onStatusUpdate(order.id, nextStatus);
-            handleStepComplete(currentStep);
+            // Étapes intermédiaires : passer à l'étape suivante SANS fermer le modal
+            // Marquer l'étape actuelle comme complétée
+            if (!completedSteps.includes(currentStep)) {
+                setCompletedSteps([...completedSteps, currentStep]);
+            }
+            
+            // Passer à l'étape suivante
+            const stepIndex = steps.findIndex(s => s.key === currentStep);
+            if (stepIndex < steps.length - 1) {
+                const nextStep = steps[stepIndex + 1].key;
+                setCurrentStep(nextStep);
+                
+                // Mettre à jour le statut seulement pour la transition verify -> processing
+                // On le fait de manière asynchrone pour ne pas bloquer l'UI
+                if (currentStep === 'verify') {
+                    // Mettre à jour le statut en arrière-plan mais ne pas fermer le modal
+                    // Utiliser setTimeout pour éviter que le modal se ferme
+                    setTimeout(() => {
+                        onStatusUpdate(order.id, 'processing');
+                    }, 100);
+                }
+                // Pour les autres étapes (prepare, package), on ne change pas le statut
+                // car la commande reste "processing" jusqu'à l'expédition
+            }
         }
     };
 

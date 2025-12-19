@@ -44,6 +44,30 @@ export default function Invoice({ order }: InvoiceProps) {
         return price * quantity;
     };
 
+    // Calculer le total final : sous-total + shipping + taxe
+    // Gère aussi les anciennes commandes qui pourraient ne pas avoir ces valeurs séparées
+    const calculateGrandTotal = () => {
+        const subtotal = order.subtotal || 0;
+        const shipping = order.shippingCost || 0;
+        const tax = order.tax || 0;
+        
+        // Calculer la somme des composants
+        const calculatedTotal = subtotal + shipping + tax;
+        
+        // Si les valeurs séparées existent et que leur somme correspond au total, utiliser la somme
+        // Sinon, utiliser order.total comme fallback (pour les anciennes commandes)
+        if (order.subtotal && order.shippingCost !== undefined && order.tax !== undefined) {
+            // Vérifier si la somme correspond au total (avec une petite marge d'erreur pour les arrondis)
+            const difference = Math.abs(calculatedTotal - order.total);
+            if (difference < 0.01) {
+                return calculatedTotal;
+            }
+        }
+        
+        // Fallback : utiliser order.total pour les anciennes commandes
+        return order.total || calculatedTotal;
+    };
+
     return (
         <div className={styles.invoice}>
             {/* En-tête premium avec dégradé */}
@@ -199,28 +223,28 @@ export default function Invoice({ order }: InvoiceProps) {
                     <div className={styles.totalsTitle}>RÉCAPITULATIF</div>
                     <div className={styles.totalsGrid}>
                         <div className={styles.totalRow}>
-                            <span className={styles.totalLabel}>Sous-total</span>
-                            <span className={styles.totalAmount}>{formatCurrency(order.subtotal, order.currency)}</span>
+                            <span className={styles.totalLabel}>Sous-total (Produits)</span>
+                            <span className={styles.totalAmount}>{formatCurrency(order.subtotal || 0, order.currency)}</span>
                         </div>
                         <div className={styles.totalRow}>
                             <span className={styles.totalLabel}>
                                 <span className={styles.labelIcon}>🚚</span>
                                 Frais de livraison
                             </span>
-                            <span className={styles.totalAmount}>{formatCurrency(order.shippingCost, order.currency)}</span>
+                            <span className={styles.totalAmount}>{formatCurrency(order.shippingCost || 0, order.currency)}</span>
                         </div>
                         <div className={styles.totalRow}>
                             <span className={styles.totalLabel}>
                                 <span className={styles.labelIcon}>💼</span>
                                 Taxes
                             </span>
-                            <span className={styles.totalAmount}>{formatCurrency(order.tax, order.currency)}</span>
+                            <span className={styles.totalAmount}>{formatCurrency(order.tax || 0, order.currency)}</span>
                         </div>
                         <div className={styles.totalDivider}></div>
                         <div className={styles.grandTotalRow}>
-                            <span className={styles.grandTotalLabel}>TOTAL À PAYER</span>
+                            <span className={styles.grandTotalLabel}>TOTAL PAYÉ PAR LE CLIENT</span>
                             <span className={styles.grandTotalAmount}>
-                                {formatCurrency(order.total, order.currency)}
+                                {formatCurrency(calculateGrandTotal(), order.currency)}
                             </span>
                         </div>
                     </div>
