@@ -249,10 +249,16 @@ export async function POST(request: NextRequest) {
           name: item.name,
           quantity: item.quantity,
           price: item.price,
+          size: item.size,
+          image: item.image,
         })),
+        subtotal: data.subtotal,
+        shippingCost: data.shippingCost,
+        tax: data.tax,
         total: data.total,
         currency: data.currency,
         shippingAddress: data.shippingAddress,
+        orderDate: new Date().toISOString(),
       });
       console.log('✅ [CHECKOUT] Email de confirmation envoyé');
     } catch (emailError) {
