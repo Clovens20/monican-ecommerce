@@ -51,21 +51,28 @@ export default function Invoice({ order }: InvoiceProps) {
         const shipping = order.shippingCost || 0;
         const tax = order.tax || 0;
         
-        // Calculer la somme des composants
+        // Calculer la somme des composants (ce que le client a réellement payé)
         const calculatedTotal = subtotal + shipping + tax;
         
-        // Si les valeurs séparées existent et que leur somme correspond au total, utiliser la somme
-        // Sinon, utiliser order.total comme fallback (pour les anciennes commandes)
-        if (order.subtotal && order.shippingCost !== undefined && order.tax !== undefined) {
-            // Vérifier si la somme correspond au total (avec une petite marge d'erreur pour les arrondis)
-            const difference = Math.abs(calculatedTotal - order.total);
-            if (difference < 0.01) {
-                return calculatedTotal;
-            }
+        // Pour les nouvelles commandes : utiliser toujours la somme calculée
+        // car c'est le montant réel payé par le client (produit + shipping + taxe)
+        if (order.subtotal !== undefined && order.subtotal !== null && 
+            order.shippingCost !== undefined && order.shippingCost !== null &&
+            order.tax !== undefined && order.tax !== null) {
+            // Les valeurs séparées existent, utiliser la somme calculée
+            // C'est le montant réel payé par le client
+            return calculatedTotal;
         }
         
-        // Fallback : utiliser order.total pour les anciennes commandes
-        return order.total || calculatedTotal;
+        // Pour les anciennes commandes qui n'ont pas les valeurs séparées :
+        // utiliser order.total comme fallback
+        // Mais si calculatedTotal est > 0 (même partiellement), le privilégier
+        if (calculatedTotal > 0) {
+            return calculatedTotal;
+        }
+        
+        // Dernier recours : utiliser order.total
+        return order.total || 0;
     };
 
     return (
@@ -109,7 +116,7 @@ export default function Invoice({ order }: InvoiceProps) {
                     </div>
                     <div className={styles.invoiceMetadata}>
                         <div className={styles.invoiceTitle}>FACTURE</div>
-                        <div className={styles.invoiceNumber}>N° {order.id}</div>
+                        <div className={styles.invoiceNumber}>N° {order.orderNumber || order.id}</div>
                         <div className={styles.metadataGrid}>
                             <div className={styles.metadataItem}>
                                 <div className={styles.metadataLabel}>Date d'émission</div>

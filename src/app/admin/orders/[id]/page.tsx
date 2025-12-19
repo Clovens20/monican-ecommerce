@@ -143,7 +143,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     return (
         <div>
             <div className={styles.header}>
-                <h1 className={styles.title}>Commande #{order.id}</h1>
+                <h1 className={styles.title}>Commande #{order.orderNumber || order.id}</h1>
                 <span style={{
                     padding: '0.5rem 1rem',
                     borderRadius: '999px',

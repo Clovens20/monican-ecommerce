@@ -422,23 +422,77 @@ export default function SubAdminPage() {
                     subAdminCode={code}
                     onClose={() => setSelectedOrder(null)}
                     onStatusUpdate={async (orderId, newStatus, trackingNumber) => {
-                        // Rafraîchir les données depuis la base de données
-                        await fetchOrders();
-                        
-                        // Ne fermer le modal QUE si la commande est expédiée (shipped)
-                        // Pour les autres statuts, laisser le modal ouvert pour continuer le workflow
-                        if (newStatus === 'shipped') {
-                            setSelectedOrder(null);
-                        }
-                        // Sinon, mettre à jour l'ordre sélectionné avec le nouveau statut
-                        else if (selectedOrder) {
-                            const updatedOrder = orders.find(o => o.id === orderId);
-                            if (updatedOrder) {
-                                setSelectedOrder({
-                                    ...selectedOrder,
-                                    status: newStatus
-                                });
+                        try {
+                            // Récupérer les informations de la commande avant la mise à jour pour l'email
+                            const orderInfo = selectedOrder || orders.find(o => o.id === orderId);
+                            
+                            // Mettre à jour le statut dans la base de données
+                            const updateResponse = await fetch(`/api/admin/orders/${orderId}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    status: newStatus,
+                                    trackingNumber: trackingNumber || undefined,
+                                }),
+                            });
+
+                            if (!updateResponse.ok) {
+                                const errorData = await updateResponse.json();
+                                console.error('Erreur lors de la mise à jour du statut:', errorData);
+                                alert(`Erreur lors de la mise à jour: ${errorData.error || 'Erreur inconnue'}`);
+                                return;
                             }
+
+                            // Si la commande est expédiée, envoyer un email de notification au client
+                            if (newStatus === 'shipped' && trackingNumber && orderInfo) {
+                                try {
+                                    const emailResponse = await fetch(`/api/admin/orders/${orderId}/shipping-notification`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                        body: JSON.stringify({
+                                            trackingNumber: trackingNumber,
+                                            carrier: 'USPS',
+                                        }),
+                                    });
+
+                                    if (emailResponse.ok) {
+                                        console.log('✅ Email de notification d\'expédition envoyé au client');
+                                    } else {
+                                        const errorData = await emailResponse.json();
+                                        console.error('Erreur lors de l\'envoi de l\'email:', errorData);
+                                        // Ne pas bloquer le processus si l'email échoue
+                                    }
+                                } catch (emailError) {
+                                    console.error('Erreur lors de l\'envoi de l\'email:', emailError);
+                                    // Ne pas bloquer le processus si l'email échoue
+                                }
+                            }
+
+                            // Rafraîchir les données depuis la base de données
+                            await fetchOrders();
+                            
+                            // Ne fermer le modal QUE si la commande est expédiée (shipped)
+                            // Pour les autres statuts, laisser le modal ouvert pour continuer le workflow
+                            if (newStatus === 'shipped') {
+                                setSelectedOrder(null);
+                            }
+                            // Sinon, mettre à jour l'ordre sélectionné avec le nouveau statut
+                            else if (selectedOrder) {
+                                const updatedOrder = orders.find(o => o.id === orderId);
+                                if (updatedOrder) {
+                                    setSelectedOrder({
+                                        ...selectedOrder,
+                                        status: newStatus
+                                    });
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Erreur lors de la mise à jour du statut:', error);
+                            alert('Erreur lors de la mise à jour du statut. Veuillez réessayer.');
                         }
                     }}
                 />

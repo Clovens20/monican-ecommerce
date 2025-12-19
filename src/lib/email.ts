@@ -461,39 +461,250 @@ function getShippingNotificationTemplate(data: {
 }): string {
     return `
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Votre commande a été expédiée - Monican.shop</title>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #000; color: #fff; padding: 20px; text-align: center; }
-        .content { padding: 20px; background: #f9f9f9; }
-        .tracking { background: #fff; padding: 15px; margin: 20px 0; border-radius: 5px; text-align: center; }
-        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background-color: #f5f5f5;
+            padding: 0;
+            margin: 0;
+        }
+        .email-wrapper {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+        .message {
+            font-size: 16px;
+            color: #4a4a4a;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+        .order-info {
+            background: #f9fafb;
+            border-left: 4px solid #000000;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 4px;
+        }
+        .order-info-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6b7280;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .order-info-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #000000;
+        }
+        .tracking-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .tracking-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #92400e;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+        .tracking-number {
+            font-size: 24px;
+            font-weight: 900;
+            color: #000000;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.1em;
+            margin-bottom: 8px;
+            word-break: break-all;
+        }
+        .carrier-info {
+            font-size: 14px;
+            color: #78350f;
+            margin-top: 8px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #000000;
+            color: #ffffff;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 30px 0;
+            transition: background 0.2s;
+        }
+        .cta-button:hover {
+            background: #1a1a1a;
+        }
+        .info-section {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+        .info-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+        .info-text {
+            font-size: 14px;
+            color: #4a4a4a;
+            line-height: 1.8;
+        }
+        .footer {
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .footer-content {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .footer-links {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .footer-links a {
+            color: #ffffff;
+            text-decoration: none;
+            margin: 0 12px;
+            font-size: 13px;
+        }
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .tracking-number {
+                font-size: 20px;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="email-wrapper">
         <div class="header">
-            <h1>Monican E-commerce</h1>
+            <h1>MONICAN</h1>
+            <p>E-Commerce Excellence</p>
         </div>
+        
         <div class="content">
-            <h2>Votre commande a été expédiée !</h2>
-            <p>Bonjour ${data.customerName},</p>
-            <p>Votre commande <strong>${data.orderNumber}</strong> a été expédiée.</p>
-            
-            <div class="tracking">
-                <h3>Numéro de suivi</h3>
-                <p style="font-size: 24px; font-weight: bold;">${data.trackingNumber}</p>
-                ${data.carrier ? `<p>Transporteur: ${data.carrier}</p>` : ''}
+            <div class="greeting">
+                Bonjour ${data.customerName},
             </div>
             
-            <p>Vous pouvez suivre votre colis en utilisant le numéro de suivi ci-dessus.</p>
+            <div class="message">
+                Excellente nouvelle ! Votre commande a été expédiée et est en route vers vous.
+            </div>
+            
+            <div class="order-info">
+                <div class="order-info-label">Numéro de commande</div>
+                <div class="order-info-value">${data.orderNumber}</div>
+            </div>
+            
+            <div class="tracking-box">
+                <div class="tracking-label">Numéro de suivi</div>
+                <div class="tracking-number">${data.trackingNumber}</div>
+                ${data.carrier ? `<div class="carrier-info">Transporteur: ${data.carrier}</div>` : ''}
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="https://monican.shop/track-order?tracking=${encodeURIComponent(data.trackingNumber)}" class="cta-button">
+                    Suivre mon colis
+                </a>
+            </div>
+            
+            <div class="info-section">
+                <div class="info-title">📦 Prochaines étapes</div>
+                <div class="info-text">
+                    <p style="margin-bottom: 12px;">
+                        <strong>1. Suivi en temps réel</strong><br>
+                        Utilisez le numéro de suivi ci-dessus pour suivre l'emplacement de votre colis en temps réel sur le site du transporteur.
+                    </p>
+                    <p style="margin-bottom: 12px;">
+                        <strong>2. Réception</strong><br>
+                        Votre colis devrait arriver dans les prochains jours ouvrables. Assurez-vous qu'il y a quelqu'un pour le recevoir.
+                    </p>
+                    <p>
+                        <strong>3. Questions ?</strong><br>
+                        Si vous avez des questions ou des préoccupations concernant votre commande, notre équipe est là pour vous aider.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="message" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e5e7eb;">
+                Nous vous remercions de votre confiance et espérons que vous serez satisfait de votre achat.
+                <br><br>
+                Cordialement,<br>
+                <strong>L'équipe Monican</strong>
+            </div>
         </div>
+        
         <div class="footer">
-            <p>Monican E-commerce - support@monican.shop</p>
-            <p>www.monican.shop - +1 717-880-1479</p>
+            <div class="footer-content">
+                <p><strong>MONICAN</strong></p>
+                <p>E-Commerce Excellence</p>
+                <div class="footer-links">
+                    <a href="https://monican.shop">www.monican.shop</a>
+                    <a href="mailto:support@monican.shop">support@monican.shop</a>
+                    <a href="tel:+17178801479">+1 717-880-1479</a>
+                </div>
+                <p style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
+                    © ${new Date().getFullYear()} Monican.shop. Tous droits réservés.
+                </p>
+            </div>
         </div>
     </div>
 </body>
