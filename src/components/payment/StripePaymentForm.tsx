@@ -26,15 +26,13 @@ const stripePromise = loadStripe(
 function PaymentForm({
     onTokenReceived,
     onError,
-    amount,
-    currency,
     disabled = false,
-}: Omit<StripePaymentFormProps, 'onTokenReceived' | 'onError' | 'amount' | 'currency' | 'disabled'> & {
+    clientSecret,
+}: {
     onTokenReceived: (paymentIntentId: string) => void;
     onError: (error: string) => void;
-    amount: number;
-    currency: 'USD' | 'CAD' | 'MXN';
     disabled: boolean;
+    clientSecret: string;
 }) {
     const stripe = useStripe();
     const elements = useElements();
@@ -49,35 +47,11 @@ function PaymentForm({
             return;
         }
 
-        const paymentElement = elements.getElement(PaymentElement);
-        if (!paymentElement) {
-            onError('Élément de paiement non trouvé');
-            return;
-        }
-
         setIsProcessing(true);
         setError(null);
 
         try {
-            // Créer un PaymentIntent côté serveur
-            const response = await fetch('/api/payments/create-intent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    amount,
-                    currency: currency.toLowerCase(),
-                }),
-            });
-
-            const { clientSecret, error: apiError } = await response.json();
-
-            if (apiError || !clientSecret) {
-                throw new Error(apiError || 'Erreur lors de la création du PaymentIntent');
-            }
-
-            // Confirmer le paiement
+            // Confirmer le paiement avec le clientSecret existant
             const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
                 elements,
                 clientSecret,
@@ -116,7 +90,7 @@ function PaymentForm({
         } finally {
             setIsProcessing(false);
         }
-    }, [stripe, elements, amount, currency, disabled, isProcessing, onTokenReceived, onError]);
+    }, [stripe, elements, clientSecret, disabled, isProcessing, onTokenReceived, onError]);
 
     // Exposer la fonction handleSubmit via window pour l'appeler depuis le parent
     useEffect(() => {
@@ -174,25 +148,57 @@ export default function StripePaymentForm({
 }: StripePaymentFormProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [stripeError, setStripeError] = useState<string | null>(null);
+    const [clientSecret, setClientSecret] = useState<string | null>(null);
+    const [creatingIntent, setCreatingIntent] = useState(true);
 
     useEffect(() => {
         const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
         if (!publishableKey) {
             setStripeError('Configuration Stripe manquante (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)');
             setIsLoading(false);
+            setCreatingIntent(false);
             return;
         }
 
-        stripePromise.then(() => {
+        // Charger Stripe SDK
+        stripePromise.then(async () => {
             setIsLoading(false);
+            
+            // Créer le PaymentIntent dès le chargement
+            try {
+                const response = await fetch('/api/payments/create-intent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        amount,
+                        currency: currency.toLowerCase(),
+                    }),
+                });
+
+                const { clientSecret: secret, error: apiError } = await response.json();
+
+                if (apiError || !secret) {
+                    throw new Error(apiError || 'Erreur lors de la création du PaymentIntent');
+                }
+
+                setClientSecret(secret);
+            } catch (error: any) {
+                console.error('❌ [STRIPE] Erreur création PaymentIntent:', error);
+                setStripeError(error.message || 'Impossible de créer le PaymentIntent');
+            } finally {
+                setCreatingIntent(false);
+            }
         }).catch((error) => {
             console.error('❌ [STRIPE] Erreur chargement SDK:', error);
             setStripeError('Impossible de charger le SDK Stripe');
             setIsLoading(false);
+            setCreatingIntent(false);
         });
-    }, []);
+    }, [amount, currency]);
 
-    if (isLoading) {
+    if (isLoading || creatingIntent) {
         return (
             <div style={{
                 padding: '2rem',
@@ -204,13 +210,13 @@ export default function StripePaymentForm({
             }}>
                 <div style={{ marginBottom: '1rem', fontSize: '2rem' }}>🔄</div>
                 <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                    Chargement du formulaire de paiement sécurisé...
+                    {isLoading ? 'Chargement du formulaire de paiement sécurisé...' : 'Initialisation du paiement...'}
                 </div>
             </div>
         );
     }
 
-    if (stripeError) {
+    if (stripeError || !clientSecret) {
         return (
             <div style={{
                 padding: '1rem',
@@ -220,12 +226,13 @@ export default function StripePaymentForm({
                 fontSize: '0.9rem',
                 marginBottom: '1rem'
             }}>
-                ⚠️ {stripeError}
+                ⚠️ {stripeError || 'Impossible d\'initialiser le formulaire de paiement'}
             </div>
         );
     }
 
     const options: StripeElementsOptions = {
+        clientSecret,
         appearance: {
             theme: 'stripe',
         },
@@ -236,11 +243,9 @@ export default function StripePaymentForm({
             <PaymentForm
                 onTokenReceived={onTokenReceived}
                 onError={onError}
-                amount={amount}
-                currency={currency}
                 disabled={disabled}
+                clientSecret={clientSecret}
             />
         </Elements>
     );
 }
-
