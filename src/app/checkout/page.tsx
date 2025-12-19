@@ -212,9 +212,13 @@ export default function CheckoutPage() {
                 // Afficher les détails de validation si disponibles
                 let errorMessage = data.error || 'Erreur lors du traitement de la commande';
                 if (data.details && Array.isArray(data.details)) {
-                    const validationErrors = data.details.map((issue: any) => 
-                        `${issue.path?.join('.') || 'Champ'}: ${issue.message}`
-                    ).join(', ');
+                    const validationErrors = data.details.map((issue: any) => {
+                        // path peut être une chaîne ou un tableau
+                        const pathStr = Array.isArray(issue.path) 
+                            ? issue.path.join('.') 
+                            : (issue.path || 'Champ');
+                        return `${pathStr}: ${issue.message}`;
+                    }).join(', ');
                     errorMessage = `${errorMessage} - ${validationErrors}`;
                 }
                 console.error('Erreur checkout - détails:', data);
