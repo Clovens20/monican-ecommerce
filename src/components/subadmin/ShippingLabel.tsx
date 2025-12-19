@@ -3,12 +3,65 @@
 import Image from 'next/image';
 import { Order } from '@/lib/types';
 import styles from './ShippingLabel.module.css';
+import { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 
 interface ShippingLabelProps {
     order: Order;
 }
 
 export default function ShippingLabel({ order }: ShippingLabelProps) {
+    const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+
+    useEffect(() => {
+        // Générer le QR code avec les informations de shipping
+        const generateQRCode = async () => {
+            // Prioriser orderNumber (format ORD-MON-XXXXXX) au lieu de l'UUID
+            const orderNumber = order.orderNumber || order.id;
+            
+            const shippingData = {
+                // Numéro de commande au format ORD-MON-XXXXXX (prioritaire)
+                orderNumber: orderNumber,
+                // ID technique (UUID) pour référence interne si nécessaire
+                orderId: order.id,
+                customerName: order.customerName,
+                address: {
+                    street: order.shippingAddress.street,
+                    city: order.shippingAddress.city,
+                    state: order.shippingAddress.state,
+                    zip: order.shippingAddress.zip,
+                    country: order.shippingAddress.country
+                },
+                phone: order.customerPhone || '',
+                tracking: order.trackingNumber || '',
+                date: order.date,
+                // Métadonnées pour faciliter le scan
+                type: 'shipping_label',
+                version: '1.0'
+            };
+
+            // Format JSON structuré pour faciliter le parsing
+            const qrData = JSON.stringify(shippingData, null, 0);
+            
+            try {
+                const dataUrl = await QRCode.toDataURL(qrData, {
+                    width: 200,
+                    margin: 1,
+                    color: {
+                        dark: '#000000',
+                        light: '#FFFFFF'
+                    },
+                    errorCorrectionLevel: 'M' // Niveau de correction d'erreur moyen pour meilleure lisibilité
+                });
+                setQrCodeUrl(dataUrl);
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+            }
+        };
+
+        generateQRCode();
+    }, [order]);
+
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('fr-FR', {
             year: 'numeric',
@@ -69,7 +122,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             <div className={styles.orderBar}>
                 <div className={styles.orderDetail}>
                     <span className={styles.orderLabel}>COMMANDE</span>
-                    <span className={styles.orderValue}>#{order.id}</span>
+                    <span className={styles.orderValue}>#{order.orderNumber || order.id}</span>
                 </div>
                 <div className={styles.orderDetail}>
                     <span className={styles.orderLabel}>DATE</span>
@@ -84,7 +137,18 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                     <div className={styles.headerTitle}>DESTINATAIRE</div>
                 </div>
                 <div className={styles.recipientBox}>
-                    <div className={styles.recipientName}>{order.customerName}</div>
+                    <div className={styles.recipientNameRow}>
+                        <div className={styles.recipientName}>{order.customerName}</div>
+                        {qrCodeUrl && (
+                            <div className={styles.qrCodeInline}>
+                                <img 
+                                    src={qrCodeUrl} 
+                                    alt="QR Code Shipping" 
+                                    className={styles.qrCodeImage}
+                                />
+                            </div>
+                        )}
+                    </div>
                     <div className={styles.addressLines}>
                         <div className={styles.addressLine}>{order.shippingAddress.street}</div>
                         <div className={styles.addressLine}>
@@ -144,16 +208,6 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                     <span className={styles.itemsText}>
                         {order.items.reduce((sum, item) => sum + item.quantity, 0)} article{order.items.reduce((sum, item) => sum + item.quantity, 0) > 1 ? 's' : ''}
                     </span>
-                </div>
-                <div className={styles.qrSection}>
-                    <div className={styles.qrCode}>
-                        <div className={styles.qrPattern}>
-                            {Array.from({ length: 25 }).map((_, i) => (
-                                <div key={i} className={styles.qrDot} style={{ opacity: Math.random() > 0.3 ? 1 : 0 }} />
-                            ))}
-                        </div>
-                    </div>
-                    <div className={styles.qrLabel}>Scan moi</div>
                 </div>
             </div>
 

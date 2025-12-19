@@ -294,6 +294,7 @@ export default function SubAdminPage() {
                                     // Convertir SubAdminOrder en Order pour OrderDetails en utilisant les données réelles
                                     const orderForDetails: Order = {
                                         id: order.id,
+                                        orderNumber: order.orderNumber || order.id,
                                         customerName: order.customerName,
                                         customerEmail: order.customerEmail,
                                         customerPhone: order.customerPhone || '',
@@ -369,6 +370,7 @@ export default function SubAdminPage() {
                                                                 // Convertir en format Order
                                                                 const fullOrder: Order = {
                                                                     id: data.order.id,
+                                                                    orderNumber: data.order.orderNumber || data.order.id,
                                                                     customerName: data.order.customerName,
                                                                     customerEmail: data.order.customerEmail,
                                                                     customerPhone: data.order.customerPhone || '',

@@ -26,17 +26,10 @@ export async function GET(
             );
         }
 
-        // Récupérer le order_number depuis la base de données directement
-        const { data: orderData } = await supabaseAdmin
-            .from('orders')
-            .select('order_number')
-            .eq('id', id)
-            .single();
-
         // Formater les données pour la réponse
         const formattedOrder = {
             id: order.id,
-            orderNumber: orderData?.order_number || order.id, // Utiliser order_number si disponible, sinon l'ID
+            orderNumber: order.orderNumber || order.id, // Utiliser orderNumber depuis l'objet Order
             customerName: order.customerName,
             customerEmail: order.customerEmail,
             date: order.date,

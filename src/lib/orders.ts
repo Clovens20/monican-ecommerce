@@ -7,6 +7,7 @@ import { Order, OrderItem, OrderStatus, OrderStatusHistory, ShippingAddress } fr
 export const mockOrders: Order[] = [
     {
         id: 'ORD-001',
+        orderNumber: 'ORD-MON-000001',
         customerName: 'Jean Dupont',
         customerEmail: 'jean.dupont@example.com',
         customerPhone: '+1 514 555 0101',
@@ -52,6 +53,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-002',
+        orderNumber: 'ORD-MON-000002',
         customerName: 'Alice Smith',
         customerEmail: 'alice.smith@example.com',
         customerPhone: '+1 212 555 0199',
@@ -90,6 +92,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-003',
+        orderNumber: 'ORD-MON-000003',
         customerName: 'Carlos Rodriguez',
         customerEmail: 'carlos.r@example.com',
         customerPhone: '+52 55 1234 5678',
@@ -136,6 +139,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-004',
+        orderNumber: 'ORD-MON-000004',
         customerName: 'Marie Martin',
         customerEmail: 'marie.martin@example.com',
         customerPhone: '+1 514 555 0202',
@@ -184,6 +188,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-005',
+        orderNumber: 'ORD-MON-000005',
         customerName: 'John Williams',
         customerEmail: 'john.w@example.com',
         customerPhone: '+1 415 555 0303',
@@ -219,6 +224,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-006',
+        orderNumber: 'ORD-MON-000006',
         customerName: 'Sophie Tremblay',
         customerEmail: 'sophie.t@example.com',
         customerPhone: '+1 418 555 0404',
@@ -265,6 +271,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-007',
+        orderNumber: 'ORD-MON-000007',
         customerName: 'Miguel Hernandez',
         customerEmail: 'miguel.h@example.com',
         customerPhone: '+52 33 9876 5432',
@@ -303,6 +310,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-008',
+        orderNumber: 'ORD-MON-000008',
         customerName: 'Emily Johnson',
         customerEmail: 'emily.j@example.com',
         customerPhone: '+1 305 555 0505',
@@ -351,6 +359,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-009',
+        orderNumber: 'ORD-MON-000009',
         customerName: 'Pierre Dubois',
         customerEmail: 'pierre.d@example.com',
         customerPhone: '+1 514 555 0606',
@@ -388,6 +397,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-010',
+        orderNumber: 'ORD-MON-000010',
         customerName: 'Laura Garcia',
         customerEmail: 'laura.g@example.com',
         customerPhone: '+52 81 5555 7890',
@@ -432,6 +442,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-011',
+        orderNumber: 'ORD-MON-000011',
         customerName: 'David Lee',
         customerEmail: 'david.l@example.com',
         customerPhone: '+1 206 555 0707',
@@ -478,6 +489,7 @@ export const mockOrders: Order[] = [
     },
     {
         id: 'ORD-012',
+        orderNumber: 'ORD-MON-000012',
         customerName: 'Isabelle Gagnon',
         customerEmail: 'isabelle.g@example.com',
         customerPhone: '+1 819 555 0808',

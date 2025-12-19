@@ -375,6 +375,13 @@
         margin: 0;
         padding: 0;
         background: white;
+        page-break-after: avoid;
+        page-break-inside: avoid;
+    }
+
+    /* S'assurer qu'un seul conteneur s'imprime */
+    .printContainer:not(:first-of-type) {
+        display: none !important;
     }
 
     /* Masquer le modal et tout le reste */

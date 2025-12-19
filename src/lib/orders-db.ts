@@ -37,6 +37,7 @@ interface SupabaseOrder {
 function convertSupabaseToOrder(supabaseOrder: SupabaseOrder): Order {
     return {
         id: supabaseOrder.id,
+        orderNumber: supabaseOrder.order_number,
         customerName: supabaseOrder.customer_name,
         customerEmail: supabaseOrder.customer_email,
         customerPhone: supabaseOrder.customer_phone || '',
@@ -354,7 +355,7 @@ export async function createOrder(orderData: {
             return null;
         }
 
-        const orderNumber = orderNumberData || `ORD-${Date.now()}`;
+        const orderNumber = orderNumberData || `ORD-MON-${String(Date.now()).slice(-6)}`;
 
         // Créer la commande (customer_id peut être NULL pour les commandes sans compte)
         const { data, error } = await supabaseAdmin

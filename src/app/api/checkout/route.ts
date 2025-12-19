@@ -242,7 +242,7 @@ export async function POST(request: NextRequest) {
     
     try {
       await sendOrderConfirmation({
-        orderNumber: order.id,
+        orderNumber: order.orderNumber || order.id,
         customerEmail: data.customerEmail,
         customerName: data.customerName,
         items: data.items.map(item => ({
@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
       success: true,
       order: {
         id: order.id,
-        orderNumber: order.id,
+        orderNumber: order.orderNumber || order.id,
         total: order.total,
         currency: order.currency,
       },
