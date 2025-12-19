@@ -165,30 +165,48 @@ export default function CheckoutPage() {
 
             // Préparer les données pour l'API checkout
             const checkoutData = {
-                customerName: `${customerInfo.firstName} ${customerInfo.lastName}`,
-                customerEmail: customerInfo.email,
-                customerPhone: customerInfo.phone || undefined, // Optionnel selon le schéma
+                customerName: String(`${customerInfo.firstName} ${customerInfo.lastName}`).trim(),
+                customerEmail: String(customerInfo.email).trim(),
+                customerPhone: String(customerInfo.phone || '').trim(),
                 shippingAddress: {
-                    street: shippingAddress.street,
-                    city: shippingAddress.city,
-                    state: shippingAddress.state,
-                    zip: shippingAddress.zip,
-                    country: shippingAddress.country,
+                    street: String(shippingAddress.street).trim(),
+                    city: String(shippingAddress.city).trim(),
+                    state: String(shippingAddress.state).trim(),
+                    zip: String(shippingAddress.zip).trim(),
+                    country: String(shippingAddress.country).trim(),
                 },
-                items: items.map(item => ({
-                    productId: item.id,
-                    name: item.name,
-                    quantity: Number(item.quantity), // S'assurer que c'est un nombre
-                    price: Number(item.price), // S'assurer que c'est un nombre
-                    size: item.selectedSize,
-                    image: item.images?.[0] || '',
-                })),
-                paymentSourceId: token,
+                items: items.map(item => {
+                    // Extraire l'URL de l'image (ProductImage est un objet avec url, alt, etc.)
+                    let imageUrl = '';
+                    if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+                        const firstImage = item.images[0];
+                        // Si c'est un objet ProductImage, extraire l'URL
+                        if (typeof firstImage === 'string') {
+                            imageUrl = firstImage;
+                        } else if (firstImage && typeof firstImage === 'object') {
+                            imageUrl = firstImage.url || firstImage.id || '';
+                        }
+                    }
+                    
+                    // Validation et conversion des valeurs
+                    const quantity = Math.max(1, Math.floor(Number(item.quantity)) || 1);
+                    const price = Math.max(0, Number(item.price) || 0);
+                    
+                    return {
+                        productId: String(item.id || '').trim(),
+                        name: String(item.name || '').trim(),
+                        quantity: quantity,
+                        price: price,
+                        size: String(item.selectedSize || '').trim(),
+                        image: String(imageUrl).trim(),
+                    };
+                }),
+                paymentSourceId: String(token),
                 currency: currency,
-                subtotal: Number(total),
-                shippingCost: Number(selectedShippingOption.cost / (settings.exchangeRate || 1)),
-                tax: Number(taxAmount / settings.exchangeRate),
-                total: Number(totalUSD),
+                subtotal: Math.max(0, Number(total) || 0),
+                shippingCost: Math.max(0, Number(selectedShippingOption.cost / (settings.exchangeRate || 1)) || 0),
+                tax: Math.max(0, Number(taxAmount / settings.exchangeRate) || 0),
+                total: Math.max(0, Number(totalUSD) || 0),
             };
 
             console.log('[Checkout] Données envoyées:', {

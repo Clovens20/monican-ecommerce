@@ -22,7 +22,7 @@ import { validateAndSanitize } from '@/lib/validation';
 const CheckoutSchema = z.object({
   customerName: z.string().min(1, 'Le nom du client est requis').max(100),
   customerEmail: z.string().email('Email invalide').max(255),
-  customerPhone: z.string().min(1, 'Le téléphone est requis').max(50),
+  customerPhone: z.string().max(50).optional(),
   customerId: z.string().optional(),
   shippingAddress: z.object({
     street: z.string().min(1, 'L\'adresse est requise').max(255),
