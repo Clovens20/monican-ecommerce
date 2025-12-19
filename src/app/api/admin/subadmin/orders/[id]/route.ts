@@ -31,7 +31,7 @@ export async function GET(
       success: true,
       order: {
         id: order.id,
-        orderNumber: order.id,
+        orderNumber: order.orderNumber || order.id,
         customerName: order.customerName,
         customerEmail: order.customerEmail,
         customerPhone: order.customerPhone || '',

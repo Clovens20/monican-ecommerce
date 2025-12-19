@@ -334,7 +334,7 @@ export default function SubAdminPage() {
                                     
                                     return (
                                         <tr key={order.id}>
-                                            <td style={{ fontWeight: 600 }}>{order.orderNumber || order.id.substring(0, 8)}...</td>
+                                            <td style={{ fontWeight: 600 }}>{order.orderNumber || order.id}</td>
                                             <td>
                                                 <div style={{ fontWeight: 500 }}>{order.customerName}</div>
                                                 <div style={{ fontSize: '0.8rem', color: '#6b7280' }}>{order.customerEmail}</div>

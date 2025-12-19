@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Order, OrderStatus } from '@/lib/types';
 import OrderProcessingWorkflow from './OrderProcessingWorkflow';
 import ShippingLabel from './ShippingLabel';
@@ -18,6 +18,7 @@ export default function OrderDetails({ order, subAdminCode = '', onClose, onStat
     const [showWorkflow, setShowWorkflow] = useState(false);
     const [showShippingLabel, setShowShippingLabel] = useState(false);
     const [showInvoice, setShowInvoice] = useState(false);
+    const printContainerRef = useRef<HTMLDivElement>(null); // Ajouter cette ref
 
     const handleStatusUpdate = (orderId: string, newStatus: OrderStatus, trackingNumber?: string) => {
         if (onStatusUpdate) {
@@ -53,15 +54,137 @@ export default function OrderDetails({ order, subAdminCode = '', onClose, onStat
     };
 
     const handlePrintLabel = () => {
-        // S'assurer que seule l'étiquette est affichée
+        console.log('🖨️ Starting print process...');
         setShowInvoice(false);
         setShowShippingLabel(true);
+        
+        // Attendre que React rende le composant
         setTimeout(() => {
-            window.print();
-            setTimeout(() => {
-                setShowShippingLabel(false);
-            }, 100);
-        }, 100);
+            const container = printContainerRef.current;
+            console.log('�� Container found:', !!container);
+            
+            if (!container) {
+                console.error('❌ Print container not found!');
+                return;
+            }
+            
+            // Créer un clone du conteneur directement dans le body
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                // Si popup bloquée, utiliser une approche alternative
+                const printDiv = document.createElement('div');
+                printDiv.style.position = 'fixed';
+                printDiv.style.left = '0';
+                printDiv.style.top = '0';
+                printDiv.style.width = '100vw';
+                printDiv.style.height = '100vh';
+                printDiv.style.zIndex = '999999';
+                printDiv.style.background = 'white';
+                printDiv.style.display = 'flex';
+                printDiv.style.alignItems = 'center';
+                printDiv.style.justifyContent = 'center';
+                
+                // Cloner le contenu
+                const shippingLabel = container.querySelector('[class*="shippingLabel"]');
+                if (shippingLabel) {
+                    const clone = shippingLabel.cloneNode(true) as HTMLElement;
+                    // Forcer la visibilité sur le clone
+                    clone.style.visibility = 'visible';
+                    clone.style.display = 'flex';
+                    clone.style.flexDirection = 'column';
+                    clone.style.width = '4in';
+                    clone.style.height = '6in';
+                    clone.style.background = 'white';
+                    clone.style.border = '2px solid #000';
+                    clone.style.padding = '0.2in';
+                    clone.style.boxSizing = 'border-box';
+                    
+                    // Forcer la visibilité de tous les enfants
+                    const allElements = clone.querySelectorAll('*');
+                    allElements.forEach(el => {
+                        (el as HTMLElement).style.visibility = 'visible';
+                        (el as HTMLElement).style.opacity = '1';
+                        (el as HTMLElement).style.color = '#000';
+                    });
+                    
+                    printDiv.appendChild(clone);
+                    document.body.appendChild(printDiv);
+                    
+                    // Forcer le reflow
+                    printDiv.offsetHeight;
+                    
+                    // Attendre que les images soient chargées
+                    const images = printDiv.querySelectorAll('img');
+                    const imagePromises = Array.from(images).map(img => {
+                        if (img.complete && img.naturalWidth > 0) {
+                            return Promise.resolve();
+                        }
+                        return new Promise((resolve) => {
+                            img.onload = resolve;
+                            img.onerror = resolve;
+                            setTimeout(resolve, 3000);
+                        });
+                    });
+                    
+                    Promise.all(imagePromises).then(() => {
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                window.print();
+                                setTimeout(() => {
+                                    document.body.removeChild(printDiv);
+                                    setShowShippingLabel(false);
+                                }, 500);
+                            });
+                        });
+                    });
+                } else {
+                    console.error('❌ Shipping label not found in container!');
+                    console.log('Container HTML:', container.innerHTML.substring(0, 500));
+                }
+            } else {
+                // Approche avec nouvelle fenêtre (meilleure pour l'impression)
+                printWindow.document.open();
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Shipping Label</title>
+                        <style>
+                            @page {
+                                size: 4in 6in;
+                                margin: 0;
+                            }
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                min-height: 100vh;
+                                background: white;
+                            }
+                            * {
+                                visibility: visible !important;
+                                color: #000 !important;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        ${container.innerHTML}
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                
+                printWindow.onload = () => {
+                    setTimeout(() => {
+                        printWindow.print();
+                        printWindow.close();
+                        setShowShippingLabel(false);
+                    }, 250);
+                };
+            }
+        }, 500);
     };
 
     const handlePrintInvoice = () => {
@@ -77,14 +200,14 @@ export default function OrderDetails({ order, subAdminCode = '', onClose, onStat
     };
 
     const handleMarkAsProcessed = () => {
-        alert(`Commande ${order.id} marquée comme traitée`);
+        alert(`Commande ${order.orderNumber || order.id} marquée comme traitée`);
         onClose();
     };
 
     return (
         <>
             {showShippingLabel && (
-                <div className={styles.printContainer}>
+                <div ref={printContainerRef} className={styles.printContainer}>
                     <ShippingLabel order={order} />
                 </div>
             )}
@@ -98,7 +221,7 @@ export default function OrderDetails({ order, subAdminCode = '', onClose, onStat
                 {/* Header */}
                 <div className={styles.header}>
                     <div className={styles.headerInfo}>
-                        <h2>Commande {order.id}</h2>
+                        <h2>Commande {order.orderNumber || order.id}</h2>
                         <div className={styles.orderMeta}>
                             <span>📅 {formatDate(order.date)}</span>
                             <span className={`${styles.statusBadge} ${getStatusClass(order.status)}`}>

@@ -12,6 +12,7 @@ interface ShippingLabelProps {
 
 export default function ShippingLabel({ order }: ShippingLabelProps) {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+    const [qrCodeReady, setQrCodeReady] = useState(false);
 
     useEffect(() => {
         // Générer le QR code avec les informations de shipping
@@ -54,8 +55,11 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                     errorCorrectionLevel: 'M' // Niveau de correction d'erreur moyen pour meilleure lisibilité
                 });
                 setQrCodeUrl(dataUrl);
+                // Marquer le QR code comme prêt après un court délai pour laisser l'image se charger
+                setTimeout(() => setQrCodeReady(true), 50);
             } catch (error) {
                 console.error('Error generating QR code:', error);
+                setQrCodeReady(true); // Marquer comme prêt même en cas d'erreur pour ne pas bloquer l'impression
             }
         };
 
@@ -138,27 +142,35 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 </div>
                 <div className={styles.recipientBox}>
                     <div className={styles.recipientNameRow}>
-                        <div className={styles.recipientName}>{order.customerName}</div>
+                        <div className={styles.recipientName}>{order.customerName || 'N/A'}</div>
                         {qrCodeUrl && (
                             <div className={styles.qrCodeInline}>
                                 <img 
                                     src={qrCodeUrl} 
                                     alt="QR Code Shipping" 
                                     className={styles.qrCodeImage}
+                                    onLoad={() => setQrCodeReady(true)}
+                                    onError={() => setQrCodeReady(true)}
                                 />
                             </div>
                         )}
                     </div>
-                    <div className={styles.addressLines}>
-                        <div className={styles.addressLine}>{order.shippingAddress.street}</div>
-                        <div className={styles.addressLine}>
-                            {order.shippingAddress.city}, {order.shippingAddress.state}
+                    {order.shippingAddress ? (
+                        <div className={styles.addressLines}>
+                            <div className={styles.addressLine}>{order.shippingAddress.street || ''}</div>
+                            <div className={styles.addressLine}>
+                                {order.shippingAddress.city || ''}, {order.shippingAddress.state || ''}
+                            </div>
+                            <div className={styles.addressLine}>
+                                {order.shippingAddress.zip || ''}
+                            </div>
+                            <div className={styles.countryLine}>{getCountryName(order.shippingAddress.country || 'US')}</div>
                         </div>
-                        <div className={styles.addressLine}>
-                            {order.shippingAddress.zip}
+                    ) : (
+                        <div className={styles.addressLines}>
+                            <div className={styles.addressLine} style={{ color: '#ef4444' }}>Adresse non disponible</div>
                         </div>
-                        <div className={styles.countryLine}>{getCountryName(order.shippingAddress.country)}</div>
-                    </div>
+                    )}
                     {order.customerPhone && (
                         <div className={styles.contactLine}>
                             <span className={styles.phoneIcon}>📞</span>

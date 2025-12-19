@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       success: true,
       orders: orders.map(order => ({
         id: order.id,
-        orderNumber: order.id,
+        orderNumber: order.orderNumber || order.id,
         customerName: order.customerName,
         customerEmail: order.customerEmail,
         customerPhone: order.customerPhone || '',

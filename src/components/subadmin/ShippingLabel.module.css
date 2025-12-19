@@ -443,34 +443,99 @@
 
 /* Styles d'impression */
 @media print {
-    /* Masquer tout sauf l'étiquette */
-    body * {
-        visibility: hidden;
+    /* L'étiquette est déjà dans .printContainer qui gère la visibilité */
+    .shippingLabel {
+        position: relative !important;
+        width: 4in !important;
+        height: 6in !important;
+        min-width: 4in !important;
+        min-height: 6in !important;
+        max-width: 4in !important;
+        max-height: 6in !important;
+        margin: 0 !important;
+        padding: 0.2in !important;
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+        background: white !important;
+        box-sizing: border-box !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        page-break-before: avoid !important;
+        overflow: visible !important;
+        display: flex !important;
+        flex-direction: column !important;
+        visibility: visible !important;
     }
 
+    /* Forcer la visibilité de TOUS les enfants */
     .shippingLabel,
     .shippingLabel * {
-        visibility: visible;
+        visibility: visible !important;
+        color: #000 !important;
+        background: transparent !important;
     }
 
-    .shippingLabel {
-        position: relative;
-        width: 4in;
-        height: 6in;
-        min-width: 4in;
-        min-height: 6in;
-        max-width: 4in;
-        max-height: 6in;
-        margin: 0;
-        padding: 0.2in;
-        border: 2px solid #000;
-        box-shadow: none;
-        background: white;
-        box-sizing: border-box;
-        page-break-after: avoid;
-        page-break-inside: avoid;
-        page-break-before: avoid;
-        overflow: hidden;
+    /* S'assurer que les éléments flex sont correctement affichés */
+    .labelHeader,
+    .brandSection,
+    .recipientBox,
+    .recipientNameRow,
+    .addressLines,
+    .senderSection,
+    .senderBox,
+    .trackingSection,
+    .trackingBox,
+    .labelFooter,
+    .itemsBadge {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Éléments en ligne */
+    .orderBar,
+    .orderDetail,
+    .contactLine {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* Éléments de section */
+    .recipientSection,
+    .sectionHeader {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    /* S'assurer que les images sont visibles */
+    .logoImage,
+    .qrCodeImage,
+    .shippingLabel img {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* S'assurer que tous les textes sont visibles */
+    .companyName,
+    .tagline,
+    .recipientName,
+    .addressLine,
+    .countryLine,
+    .phoneNumber,
+    .orderValue,
+    .orderLabel,
+    .senderName,
+    .senderContact,
+    .trackingNumber,
+    .itemsText {
+        visibility: visible !important;
+        opacity: 1 !important;
+        color: #000 !important;
     }
 
     /* S'assurer qu'une seule étiquette s'imprime */
@@ -479,22 +544,13 @@
     }
 
     .printWarning {
-        display: none;
+        display: none !important;
     }
 
     @page {
         size: 4in 6in;
         margin: 0;
         /* Format optimisé pour imprimantes D520 et Phomemo 4x6 */
-    }
-
-    /* Empêcher les sauts de page multiples */
-    html, body {
-        height: 6in;
-        width: 4in;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
     }
 }
 

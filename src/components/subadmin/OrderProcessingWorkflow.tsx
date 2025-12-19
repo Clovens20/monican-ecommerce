@@ -72,7 +72,7 @@ export default function OrderProcessingWorkflow({
 
         if (currentStep === 'ship') {
             onStatusUpdate(order.id, 'shipped', trackingNumber);
-            alert(`Commande ${order.id} expédiée avec succès!\nNuméro de suivi: ${trackingNumber}`);
+            alert(`Commande ${order.orderNumber || order.id} expédiée avec succès!\nNuméro de suivi: ${trackingNumber}`);
             onClose();
         } else {
             const nextStatus = currentStep === 'verify' ? 'processing' : order.status;
@@ -93,7 +93,7 @@ export default function OrderProcessingWorkflow({
         <div className={styles.overlay} onClick={onClose}>
             <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
                 <div className={styles.header}>
-                    <h2 className={styles.title}>Traitement de la Commande {order.id}</h2>
+                    <h2 className={styles.title}>Traitement de la Commande {order.orderNumber || order.id}</h2>
                     <button className={styles.closeBtn} onClick={onClose}>×</button>
                 </div>
 

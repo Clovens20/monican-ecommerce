@@ -349,46 +349,56 @@
 }
 
 .printContainer {
-    display: none;
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+    width: 100vw;
+    height: 100vh;
+    visibility: hidden;
+    z-index: -1;
 }
 
 @media print {
-    /* Masquer tout sauf le conteneur d'impression */
-    body * {
-        visibility: hidden;
+    /* Masquer uniquement le modal et l'overlay du workflow, pas tout le body */
+    .modal,
+    .modalContent,
+    .overlay {
+        display: none !important;
+        visibility: hidden !important;
     }
 
-    .printContainer,
-    .printContainer * {
-        visibility: visible;
-    }
-
+    /* Afficher le conteneur d'impression et TOUT son contenu */
     .printContainer {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0;
-        padding: 0;
-        background: white;
-        page-break-after: avoid;
-        page-break-inside: avoid;
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        page-break-after: avoid !important;
+        page-break-inside: avoid !important;
+        visibility: visible !important;
+        z-index: 9999 !important;
+    }
+
+    /* Afficher TOUT le contenu du conteneur - NE PAS forcer display:block pour préserver les flexbox */
+    .printContainer {
+        visibility: visible !important;
+    }
+    
+    /* Forcer la visibilité mais préserver les types d'affichage existants */
+    .printContainer * {
+        visibility: visible !important;
     }
 
     /* S'assurer qu'un seul conteneur s'imprime */
     .printContainer:not(:first-of-type) {
         display: none !important;
-    }
-
-    /* Masquer le modal et tout le reste */
-    .modal,
-    .modal * {
-        display: none !important;
-        visibility: hidden !important;
     }
 }
 
