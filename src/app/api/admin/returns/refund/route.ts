@@ -50,11 +50,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Si refundMethod est 'original' et qu'il y a un payment_id, traiter le remboursement via Square
+    // Si refundMethod est 'original' et qu'il y a un payment_id, traiter le remboursement
     let refundTransactionId = null;
     if (refundMethod === 'original' && order.payment_id) {
       try {
-        // Convertir le montant en centimes pour Square
+        // Convertir le montant en centimes
         const amountInCents = Math.round(refundAmount * 100);
         
         const refundResult = await refundPayment({

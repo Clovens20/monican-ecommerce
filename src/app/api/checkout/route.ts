@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
       tax: data.tax,
       total: data.total,
       currency: data.currency,
-      paymentMethod: 'Square',
+      paymentMethod: 'Stripe',
       paymentId: paymentId,
       paymentStatus: 'completed',
     });

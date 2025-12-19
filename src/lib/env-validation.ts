@@ -18,12 +18,10 @@ export function validateEnvironmentVariables(): {
   ];
 
   const recommended = [
-    'SQUARE_ACCESS_TOKEN',
-    'SQUARE_LOCATION_ID',
-    'SQUARE_ENVIRONMENT',
+    'STRIPE_SECRET_KEY',
+    'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
     'EMAIL_SERVICE',
     'RESEND_API_KEY',
-    'SQUARE_WEBHOOK_SIGNATURE_KEY',
   ];
 
   const missing: string[] = [];
@@ -44,13 +42,12 @@ export function validateEnvironmentVariables(): {
   }
 
   // Vérifications spécifiques
-  if (process.env.SQUARE_ENVIRONMENT === 'production') {
-    if (!process.env.SQUARE_ACCESS_TOKEN) {
-      warnings.push('SQUARE_ACCESS_TOKEN (requis en production)');
-    }
-    if (!process.env.SQUARE_WEBHOOK_SIGNATURE_KEY) {
-      warnings.push('SQUARE_WEBHOOK_SIGNATURE_KEY (recommandé en production)');
-    }
+  if (process.env.STRIPE_SECRET_KEY && !process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+    warnings.push('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (requis si STRIPE_SECRET_KEY est configuré)');
+  }
+
+  if (process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY && !process.env.STRIPE_SECRET_KEY) {
+    warnings.push('STRIPE_SECRET_KEY (requis si NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY est configuré)');
   }
 
   if (process.env.EMAIL_SERVICE === 'resend' && !process.env.RESEND_API_KEY) {

@@ -1,6 +1,13 @@
 // ============================================================================
-// PAYMENT PROCESSING - Square Integration
+// PAYMENT PROCESSING - Stripe Integration
 // ============================================================================
+
+import Stripe from 'stripe';
+
+// Initialiser Stripe avec la clé secrète
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+    apiVersion: '2025-12-15.clover',
+});
 
 // ============================================================================
 // TYPES
@@ -9,7 +16,7 @@
 export interface PaymentRequest {
     amount: number; // En centimes (ex: 10000 = $100.00)
     currency: 'USD' | 'CAD' | 'MXN';
-    sourceId: string; // Token de la carte depuis Square
+    sourceId: string; // PaymentIntent ID ou PaymentMethod ID depuis Stripe
     orderId?: string;
     customerEmail: string;
     customerName: string;
@@ -43,119 +50,130 @@ export interface RefundResult {
 }
 
 // ============================================================================
-// PAYMENT FUNCTIONS
+// PAYMENT FUNCTIONS - STRIPE
 // ============================================================================
 
 /**
- * Traite un paiement via Square avec retry automatique
- * ✅ CORRECTION 4: Ajout de retry avec exponential backoff
- * NOTE: Cette fonction doit être appelée côté serveur uniquement
+ * Traite un paiement via Stripe avec retry automatique
  */
 export async function processPaymentWithRetry(
     request: PaymentRequest,
     maxRetries: number = 3
 ): Promise<PaymentResult> {
-    const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN;
-    const squareLocationId = process.env.SQUARE_LOCATION_ID;
-    const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-    if (!squareAccessToken || !squareLocationId) {
+    if (!stripeSecretKey) {
         return {
             success: false,
-            error: 'Configuration Square manquante',
+            error: 'Configuration Stripe manquante (STRIPE_SECRET_KEY)',
             errorCode: 'CONFIG_ERROR',
         };
     }
 
-    const squareApiUrl = squareEnvironment === 'production'
-        ? 'https://connect.squareup.com'
-        : 'https://connect.squareupsandbox.com';
-
     let lastError: string = '';
     let lastErrorCode: string = '';
 
-    // Générer un idempotency key unique basé sur orderId et timestamp
-    const baseIdempotencyKey = request.orderId || `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            console.log(`💳 Tentative paiement ${attempt}/${maxRetries} pour ${baseIdempotencyKey}`);
+            console.log(`💳 [STRIPE] Tentative paiement ${attempt}/${maxRetries} pour ${request.orderId || 'sans orderId'}`);
 
-            // Idempotency key unique par tentative (permet retry sans risque de double paiement)
-            const idempotencyKey = `${baseIdempotencyKey}-${Math.floor(Date.now() / 1000)}-${attempt}`;
+            // Si sourceId commence par "pi_", c'est un PaymentIntent ID
+            // Sinon, c'est un PaymentMethod ID et on doit créer un PaymentIntent
+            if (request.sourceId.startsWith('pi_')) {
+                // Récupérer le PaymentIntent existant
+                const paymentIntent = await stripe.paymentIntents.retrieve(request.sourceId);
 
-            // Préparer la requête de paiement
-            const paymentRequest = {
-                source_id: request.sourceId,
-                amount_money: {
+                if (paymentIntent.status === 'succeeded') {
+                    console.log(`✅ [STRIPE] Paiement réussi: ${paymentIntent.id}`);
+                    return {
+                        success: true,
+                        paymentId: paymentIntent.id,
+                        transactionId: paymentIntent.id,
+                    };
+                } else if (paymentIntent.status === 'requires_action') {
+                    // Le paiement nécessite une action (ex: 3D Secure)
+                    return {
+                        success: false,
+                        error: 'Paiement nécessite une authentification supplémentaire',
+                        errorCode: 'REQUIRES_ACTION',
+                    };
+                } else if (paymentIntent.status === 'processing') {
+                    // Le paiement est en cours de traitement
+                    return {
+                        success: false,
+                        error: 'Paiement en cours de traitement',
+                        errorCode: 'PROCESSING',
+                    };
+                } else {
+                    lastError = `Statut: ${paymentIntent.status}`;
+                    lastErrorCode = 'INVALID_STATUS';
+                }
+            } else {
+                // Créer un PaymentIntent avec le PaymentMethod
+                const paymentIntent = await stripe.paymentIntents.create({
                     amount: request.amount,
-                    currency: request.currency,
-                },
-                idempotency_key: idempotencyKey,
-                buyer_email_address: request.customerEmail,
-                shipping_address: {
-                    address_line_1: request.shippingAddress.street,
-                    locality: request.shippingAddress.city,
-                    administrative_district_level_1: request.shippingAddress.state,
-                    postal_code: request.shippingAddress.zip,
-                    country: request.shippingAddress.country,
-                },
-            };
+                    currency: request.currency.toLowerCase(),
+                    payment_method: request.sourceId,
+                    confirmation_method: 'manual',
+                    confirm: true,
+                    return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/order-confirmation`,
+                    metadata: {
+                        orderId: request.orderId || '',
+                        customerEmail: request.customerEmail,
+                        customerName: request.customerName,
+                    },
+                    shipping: {
+                        name: request.customerName,
+                        address: {
+                            line1: request.shippingAddress.street,
+                            city: request.shippingAddress.city,
+                            state: request.shippingAddress.state,
+                            postal_code: request.shippingAddress.zip,
+                            country: request.shippingAddress.country,
+                        },
+                    },
+                });
 
-            // Appeler l'API Square
-            const response = await fetch(`${squareApiUrl}/v2/payments`, {
-                method: 'POST',
-                headers: {
-                    'Square-Version': '2023-10-18',
-                    'Authorization': `Bearer ${squareAccessToken}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(paymentRequest),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                const errorMessage = data.errors?.[0]?.detail || 'Erreur de paiement';
-                lastError = errorMessage;
-                lastErrorCode = data.errors?.[0]?.code || 'UNKNOWN_ERROR';
-                
-                // Certaines erreurs ne doivent pas être retentées (ex: carte refusée)
-                const nonRetryableCodes = ['CARD_DECLINED', 'INSUFFICIENT_FUNDS', 'INVALID_EXPIRATION'];
-                if (nonRetryableCodes.includes(lastErrorCode)) {
-                    console.error(`❌ Erreur non-retryable: ${lastErrorCode}`);
-                    break;
+                if (paymentIntent.status === 'succeeded') {
+                    console.log(`✅ [STRIPE] Paiement réussi: ${paymentIntent.id}`);
+                    return {
+                        success: true,
+                        paymentId: paymentIntent.id,
+                        transactionId: paymentIntent.id,
+                    };
+                } else if (paymentIntent.status === 'requires_action') {
+                    return {
+                        success: false,
+                        error: 'Paiement nécessite une authentification supplémentaire',
+                        errorCode: 'REQUIRES_ACTION',
+                    };
+                } else {
+                    lastError = `Statut: ${paymentIntent.status}`;
+                    lastErrorCode = 'INVALID_STATUS';
                 }
-
-                console.error(`❌ Tentative ${attempt} échouée: ${lastError}`);
-                
-                if (attempt < maxRetries) {
-                    // Exponential backoff: 1s, 2s, 4s (max 5s)
-                    const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-                    console.log(`⏳ Attente ${delay}ms avant retry...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                }
-                continue;
             }
 
-            // Vérifier le statut du paiement
-            if (data.payment?.status === 'COMPLETED') {
-                console.log(`✅ Paiement réussi: ${data.payment.id}`);
-                return {
-                    success: true,
-                    paymentId: data.payment.id,
-                    transactionId: data.payment.id,
-                };
-            } else {
-                lastError = `Statut: ${data.payment?.status}`;
-                lastErrorCode = 'INVALID_STATUS';
-                console.warn(`⚠️ Statut de paiement non complété: ${data.payment?.status}`);
+            // Certaines erreurs ne doivent pas être retentées
+            if (lastErrorCode === 'INVALID_STATUS' && lastError.includes('canceled')) {
+                break;
+            }
+
+            if (attempt < maxRetries) {
+                const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+                console.log(`⏳ [STRIPE] Attente ${delay}ms avant retry...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
             }
 
         } catch (error: any) {
             lastError = error.message || 'Erreur lors du traitement du paiement';
-            lastErrorCode = 'PROCESSING_ERROR';
-            console.error(`❌ Tentative ${attempt} erreur:`, lastError);
+            lastErrorCode = error.code || 'PROCESSING_ERROR';
+            console.error(`❌ [STRIPE] Tentative ${attempt} erreur:`, lastError);
+
+            // Erreurs non-retryable
+            const nonRetryableCodes = ['card_declined', 'insufficient_funds', 'expired_card', 'incorrect_cvc'];
+            if (nonRetryableCodes.includes(error.code)) {
+                break;
+            }
 
             if (attempt < maxRetries) {
                 const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
@@ -164,7 +182,7 @@ export async function processPaymentWithRetry(
         }
     }
 
-    console.error(`❌ Échec paiement après ${maxRetries} tentatives`);
+    console.error(`❌ [STRIPE] Échec paiement après ${maxRetries} tentatives`);
     return {
         success: false,
         error: lastError || 'Échec paiement après retries',
@@ -173,15 +191,14 @@ export async function processPaymentWithRetry(
 }
 
 /**
- * Traite un paiement via Square (wrapper avec retry par défaut)
+ * Traite un paiement via Stripe (wrapper avec retry par défaut)
  */
 export async function processPayment(request: PaymentRequest): Promise<PaymentResult> {
     return processPaymentWithRetry(request, 3);
 }
 
 /**
- * Rembourse un paiement
- * ✅ CORRECTION 4: Amélioration du remboursement avec gestion d'erreurs et idempotency
+ * Rembourse un paiement via Stripe
  */
 export async function refundPayment(
     paymentId: string,
@@ -195,13 +212,12 @@ export async function refundPayment(
     reason?: string
 ): Promise<RefundResult> {
     try {
-        const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN;
-        const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-        if (!squareAccessToken) {
+        if (!stripeSecretKey) {
             return {
                 success: false,
-                error: 'Configuration Square manquante',
+                error: 'Configuration Stripe manquante (STRIPE_SECRET_KEY)',
             };
         }
 
@@ -220,79 +236,30 @@ export async function refundPayment(
             refundReason = paymentIdOrRequest.reason;
         }
 
-        console.log('💰 Remboursement:', paymentId, refundAmount ? `(${refundAmount})` : '(total)');
+        console.log('💰 [STRIPE] Remboursement:', paymentId, refundAmount ? `(${refundAmount} centimes)` : '(total)');
 
-        const squareApiUrl = squareEnvironment === 'production'
-            ? 'https://connect.squareup.com'
-            : 'https://connect.squareupsandbox.com';
-
-        // Récupérer le paiement pour obtenir le montant et la devise si montant partiel
-        let currency = 'CAD';
-        let totalAmount: number | undefined;
-
-        try {
-            const paymentResponse = await fetch(`${squareApiUrl}/v2/payments/${paymentId}`, {
-                method: 'GET',
-                headers: {
-                    'Square-Version': '2023-10-18',
-                    'Authorization': `Bearer ${squareAccessToken}`,
-                },
-            });
-
-            if (paymentResponse.ok) {
-                const paymentData = await paymentResponse.json();
-                currency = paymentData.payment?.amount_money?.currency || 'CAD';
-                totalAmount = Number(paymentData.payment?.amount_money?.amount || 0);
-            }
-        } catch (error) {
-            console.warn('⚠️ Impossible de récupérer les détails du paiement:', error);
-        }
-
-        // Créer la requête de remboursement avec idempotency key unique
-        const idempotencyKey = `refund-${paymentId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Récupérer le PaymentIntent pour obtenir le montant
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentId);
         
-        const refundRequest: any = {
-            idempotency_key: idempotencyKey,
-            payment_id: paymentId,
-            reason: refundReason || 'Échec commande - remboursement auto',
+        const refundParams: Stripe.RefundCreateParams = {
+            payment_intent: paymentId,
+            reason: refundReason ? (refundReason as Stripe.RefundCreateParams.Reason) : undefined,
         };
 
-        // Si montant spécifié, remboursement partiel, sinon remboursement total
+        // Si montant spécifié, remboursement partiel
         if (refundAmount !== undefined) {
-            refundRequest.amount_money = {
-                amount: refundAmount, // En centimes
-                currency: currency,
-            };
+            refundParams.amount = refundAmount;
         }
 
-        const response = await fetch(`${squareApiUrl}/v2/refunds`, {
-            method: 'POST',
-            headers: {
-                'Square-Version': '2023-10-18',
-                'Authorization': `Bearer ${squareAccessToken}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(refundRequest),
-        });
+        const refund = await stripe.refunds.create(refundParams);
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            const errorMessage = data.errors?.[0]?.detail || 'Erreur de remboursement';
-            console.error('❌ Erreur remboursement:', errorMessage);
-            return {
-                success: false,
-                error: errorMessage,
-            };
-        }
-
-        console.log('✅ Remboursement créé:', data.refund?.id);
+        console.log('✅ [STRIPE] Remboursement créé:', refund.id);
         return {
             success: true,
-            refundId: data.refund?.id,
+            refundId: refund.id,
         };
     } catch (error: any) {
-        console.error('❌ Erreur remboursement:', error);
+        console.error('❌ [STRIPE] Erreur remboursement:', error);
         return {
             success: false,
             error: error.message || 'Erreur lors du remboursement',
@@ -301,7 +268,7 @@ export async function refundPayment(
 }
 
 /**
- * Vérifie le statut d'un paiement
+ * Vérifie le statut d'un paiement Stripe
  */
 export async function getPaymentStatus(paymentId: string): Promise<{
     status: string;
@@ -309,38 +276,21 @@ export async function getPaymentStatus(paymentId: string): Promise<{
     currency: string;
 } | null> {
     try {
-        const squareAccessToken = process.env.SQUARE_ACCESS_TOKEN;
-        const squareEnvironment = process.env.SQUARE_ENVIRONMENT || 'sandbox';
+        const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-        if (!squareAccessToken) {
+        if (!stripeSecretKey) {
             return null;
         }
 
-        const squareApiUrl = squareEnvironment === 'production'
-            ? 'https://connect.squareup.com'
-            : 'https://connect.squareupsandbox.com';
-
-        const response = await fetch(`${squareApiUrl}/v2/payments/${paymentId}`, {
-            method: 'GET',
-            headers: {
-                'Square-Version': '2023-10-18',
-                'Authorization': `Bearer ${squareAccessToken}`,
-            },
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data.payment) {
-            return null;
-        }
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentId);
 
         return {
-            status: data.payment.status,
-            amount: data.payment.amount_money.amount,
-            currency: data.payment.amount_money.currency,
+            status: paymentIntent.status,
+            amount: paymentIntent.amount,
+            currency: paymentIntent.currency.toUpperCase(),
         };
     } catch (error) {
-        console.error('Error getting payment status:', error);
+        console.error('❌ [STRIPE] Error getting payment status:', error);
         return null;
     }
 }

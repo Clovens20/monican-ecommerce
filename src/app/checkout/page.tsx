@@ -5,7 +5,7 @@ import { useCart } from '@/lib/cart';
 import { useCountry, CountryCode } from '@/lib/country';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShippingOption } from '@/lib/shipping-calculator';
-import SquarePaymentForm from '@/components/payment/SquarePaymentForm';
+import StripePaymentForm from '@/components/payment/StripePaymentForm';
 import styles from './page.module.css';
 
 interface ShippingAddress {
@@ -141,7 +141,7 @@ export default function CheckoutPage() {
     };
 
     const handlePaymentError = (error: string) => {
-        console.error('Square Payment Error:', error);
+        console.error('Payment Error:', error);
         setPaymentError(error);
         setLoading(false);
     };
@@ -226,16 +226,23 @@ export default function CheckoutPage() {
             window.location.href = `/order-confirmation?orderId=${data.order?.id || data.order?.orderNumber}`;
         } catch (error: any) {
             console.error('Erreur checkout:', error);
-            setPaymentError(error.message || 'Erreur lors du traitement de la commande');
+            const errorMessage = error.message || 'Erreur lors du traitement de la commande';
+            setPaymentError(errorMessage);
             setLoading(false);
+            
+            // Rediriger vers la page d'échec si c'est une erreur de paiement
+            if (errorMessage.includes('paiement') || errorMessage.includes('payment') || errorMessage.includes('carte')) {
+                const errorCode = error.errorCode || 'processing_error';
+                window.location.href = `/payment-failed?error=${encodeURIComponent(errorCode)}`;
+            }
         }
     };
 
     const handlePaymentSubmit = () => {
         if (!paymentToken) {
-            // Si pas de token, déclencher la tokenisation
-            if (typeof window !== 'undefined' && (window as any).__squarePaymentFormSubmit) {
-                (window as any).__squarePaymentFormSubmit();
+            // Si pas de token, déclencher la soumission du formulaire Stripe
+            if (typeof window !== 'undefined' && (window as any).__stripePaymentFormSubmit) {
+                (window as any).__stripePaymentFormSubmit();
             } else {
                 setPaymentError('Le formulaire de paiement n\'est pas encore prêt. Veuillez patienter.');
             }
@@ -522,10 +529,10 @@ export default function CheckoutPage() {
                                     Informations de paiement
                                 </h3>
                                 <p style={{ fontSize: '0.9rem', color: '#6b7280', marginBottom: '1rem' }}>
-                                    Entrez les informations de votre carte de crédit. Le paiement est sécurisé par Square.
+                                    Entrez les informations de votre carte de crédit. Le paiement est sécurisé par Stripe.
                                 </p>
                                 
-                                <SquarePaymentForm
+                                <StripePaymentForm
                                     onTokenReceived={handlePaymentTokenReceived}
                                     onError={handlePaymentError}
                                     amount={Math.round(totalUSD * 100)}

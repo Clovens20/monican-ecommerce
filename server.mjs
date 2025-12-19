@@ -29,13 +29,6 @@ const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
   }
 });
 
-/**
- * NOTE: La route OAuth Square a été supprimée.
- * Square est maintenant configuré directement via les variables d'environnement:
- * - SQUARE_ACCESS_TOKEN
- * - SQUARE_LOCATION_ID
- * - SQUARE_ENVIRONMENT
- */
 
 // Route de santé pour vérifier que le serveur fonctionne
 app.get("/health", (req, res) => {
@@ -74,7 +67,5 @@ app.listen(PORT, HOST, () => {
   console.log(`   GET  /health - Vérification de santé`);
   console.log(`\n✅ Variables d'environnement:`);
   console.log(`   SUPABASE_URL: ${supabaseUrl ? '✓' : '✗'}`);
-  console.log(`   SQUARE_ACCESS_TOKEN: ${process.env.SQUARE_ACCESS_TOKEN ? '✓' : '✗'}`);
-  console.log(`   SQUARE_LOCATION_ID: ${process.env.SQUARE_LOCATION_ID ? '✓' : '✗'}`);
 });
 
