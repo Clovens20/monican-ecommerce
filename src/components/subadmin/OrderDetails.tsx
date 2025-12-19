@@ -88,16 +88,25 @@ export default function OrderDetails({ order, subAdminCode = '', onClose, onStat
                 const shippingLabel = container.querySelector('[class*="shippingLabel"]');
                 if (shippingLabel) {
                     const clone = shippingLabel.cloneNode(true) as HTMLElement;
-                    // Forcer la visibilité sur le clone
-                    clone.style.visibility = 'visible';
-                    clone.style.display = 'flex';
-                    clone.style.flexDirection = 'column';
-                    clone.style.width = '4in';
-                    clone.style.height = '6in';
-                    clone.style.background = 'white';
-                    clone.style.border = '2px solid #000';
-                    clone.style.padding = '0.2in';
-                    clone.style.boxSizing = 'border-box';
+                    // Forcer la visibilité et la taille EXACTE sur le clone
+                    clone.style.cssText = `
+                        visibility: visible !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        width: 4in !important;
+                        height: 6in !important;
+                        max-width: 4in !important;
+                        max-height: 6in !important;
+                        min-width: 4in !important;
+                        min-height: 6in !important;
+                        background: white !important;
+                        border: 2px solid #000 !important;
+                        padding: 0.15in !important;
+                        box-sizing: border-box !important;
+                        overflow: hidden !important;
+                        gap: 0.08in !important;
+                        position: relative !important;
+                    `;
                     
                     // Forcer la visibilité de tous les enfants
                     const allElements = clone.querySelectorAll('*');
@@ -154,14 +163,32 @@ export default function OrderDetails({ order, subAdminCode = '', onClose, onStat
                                 size: 4in 6in;
                                 margin: 0;
                             }
-                            body {
+                            * {
                                 margin: 0;
                                 padding: 0;
+                                box-sizing: border-box;
+                            }
+                            html, body {
+                                width: 4in;
+                                height: 6in;
+                                margin: 0;
+                                padding: 0;
+                                overflow: hidden;
+                            }
+                            body {
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                min-height: 100vh;
                                 background: white;
+                            }
+                            .shippingLabel {
+                                width: 4in !important;
+                                height: 6in !important;
+                                max-width: 4in !important;
+                                max-height: 6in !important;
+                                padding: 0.15in !important;
+                                overflow: hidden !important;
+                                gap: 0.08in !important;
                             }
                             * {
                                 visibility: visible !important;
