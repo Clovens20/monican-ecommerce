@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import { Order } from '@/lib/types';
-import styles from './ShippingLabel.module.css';
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 
@@ -79,89 +78,231 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
     };
 
     return (
-        <div className={styles.shippingLabel}>
+        <div style={{
+            width: '4in',
+            height: '6in',
+            background: '#fff',
+            border: '2px solid #000',
+            padding: '0.12in',
+            boxSizing: 'border-box',
+            fontFamily: 'Arial, sans-serif',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0,
+            overflow: 'hidden'
+        }}>
             {/* Header avec logo et badge */}
-            <div className={styles.labelHeader}>
-                <div className={styles.brandSection}>
-                    <div className={styles.logoContainer}>
-                        <div className={styles.logoWrapper}>
+            <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                borderBottom: '2px solid #000',
+                paddingBottom: '0.08in',
+                marginBottom: '0.08in'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: '0.1in'
+                }}>
+                    <div style={{
+                        width: '0.45in',
+                        height: '0.45in',
+                        border: '2px solid #000',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#000',
+                        flexShrink: 0
+                    }}>
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%'
+                        }}>
                             <Image
                                 src="/logo.png"
                                 alt="MONICAN Logo"
-                                width={60}
-                                height={60}
-                                className={styles.logoImage}
+                                width={40}
+                                height={40}
+                                style={{
+                                    width: '80%',
+                                    height: '80%',
+                                    objectFit: 'contain',
+                                    filter: 'invert(1)'
+                                }}
                                 priority
                             />
                         </div>
                     </div>
-                    <div className={styles.companyInfo}>
-                        <div className={styles.companyName}>MONICAN</div>
-                        <div className={styles.tagline}>E-COMMERCE EXCELLENCE</div>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.02in'
+                    }}>
+                        <div style={{
+                            fontSize: '0.2in',
+                            fontWeight: 900,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.02em',
+                            lineHeight: 1.2
+                        }}>MONICAN</div>
+                        <div style={{
+                            fontSize: '0.07in',
+                            fontWeight: 400,
+                            textTransform: 'uppercase'
+                        }}>E-COMMERCE EXCELLENCE</div>
                     </div>
                 </div>
-                <div className={styles.priorityBadge}>
-                    <div className={styles.badgeText}>STANDARD</div>
-                </div>
+                <div style={{
+                    border: '2px solid #000',
+                    padding: '0.05in 0.1in',
+                    fontWeight: 900,
+                    fontSize: '0.1in',
+                    textTransform: 'uppercase',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                }}>STANDARD</div>
             </div>
 
             {/* Barre de commande et date */}
-            <div className={styles.orderBar}>
-                <div className={styles.orderDetail}>
-                    <span className={styles.orderLabel}>COMMANDE</span>
-                    <span className={styles.orderValue}>#{order.orderNumber || order.id}</span>
+            <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                borderBottom: '2px solid #000',
+                padding: '0.06in 0',
+                marginBottom: '0.08in',
+                fontSize: '0.09in'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '0.02in'
+                }}>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>COMMANDE</span>
+                    <span style={{ fontWeight: 400, fontFamily: 'monospace' }}>#{order.orderNumber || order.id}</span>
                 </div>
-                <div className={styles.orderDetail}>
-                    <span className={styles.orderLabel}>DATE</span>
-                    <span className={styles.orderValue}>{formatDate(order.date)}</span>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-end',
+                    gap: '0.02in'
+                }}>
+                    <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>DATE</span>
+                    <span style={{ fontWeight: 400, fontFamily: 'monospace' }}>{formatDate(order.date)}</span>
                 </div>
             </div>
 
             {/* Section destinataire */}
-            <div className={styles.recipientSection}>
-                <div className={styles.sectionHeader}>
-                    <span className={styles.headerIcon}>📦</span>
-                    <span className={styles.headerTitle}>DESTINATAIRE</span>
+            <div style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.06in'
+            }}>
+                <div style={{
+                    fontWeight: 900,
+                    fontSize: '0.11in',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.02em',
+                    marginBottom: '0.06in',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.05in'
+                }}>
+                    <span style={{ fontSize: '0.12in' }}>📦</span>
+                    <span>DESTINATAIRE</span>
                 </div>
                 
-                <div className={styles.recipientBox}>
-                    {/* Nom du client en haut */}
-                    <div className={styles.recipientName}>
+                <div style={{
+                    border: '2px solid #000',
+                    padding: '0.12in',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.08in'
+                }}>
+                    {/* Nom du client */}
+                    <div style={{
+                        fontSize: '0.18in',
+                        fontWeight: 900,
+                        textTransform: 'uppercase',
+                        lineHeight: 1.2,
+                        marginBottom: '0.06in'
+                    }}>
                         {order.customerName || 'N/A'}
                     </div>
                     
                     {/* Adresse et QR Code côte à côte */}
-                    <div className={styles.addressAndQrRow}>
+                    <div style={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: '0.12in',
+                        width: '100%'
+                    }}>
                         {/* Informations adresse - GAUCHE */}
-                        <div className={styles.recipientInfo}>
+                        <div style={{
+                            flex: 1,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.04in',
+                            minWidth: 0
+                        }}>
                             {order.shippingAddress ? (
-                                <div className={styles.addressLines}>
-                                    <div className={styles.addressLine}>
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.04in'
+                                }}>
+                                    <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
                                         {order.shippingAddress.street || ''}
                                     </div>
-                                    <div className={styles.addressLine}>
+                                    <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
                                         {order.shippingAddress.city || ''}, {order.shippingAddress.state || ''}
                                     </div>
-                                    <div className={styles.addressLine}>
+                                    <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
                                         {order.shippingAddress.zip || ''}
                                     </div>
                                 </div>
                             ) : (
-                                <div className={styles.addressLines}>
-                                    <div className={styles.addressLine} style={{ color: '#ef4444' }}>
-                                        Adresse non disponible
-                                    </div>
+                                <div style={{ fontSize: '0.1in', color: '#ef4444' }}>
+                                    Adresse non disponible
                                 </div>
                             )}
                         </div>
                         
                         {/* QR Code - DROITE */}
                         {qrCodeUrl && (
-                            <div className={styles.qrCodeContainer}>
+                            <div style={{
+                                flexShrink: 0,
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                justifyContent: 'flex-end'
+                            }}>
                                 <img 
                                     src={qrCodeUrl} 
-                                    alt="QR Code Shipping" 
-                                    className={styles.qrCodeImage}
+                                    alt="QR Code Shipping"
+                                    style={{
+                                        width: '0.8in',
+                                        height: '0.8in',
+                                        border: '1px solid #000',
+                                        padding: '0.02in',
+                                        background: '#fff',
+                                        objectFit: 'contain',
+                                        display: 'block'
+                                    }}
                                 />
                             </div>
                         )}
@@ -170,18 +311,33 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                     {/* Ligne de séparation */}
                     {order.shippingAddress && (
                         <>
-                            <div className={styles.separatorLine}></div>
+                            <div style={{
+                                borderTop: '1px solid #000',
+                                width: '100%',
+                                margin: '0.06in 0'
+                            }}></div>
                             
                             {/* Pays */}
-                            <div className={styles.countryLine}>
+                            <div style={{
+                                fontSize: '0.12in',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                marginTop: 0
+                            }}>
                                 {getCountryName(order.shippingAddress.country || 'US')}
                             </div>
                             
                             {/* Téléphone */}
                             {order.customerPhone && (
-                                <div className={styles.contactLine}>
-                                    <span className={styles.phoneIcon}>📞</span>
-                                    <span className={styles.phoneNumber}>{order.customerPhone}</span>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.06in',
+                                    marginTop: '0.04in',
+                                    fontSize: '0.1in'
+                                }}>
+                                    <span style={{ fontSize: '0.12in' }}>📞</span>
+                                    <span>{order.customerPhone}</span>
                                 </div>
                             )}
                         </>
@@ -190,15 +346,35 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             </div>
 
             {/* Section expéditeur */}
-            <div className={styles.senderSection}>
-                <div className={styles.senderHeader}>EXPÉDITEUR</div>
-                <div className={styles.senderBox}>
-                    <div className={styles.senderName}>MONICAN</div>
-                    <div className={styles.senderContact}>support@monican.shop</div>
-                    <div className={styles.senderContact}>www.monican.shop</div>
-                    <div className={styles.senderContact}>+1717-880-1479</div>
+            <div style={{
+                border: '1px solid #000',
+                padding: '0.08in',
+                marginTop: '0.08in'
+            }}>
+                <div style={{
+                    fontSize: '0.1in',
+                    fontWeight: 900,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.02em',
+                    marginBottom: '0.06in'
+                }}>EXPÉDITEUR</div>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.04in',
+                    alignItems: 'flex-start'
+                }}>
+                    <div style={{ fontSize: '0.11in', fontWeight: 700, textTransform: 'uppercase' }}>MONICAN</div>
+                    <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>support@monican.shop</div>
+                    <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>www.monican.shop</div>
+                    <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>+1717-880-1479</div>
                 </div>
-                <div className={styles.senderSignatureBox}></div>
+                <div style={{
+                    border: '1px solid #000',
+                    minHeight: '0.4in',
+                    marginTop: '0.08in',
+                    width: '100%'
+                }}></div>
             </div>
         </div>
     );
