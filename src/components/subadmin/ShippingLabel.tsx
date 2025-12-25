@@ -1,381 +1,474 @@
 'use client';
 
 import Image from 'next/image';
-import { Order } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
+import JsBarcode from 'jsbarcode';
+
+interface Order {
+  id: string;
+  orderNumber?: string;
+  customerName: string;
+  customerPhone?: string;
+  date: string;
+  trackingNumber?: string;
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+    country: string;
+  };
+}
 
 interface ShippingLabelProps {
-    order: Order;
+  order: Order;
 }
 
 export default function ShippingLabel({ order }: ShippingLabelProps) {
-    const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [barcodeUrl, setBarcodeUrl] = useState<string>('');
 
-    useEffect(() => {
-        const generateQRCode = async () => {
-            const orderNumber = order.orderNumber || order.id;
-            
-            const shippingData = {
-                orderNumber: orderNumber,
-                orderId: order.id,
-                customerName: order.customerName,
-                address: {
-                    street: order.shippingAddress.street,
-                    city: order.shippingAddress.city,
-                    state: order.shippingAddress.state,
-                    zip: order.shippingAddress.zip,
-                    country: order.shippingAddress.country
-                },
-                phone: order.customerPhone || '',
-                tracking: order.trackingNumber || '',
-                date: order.date,
-                type: 'shipping_label',
-                version: '1.0'
-            };
+  useEffect(() => {
+    // Générer le QR Code
+    const generateQRCode = async () => {
+      const orderNumber = order.orderNumber || order.id;
+      
+      const shippingData = {
+        orderNumber: orderNumber,
+        orderId: order.id,
+        customerName: order.customerName,
+        address: {
+          street: order.shippingAddress.street,
+          city: order.shippingAddress.city,
+          state: order.shippingAddress.state,
+          zip: order.shippingAddress.zip,
+          country: order.shippingAddress.country
+        },
+        phone: order.customerPhone || '',
+        tracking: order.trackingNumber || '',
+        date: order.date,
+        type: 'shipping_label',
+        version: '1.0'
+      };
 
-            const qrData = JSON.stringify(shippingData, null, 0);
-            
-            try {
-                const dataUrl = await QRCode.toDataURL(qrData, {
-                    width: 200,
-                    margin: 1,
-                    color: {
-                        dark: '#000000',
-                        light: '#FFFFFF'
-                    },
-                    errorCorrectionLevel: 'M'
-                });
-                setQrCodeUrl(dataUrl);
-            } catch (error) {
-                console.error('Error generating QR code:', error);
-            }
-        };
-
-        generateQRCode();
-    }, [order]);
-
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const day = date.getDate();
-        const month = date.toLocaleDateString('fr-FR', { month: 'long' });
-        const year = date.getFullYear();
-        return `${day} ${month} ${year}`;
+      const qrData = JSON.stringify(shippingData, null, 0);
+      
+      try {
+        const dataUrl = await QRCode.toDataURL(qrData, {
+          width: 200,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          },
+          errorCorrectionLevel: 'M'
+        });
+        setQrCodeUrl(dataUrl);
+      } catch (error) {
+        console.error('Error generating QR code:', error);
+      }
     };
 
-    const getCountryName = (country: string) => {
-        const countries: { [key: string]: string } = {
-            'US': 'ÉTATS-UNIS',
-            'CA': 'CANADA',
-            'MX': 'MEXIQUE',
-            'FR': 'FRANCE',
-            'UK': 'ROYAUME-UNI',
-            'DE': 'ALLEMAGNE',
-            'ES': 'ESPAGNE',
-            'IT': 'ITALIE'
-        };
-        return countries[country] || country.toUpperCase();
+    // Générer le Code-barres
+    const generateBarcode = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const orderNumber = order.orderNumber || order.id;
+        
+        // Utiliser le numéro de commande ou tracking pour le barcode
+        const barcodeValue = order.trackingNumber || orderNumber.replace(/[^0-9]/g, '').padStart(12, '0').slice(0, 12);
+        
+        JsBarcode(canvas, barcodeValue, {
+          format: 'CODE128',
+          width: 2,
+          height: 60,
+          displayValue: true,
+          fontSize: 12,
+          margin: 5,
+          background: '#ffffff',
+          lineColor: '#000000'
+        });
+        
+        setBarcodeUrl(canvas.toDataURL('image/png'));
+      } catch (error) {
+        console.error('Error generating barcode:', error);
+      }
     };
 
-    return (
+    generateQRCode();
+    generateBarcode();
+  }, [order]);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.toLocaleDateString('fr-FR', { month: 'long' });
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
+
+  const getCountryName = (country: string) => {
+    const countries: { [key: string]: string } = {
+      'US': 'ÉTATS-UNIS',
+      'CA': 'CANADA',
+      'MX': 'MEXIQUE',
+      'FR': 'FRANCE',
+      'UK': 'ROYAUME-UNI',
+      'DE': 'ALLEMAGNE',
+      'ES': 'ESPAGNE',
+      'IT': 'ITALIE'
+    };
+    return countries[country] || country.toUpperCase();
+  };
+
+  return (
+    <div style={{
+      width: '4in',
+      height: '6in',
+      background: '#fff',
+      border: '2px solid #000',
+      padding: '0.12in',
+      boxSizing: 'border-box',
+      fontFamily: 'Arial, sans-serif',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 0,
+      overflow: 'hidden'
+    }}>
+      {/* Header avec logo et badge */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        borderBottom: '2px solid #000',
+        paddingBottom: '0.08in',
+        marginBottom: '0.08in'
+      }}>
         <div style={{
-            width: '4in',
-            height: '6in',
-            background: '#fff',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: '0.1in'
+        }}>
+          <div style={{
+            width: '0.45in',
+            height: '0.45in',
             border: '2px solid #000',
-            padding: '0.12in',
-            boxSizing: 'border-box',
-            fontFamily: 'Arial, sans-serif',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#000',
+            flexShrink: 0
+          }}>
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: '50%'
+            }}>
+              <Image
+                src="/logo.png"
+                alt="MONICAN Logo"
+                width={40}
+                height={40}
+                style={{
+                  width: '80%',
+                  height: '80%',
+                  objectFit: 'contain',
+                  filter: 'invert(1)'
+                }}
+                priority
+              />
+            </div>
+          </div>
+          <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 0,
-            overflow: 'hidden'
-        }}>
-            {/* Header avec logo et badge */}
+            gap: '0.02in'
+          }}>
             <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                borderBottom: '2px solid #000',
-                paddingBottom: '0.08in',
-                marginBottom: '0.08in'
-            }}>
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: '0.1in'
-                }}>
-                    <div style={{
-                        width: '0.45in',
-                        height: '0.45in',
-                        border: '2px solid #000',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#000',
-                        flexShrink: 0
-                    }}>
-                        <div style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '50%'
-                        }}>
-                            <Image
-                                src="/logo.png"
-                                alt="MONICAN Logo"
-                                width={40}
-                                height={40}
-                                style={{
-                                    width: '80%',
-                                    height: '80%',
-                                    objectFit: 'contain',
-                                    filter: 'invert(1)'
-                                }}
-                                priority
-                            />
-                        </div>
-                    </div>
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.02in'
-                    }}>
-                        <div style={{
-                            fontSize: '0.2in',
-                            fontWeight: 900,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.02em',
-                            lineHeight: 1.2
-                        }}>MONICAN</div>
-                        <div style={{
-                            fontSize: '0.07in',
-                            fontWeight: 400,
-                            textTransform: 'uppercase'
-                        }}>E-COMMERCE EXCELLENCE</div>
-                    </div>
-                </div>
-                <div style={{
-                    border: '2px solid #000',
-                    padding: '0.05in 0.1in',
-                    fontWeight: 900,
-                    fontSize: '0.1in',
-                    textTransform: 'uppercase',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0
-                }}>STANDARD</div>
-            </div>
-
-            {/* Barre de commande et date */}
+              fontSize: '0.2in',
+              fontWeight: 900,
+              textTransform: 'uppercase',
+              letterSpacing: '0.02em',
+              lineHeight: 1.2
+            }}>MONICAN</div>
             <div style={{
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                borderBottom: '2px solid #000',
-                padding: '0.06in 0',
-                marginBottom: '0.08in',
-                fontSize: '0.09in'
-            }}>
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    gap: '0.02in'
-                }}>
-                    <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>COMMANDE</span>
-                    <span style={{ fontWeight: 400, fontFamily: 'monospace' }}>#{order.orderNumber || order.id}</span>
-                </div>
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-end',
-                    gap: '0.02in'
-                }}>
-                    <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>DATE</span>
-                    <span style={{ fontWeight: 400, fontFamily: 'monospace' }}>{formatDate(order.date)}</span>
-                </div>
-            </div>
-
-            {/* Section destinataire */}
-            <div style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.06in'
-            }}>
-                <div style={{
-                    fontWeight: 900,
-                    fontSize: '0.11in',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.02em',
-                    marginBottom: '0.06in',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.05in'
-                }}>
-                    <span style={{ fontSize: '0.12in' }}>📦</span>
-                    <span>DESTINATAIRE</span>
-                </div>
-                
-                <div style={{
-                    border: '2px solid #000',
-                    padding: '0.12in',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.08in'
-                }}>
-                    {/* Nom du client */}
-                    <div style={{
-                        fontSize: '0.18in',
-                        fontWeight: 900,
-                        textTransform: 'uppercase',
-                        lineHeight: 1.2,
-                        marginBottom: '0.06in'
-                    }}>
-                        {order.customerName || 'N/A'}
-                    </div>
-                    
-                    {/* Adresse et QR Code côte à côte */}
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        gap: '0.12in',
-                        width: '100%'
-                    }}>
-                        {/* Informations adresse - GAUCHE */}
-                        <div style={{
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.04in',
-                            minWidth: 0
-                        }}>
-                            {order.shippingAddress ? (
-                                <div style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '0.04in'
-                                }}>
-                                    <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
-                                        {order.shippingAddress.street || ''}
-                                    </div>
-                                    <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
-                                        {order.shippingAddress.city || ''}, {order.shippingAddress.state || ''}
-                                    </div>
-                                    <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
-                                        {order.shippingAddress.zip || ''}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div style={{ fontSize: '0.1in', color: '#ef4444' }}>
-                                    Adresse non disponible
-                                </div>
-                            )}
-                        </div>
-                        
-                        {/* QR Code - DROITE */}
-                        {qrCodeUrl && (
-                            <div style={{
-                                flexShrink: 0,
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                justifyContent: 'flex-end'
-                            }}>
-                                <img 
-                                    src={qrCodeUrl} 
-                                    alt="QR Code Shipping"
-                                    style={{
-                                        width: '0.8in',
-                                        height: '0.8in',
-                                        border: '1px solid #000',
-                                        padding: '0.02in',
-                                        background: '#fff',
-                                        objectFit: 'contain',
-                                        display: 'block'
-                                    }}
-                                />
-                            </div>
-                        )}
-                    </div>
-                    
-                    {/* Ligne de séparation */}
-                    {order.shippingAddress && (
-                        <>
-                            <div style={{
-                                borderTop: '1px solid #000',
-                                width: '100%',
-                                margin: '0.06in 0'
-                            }}></div>
-                            
-                            {/* Pays */}
-                            <div style={{
-                                fontSize: '0.12in',
-                                fontWeight: 700,
-                                textTransform: 'uppercase',
-                                marginTop: 0
-                            }}>
-                                {getCountryName(order.shippingAddress.country || 'US')}
-                            </div>
-                            
-                            {/* Téléphone */}
-                            {order.customerPhone && (
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.06in',
-                                    marginTop: '0.04in',
-                                    fontSize: '0.1in'
-                                }}>
-                                    <span style={{ fontSize: '0.12in' }}>📞</span>
-                                    <span>{order.customerPhone}</span>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-            </div>
-
-            {/* Section expéditeur */}
-            <div style={{
-                border: '1px solid #000',
-                padding: '0.08in',
-                marginTop: '0.08in'
-            }}>
-                <div style={{
-                    fontSize: '0.1in',
-                    fontWeight: 900,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.02em',
-                    marginBottom: '0.06in'
-                }}>EXPÉDITEUR</div>
-                <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.04in',
-                    alignItems: 'flex-start'
-                }}>
-                    <div style={{ fontSize: '0.11in', fontWeight: 700, textTransform: 'uppercase' }}>MONICAN</div>
-                    <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>support@monican.shop</div>
-                    <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>www.monican.shop</div>
-                    <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>+1717-880-1479</div>
-                </div>
-                <div style={{
-                    border: '1px solid #000',
-                    minHeight: '0.4in',
-                    marginTop: '0.08in',
-                    width: '100%'
-                }}></div>
-            </div>
+              fontSize: '0.07in',
+              fontWeight: 400,
+              textTransform: 'uppercase'
+            }}>E-COMMERCE EXCELLENCE</div>
+          </div>
         </div>
-    );
+        <div style={{
+          border: '2px solid #000',
+          padding: '0.05in 0.1in',
+          fontWeight: 900,
+          fontSize: '0.1in',
+          textTransform: 'uppercase',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0
+        }}>STANDARD</div>
+      </div>
+
+      {/* Barre de commande et date */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: '2px solid #000',
+        padding: '0.06in 0',
+        marginBottom: '0.08in',
+        fontSize: '0.09in'
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          gap: '0.02in'
+        }}>
+          <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>COMMANDE</span>
+          <span style={{ fontWeight: 400, fontFamily: 'monospace' }}>#{order.orderNumber || order.id}</span>
+        </div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: '0.02in'
+        }}>
+          <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>DATE</span>
+          <span style={{ fontWeight: 400, fontFamily: 'monospace' }}>{formatDate(order.date)}</span>
+        </div>
+      </div>
+
+      {/* Section destinataire */}
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.06in'
+      }}>
+        <div style={{
+          fontWeight: 900,
+          fontSize: '0.11in',
+          textTransform: 'uppercase',
+          letterSpacing: '0.02em',
+          marginBottom: '0.06in',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.05in'
+        }}>
+          <span style={{ fontSize: '0.12in' }}>📦</span>
+          <span>DESTINATAIRE</span>
+        </div>
+        
+        <div style={{
+          border: '2px solid #000',
+          padding: '0.12in',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.08in'
+        }}>
+          {/* Nom du client */}
+          <div style={{
+            fontSize: '0.18in',
+            fontWeight: 900,
+            textTransform: 'uppercase',
+            lineHeight: 1.2,
+            marginBottom: '0.06in'
+          }}>
+            {order.customerName || 'N/A'}
+          </div>
+          
+          {/* Adresse et QR Code côte à côte */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '0.12in',
+            width: '100%'
+          }}>
+            {/* Informations adresse - GAUCHE */}
+            <div style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.04in',
+              minWidth: 0
+            }}>
+              {order.shippingAddress ? (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.04in'
+                }}>
+                  <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
+                    {order.shippingAddress.street || ''}
+                  </div>
+                  <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
+                    {order.shippingAddress.city || ''}, {order.shippingAddress.state || ''}
+                  </div>
+                  <div style={{ fontSize: '0.1in', lineHeight: 1.4 }}>
+                    {order.shippingAddress.zip || ''}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.1in', color: '#ef4444' }}>
+                  Adresse non disponible
+                </div>
+              )}
+            </div>
+            
+            {/* QR Code - DROITE */}
+            {qrCodeUrl && (
+              <div style={{
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'flex-end'
+              }}>
+                <img 
+                  src={qrCodeUrl} 
+                  alt="QR Code Shipping"
+                  style={{
+                    width: '0.8in',
+                    height: '0.8in',
+                    border: '1px solid #000',
+                    padding: '0.02in',
+                    background: '#fff',
+                    objectFit: 'contain',
+                    display: 'block'
+                  }}
+                />
+              </div>
+            )}
+          </div>
+          
+          {/* Ligne de séparation */}
+          {order.shippingAddress && (
+            <>
+              <div style={{
+                borderTop: '1px solid #000',
+                width: '100%',
+                margin: '0.06in 0'
+              }}></div>
+              
+              {/* Pays */}
+              <div style={{
+                fontSize: '0.12in',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                marginTop: 0
+              }}>
+                {getCountryName(order.shippingAddress.country || 'US')}
+              </div>
+              
+              {/* Téléphone */}
+              {order.customerPhone && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.06in',
+                  marginTop: '0.04in',
+                  fontSize: '0.1in'
+                }}>
+                  <span style={{ fontSize: '0.12in' }}>📞</span>
+                  <span>{order.customerPhone}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Code-barres - NOUVEAU */}
+      {barcodeUrl && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginTop: '0.08in',
+          padding: '0.06in',
+          background: '#fff',
+          border: '1px solid #000'
+        }}>
+          <img 
+            src={barcodeUrl} 
+            alt="Barcode"
+            style={{
+              maxWidth: '100%',
+              height: 'auto',
+              display: 'block'
+            }}
+          />
+        </div>
+      )}
+
+      {/* Section expéditeur */}
+      <div style={{
+        border: '1px solid #000',
+        padding: '0.08in',
+        marginTop: '0.08in'
+      }}>
+        <div style={{
+          fontSize: '0.1in',
+          fontWeight: 900,
+          textTransform: 'uppercase',
+          letterSpacing: '0.02em',
+          marginBottom: '0.06in'
+        }}>EXPÉDITEUR</div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.04in',
+          alignItems: 'flex-start'
+        }}>
+          <div style={{ fontSize: '0.11in', fontWeight: 700, textTransform: 'uppercase' }}>MONICAN</div>
+          <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>support@monican.shop</div>
+          <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>www.monican.shop</div>
+          <div style={{ fontSize: '0.09in', lineHeight: 1.4 }}>+1717-880-1479</div>
+        </div>
+        <div style={{
+          border: '1px solid #000',
+          minHeight: '0.4in',
+          marginTop: '0.08in',
+          width: '100%'
+        }}></div>
+      </div>
+    </div>
+  );
+}
+
+// Exemple d'utilisation pour démonstration
+function ExampleUsage() {
+  const sampleOrder: Order = {
+    id: 'ORD-2025-001',
+    orderNumber: 'MON-12345678',
+    customerName: 'Jean Dupont',
+    customerPhone: '+33 6 12 34 56 78',
+    date: '2025-12-25',
+    trackingNumber: '1Z999AA10123456784',
+    shippingAddress: {
+      street: '123 Rue de la Paix',
+      city: 'Paris',
+      state: 'Île-de-France',
+      zip: '75001',
+      country: 'FR'
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px', background: '#f3f4f6' }}>
+      <ShippingLabel order={sampleOrder} />
+    </div>
+  );
 }
