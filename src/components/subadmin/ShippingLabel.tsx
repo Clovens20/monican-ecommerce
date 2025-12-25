@@ -160,7 +160,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#000',
+            background: 'transparent',
             flexShrink: 0
           }}>
             <div style={{
@@ -179,8 +179,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 style={{
                   width: '80%',
                   height: '80%',
-                  objectFit: 'contain',
-                  filter: 'invert(1)'
+                  objectFit: 'contain'
                 }}
                 priority
               />

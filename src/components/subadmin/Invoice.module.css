@@ -1,6 +1,6 @@
 .invoice {
     width: 8.5in;
-    min-height: 11in;
+    height: 11in;
     background: white;
     padding: 0;
     box-sizing: border-box;
@@ -10,13 +10,14 @@
     flex-direction: column;
     page-break-after: always;
     position: relative;
+    overflow: hidden;
 }
 
-/* En-tête premium avec dégradé */
+/* En-tête premium avec dégradé - RÉDUIT */
 .invoiceHeader {
     position: relative;
     background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
-    padding: 0.6in 0.75in;
+    padding: 0.4in 0.5in;
     overflow: hidden;
 }
 
@@ -43,14 +44,14 @@
 
 .companySection {
     display: flex;
-    gap: 0.3in;
+    gap: 0.2in;
     align-items: flex-start;
 }
 
 .logoWrapper {
     position: relative;
-    width: 0.9in;
-    height: 0.9in;
+    width: 0.7in;
+    height: 0.7in;
 }
 
 .logoContainer {
@@ -58,12 +59,12 @@
     width: 100%;
     height: 100%;
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0.08in;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    padding: 0.06in;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     border: 2px solid rgba(255, 255, 255, 0.3);
     z-index: 2;
 }
@@ -72,74 +73,58 @@
     width: 100% !important;
     height: 100% !important;
     object-fit: contain;
-    border-radius: 12px;
-}
-
-.logo {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: white;
-    border-radius: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
-    font-size: 0.5in;
-    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-    color: white;
-    z-index: 2;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    mix-blend-mode: multiply;
 }
 
 .logoShadow {
     position: absolute;
-    top: 6px;
-    left: 6px;
-    right: -6px;
-    bottom: -6px;
+    top: 4px;
+    left: 4px;
+    right: -4px;
+    bottom: -4px;
     background: rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
+    border-radius: 12px;
     z-index: 1;
 }
 
 .companyDetails {
     display: flex;
     flex-direction: column;
-    gap: 0.08in;
+    gap: 0.05in;
 }
 
 .companyName {
     font-weight: 900;
-    font-size: 0.4in;
+    font-size: 0.3in;
     letter-spacing: 0.02em;
     line-height: 1;
 }
 
 .companyTagline {
-    font-size: 0.13in;
+    font-size: 0.1in;
     font-weight: 600;
     opacity: 0.9;
     letter-spacing: 0.02em;
 }
 
 .companyAddress {
-    margin-top: 0.12in;
+    margin-top: 0.08in;
     display: flex;
     flex-direction: column;
-    gap: 0.05in;
+    gap: 0.04in;
 }
 
 .addressLine {
     display: flex;
     align-items: center;
-    gap: 0.08in;
-    font-size: 0.11in;
+    gap: 0.06in;
+    font-size: 0.09in;
     opacity: 0.95;
 }
 
 .icon {
-    font-size: 0.12in;
+    font-size: 0.1in;
 }
 
 .invoiceMetadata {
@@ -148,36 +133,36 @@
 
 .invoiceTitle {
     font-weight: 900;
-    font-size: 0.45in;
+    font-size: 0.35in;
     letter-spacing: 0.05em;
-    margin-bottom: 0.08in;
+    margin-bottom: 0.06in;
 }
 
 .invoiceNumber {
-    font-size: 0.16in;
+    font-size: 0.13in;
     font-weight: 700;
     font-family: 'Courier New', monospace;
     background: rgba(255, 255, 255, 0.2);
-    padding: 0.08in 0.15in;
-    border-radius: 6px;
+    padding: 0.06in 0.12in;
+    border-radius: 4px;
     display: inline-block;
-    margin-bottom: 0.15in;
+    margin-bottom: 0.1in;
 }
 
 .metadataGrid {
     display: flex;
     flex-direction: column;
-    gap: 0.1in;
+    gap: 0.08in;
 }
 
 .metadataItem {
     display: flex;
     flex-direction: column;
-    gap: 0.03in;
+    gap: 0.02in;
 }
 
 .metadataLabel {
-    font-size: 0.09in;
+    font-size: 0.08in;
     font-weight: 600;
     opacity: 0.8;
     text-transform: uppercase;
@@ -185,53 +170,53 @@
 }
 
 .metadataValue {
-    font-size: 0.12in;
+    font-size: 0.1in;
     font-weight: 700;
 }
 
 .statusPaid {
     display: inline-flex;
     align-items: center;
-    gap: 0.06in;
+    gap: 0.05in;
     background: #10b981;
     color: white;
-    padding: 0.05in 0.12in;
-    border-radius: 6px;
-    font-size: 0.1in;
+    padding: 0.04in 0.1in;
+    border-radius: 4px;
+    font-size: 0.09in;
     font-weight: 800;
 }
 
 .statusIcon {
-    font-size: 0.11in;
+    font-size: 0.1in;
 }
 
-/* Section client */
+/* Section client - RÉDUIT */
 .customerSection {
-    padding: 0.5in 0.75in;
+    padding: 0.3in 0.5in;
     background: #f9fafb;
 }
 
 .sectionTitle {
     display: flex;
     align-items: center;
-    gap: 0.12in;
+    gap: 0.1in;
     font-weight: 800;
-    font-size: 0.16in;
+    font-size: 0.13in;
     color: #111827;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    margin-bottom: 0.2in;
+    margin-bottom: 0.15in;
 }
 
 .titleIcon {
-    font-size: 0.2in;
+    font-size: 0.16in;
 }
 
 .customerCard {
     background: white;
-    border-radius: 12px;
-    padding: 0.3in;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    padding: 0.2in;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border: 1px solid #e5e7eb;
 }
 
@@ -239,23 +224,23 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 0.15in;
+    padding-bottom: 0.1in;
     border-bottom: 2px solid #e5e7eb;
-    margin-bottom: 0.15in;
+    margin-bottom: 0.1in;
 }
 
 .customerName {
     font-weight: 800;
-    font-size: 0.2in;
+    font-size: 0.16in;
     color: #111827;
 }
 
 .customerBadge {
     background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
     color: white;
-    padding: 0.06in 0.15in;
-    border-radius: 20px;
-    font-size: 0.09in;
+    padding: 0.04in 0.1in;
+    border-radius: 16px;
+    font-size: 0.08in;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.02em;
@@ -264,20 +249,20 @@
 .customerInfo {
     display: flex;
     flex-direction: column;
-    gap: 0.08in;
-    margin-bottom: 0.15in;
+    gap: 0.06in;
+    margin-bottom: 0.1in;
 }
 
 .infoRow {
     display: flex;
     align-items: center;
-    gap: 0.1in;
-    font-size: 0.13in;
+    gap: 0.08in;
+    font-size: 0.11in;
     color: #4b5563;
 }
 
 .infoIcon {
-    font-size: 0.14in;
+    font-size: 0.12in;
 }
 
 .infoText {
@@ -286,48 +271,48 @@
 
 .shippingBlock {
     background: #f9fafb;
-    border-radius: 8px;
-    padding: 0.15in;
+    border-radius: 6px;
+    padding: 0.12in;
     border: 1px solid #e5e7eb;
 }
 
 .shippingTitle {
     display: flex;
     align-items: center;
-    gap: 0.08in;
+    gap: 0.06in;
     font-weight: 700;
-    font-size: 0.12in;
+    font-size: 0.1in;
     color: #111827;
-    margin-bottom: 0.1in;
+    margin-bottom: 0.08in;
 }
 
 .shippingIcon {
-    font-size: 0.14in;
+    font-size: 0.12in;
 }
 
 .shippingAddress {
-    font-size: 0.12in;
+    font-size: 0.1in;
     color: #4b5563;
-    line-height: 1.6;
+    line-height: 1.5;
     font-weight: 500;
 }
 
 .country {
     font-weight: 700;
     color: #111827;
-    margin-top: 0.03in;
+    margin-top: 0.02in;
 }
 
-/* Section produits */
+/* Section produits - RÉDUIT */
 .productsSection {
-    padding: 0.5in 0.75in;
+    padding: 0.3in 0.5in;
 }
 
 .tableWrapper {
     background: white;
-    border-radius: 12px;
+    border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     border: 1px solid #e5e7eb;
 }
 
@@ -342,10 +327,10 @@
 }
 
 .productsTable th {
-    padding: 0.15in;
+    padding: 0.1in;
     text-align: left;
     font-weight: 800;
-    font-size: 0.11in;
+    font-size: 0.09in;
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
@@ -363,7 +348,7 @@
 }
 
 .productsTable td {
-    padding: 0.15in;
+    padding: 0.1in;
     border-bottom: 1px solid #f3f4f6;
 }
 
@@ -382,17 +367,17 @@
 .productInfo {
     display: flex;
     flex-direction: column;
-    gap: 0.04in;
+    gap: 0.03in;
 }
 
 .productName {
     font-weight: 700;
-    font-size: 0.13in;
+    font-size: 0.11in;
     color: #111827;
 }
 
 .productSku {
-    font-size: 0.1in;
+    font-size: 0.08in;
     color: #6b7280;
     font-family: 'Courier New', monospace;
 }
@@ -403,7 +388,7 @@
 
 .rightCell {
     text-align: right;
-    font-size: 0.13in;
+    font-size: 0.11in;
     color: #374151;
     font-weight: 600;
 }
@@ -412,31 +397,31 @@
     display: inline-block;
     background: #e0e7ff;
     color: #3730a3;
-    padding: 0.04in 0.1in;
-    border-radius: 6px;
+    padding: 0.03in 0.08in;
+    border-radius: 4px;
     font-weight: 700;
-    font-size: 0.11in;
+    font-size: 0.09in;
 }
 
 .quantityBadge {
     display: inline-block;
     background: #dbeafe;
     color: #1e40af;
-    padding: 0.04in 0.1in;
-    border-radius: 6px;
+    padding: 0.03in 0.08in;
+    border-radius: 4px;
     font-weight: 700;
-    font-size: 0.11in;
+    font-size: 0.09in;
 }
 
 .totalCell {
     font-weight: 800;
     color: #111827;
-    font-size: 0.14in;
+    font-size: 0.12in;
 }
 
-/* Section totaux */
+/* Section totaux - RÉDUIT */
 .totalsSection {
-    padding: 0 0.75in 0.5in 0.75in;
+    padding: 0 0.5in 0.3in 0.5in;
     display: flex;
     justify-content: flex-end;
 }
@@ -444,34 +429,34 @@
 .totalsCard {
     width: 45%;
     background: white;
-    border-radius: 12px;
-    padding: 0.3in;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    padding: 0.2in;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     border: 2px solid #e5e7eb;
 }
 
 .totalsTitle {
     font-weight: 800;
-    font-size: 0.14in;
+    font-size: 0.11in;
     color: #111827;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    margin-bottom: 0.15in;
-    padding-bottom: 0.1in;
+    margin-bottom: 0.1in;
+    padding-bottom: 0.08in;
     border-bottom: 2px solid #e5e7eb;
 }
 
 .totalsGrid {
     display: flex;
     flex-direction: column;
-    gap: 0.12in;
+    gap: 0.08in;
 }
 
 .totalRow {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.13in;
+    font-size: 0.11in;
 }
 
 .totalLabel {
@@ -479,23 +464,23 @@
     color: #6b7280;
     display: flex;
     align-items: center;
-    gap: 0.08in;
+    gap: 0.06in;
 }
 
 .labelIcon {
-    font-size: 0.12in;
+    font-size: 0.1in;
 }
 
 .totalAmount {
     font-weight: 700;
     color: #111827;
-    font-size: 0.14in;
+    font-size: 0.12in;
 }
 
 .totalDivider {
     height: 2px;
     background: linear-gradient(90deg, transparent 0%, #e5e7eb 50%, transparent 100%);
-    margin: 0.08in 0;
+    margin: 0.06in 0;
 }
 
 .grandTotalRow {
@@ -504,48 +489,48 @@
     align-items: center;
     background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
     color: white;
-    padding: 0.15in;
-    border-radius: 8px;
-    margin-top: 0.1in;
+    padding: 0.12in;
+    border-radius: 6px;
+    margin-top: 0.08in;
 }
 
 .grandTotalLabel {
     font-weight: 900;
-    font-size: 0.15in;
+    font-size: 0.12in;
     letter-spacing: 0.02em;
 }
 
 .grandTotalAmount {
     font-weight: 900;
-    font-size: 0.22in;
+    font-size: 0.18in;
 }
 
-/* Section paiement */
+/* Section paiement - RÉDUIT */
 .paymentSection {
-    padding: 0 0.75in 0.5in 0.75in;
+    padding: 0 0.5in 0.25in 0.5in;
 }
 
 .paymentCard {
     background: #f0fdf4;
-    border-radius: 12px;
-    padding: 0.25in;
+    border-radius: 8px;
+    padding: 0.18in;
     border: 2px solid #86efac;
 }
 
 .paymentHeader {
     display: flex;
     align-items: center;
-    gap: 0.1in;
+    gap: 0.08in;
     font-weight: 800;
-    font-size: 0.14in;
+    font-size: 0.11in;
     color: #166534;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    margin-bottom: 0.12in;
+    margin-bottom: 0.1in;
 }
 
 .paymentIcon {
-    font-size: 0.18in;
+    font-size: 0.14in;
 }
 
 .paymentDetails {
@@ -556,11 +541,11 @@
 .paymentRow {
     display: flex;
     flex-direction: column;
-    gap: 0.05in;
+    gap: 0.04in;
 }
 
 .paymentLabel {
-    font-size: 0.1in;
+    font-size: 0.08in;
     font-weight: 600;
     color: #166534;
     text-transform: uppercase;
@@ -568,7 +553,7 @@
 }
 
 .paymentValue {
-    font-size: 0.13in;
+    font-size: 0.11in;
     font-weight: 700;
     color: #14532d;
 }
@@ -576,18 +561,18 @@
 .paymentStatus {
     display: flex;
     align-items: center;
-    gap: 0.08in;
-    font-size: 0.13in;
+    gap: 0.06in;
+    font-size: 0.11in;
     font-weight: 700;
     color: #14532d;
 }
 
 .statusDot {
-    width: 0.1in;
-    height: 0.1in;
+    width: 0.08in;
+    height: 0.08in;
     background: #22c55e;
     border-radius: 50%;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
     animation: pulse 2s infinite;
 }
 
@@ -596,38 +581,38 @@
     50% { opacity: 0.5; }
 }
 
-/* Pied de page */
+/* Pied de page - RÉDUIT */
 .invoiceFooter {
     margin-top: auto;
-    padding: 0.5in 0.75in;
+    padding: 0.25in 0.5in;
     background: #f9fafb;
 }
 
 .footerDivider {
-    height: 3px;
+    height: 2px;
     background: linear-gradient(90deg, #1e40af 0%, #7c3aed 50%, #1e40af 100%);
-    margin-bottom: 0.3in;
+    margin-bottom: 0.2in;
     border-radius: 2px;
 }
 
 .footerContent {
     display: flex;
     flex-direction: column;
-    gap: 0.25in;
+    gap: 0.15in;
 }
 
 .thankYouMessage {
     display: flex;
-    gap: 0.2in;
+    gap: 0.15in;
     align-items: flex-start;
     background: white;
-    padding: 0.25in;
-    border-radius: 12px;
+    padding: 0.18in;
+    border-radius: 8px;
     border: 1px solid #e5e7eb;
 }
 
 .thankYouIcon {
-    font-size: 0.35in;
+    font-size: 0.25in;
 }
 
 .thankYouText {
@@ -636,36 +621,36 @@
 
 .thankYouTitle {
     font-weight: 800;
-    font-size: 0.16in;
+    font-size: 0.13in;
     color: #111827;
-    margin-bottom: 0.06in;
+    margin-bottom: 0.04in;
 }
 
 .thankYouSubtext {
-    font-size: 0.12in;
+    font-size: 0.1in;
     color: #6b7280;
-    line-height: 1.6;
+    line-height: 1.5;
 }
 
 .footerInfo {
     display: flex;
     flex-direction: column;
-    gap: 0.08in;
+    gap: 0.06in;
     text-align: center;
 }
 
 .footerNote {
-    font-size: 0.11in;
+    font-size: 0.09in;
     color: #6b7280;
     font-weight: 600;
 }
 
 .footerLinks {
-    font-size: 0.1in;
+    font-size: 0.08in;
     color: #9ca3af;
     display: flex;
     justify-content: center;
-    gap: 0.12in;
+    gap: 0.1in;
 }
 
 .separator {
@@ -674,7 +659,6 @@
 
 /* Styles d'impression */
 @media print {
-    /* Masquer tout sauf la facture */
     body * {
         visibility: hidden;
     }
@@ -689,7 +673,7 @@
         left: 0;
         top: 0;
         width: 8.5in;
-        min-height: 11in;
+        height: 11in;
         margin: 0;
         padding: 0;
         box-shadow: none;
@@ -699,7 +683,6 @@
     @page {
         size: 8.5in 11in;
         margin: 0;
-        /* Format optimisé pour impression standard 8.5x11 (Letter) */
     }
 }
 
