@@ -45,6 +45,9 @@ export interface Product {
 
 export type OrderStatus = 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'returned';
 
+// Nouveau: Type pour les langues supportées
+export type OrderLanguage = 'en' | 'fr' | 'es' | 'de' | 'it';
+
 export interface OrderItem {
     id: string;
     productId: string;
@@ -60,7 +63,7 @@ export interface ShippingAddress {
     city: string;
     state: string;
     zip: string;
-    country: 'US' | 'CA' | 'MX';
+    country: 'US' | 'CA' | 'MX' | 'FR' | 'UK' | 'DE' | 'ES' | 'IT'; // Ajout de plus de pays
 }
 
 export interface OrderStatusHistory {
@@ -84,11 +87,12 @@ export interface Order {
     shippingCost: number;
     tax: number;
     total: number;
-    currency: 'USD' | 'CAD' | 'MXN';
+    currency: 'USD' | 'CAD' | 'MXN' | 'EUR' | 'GBP'; // Ajout de EUR et GBP
     date: string;
     trackingNumber?: string;
     paymentMethod: string;
     internalNotes?: string;
+    language?: OrderLanguage; // NOUVEAU: Langue de la facture/documents
 }
 
 // ============================================================================

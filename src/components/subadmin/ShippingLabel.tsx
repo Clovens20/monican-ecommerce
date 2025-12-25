@@ -30,7 +30,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
   const [barcodeUrl, setBarcodeUrl] = useState<string>('');
 
   useEffect(() => {
-    // Générer le QR Code
+    // Generate QR Code
     const generateQRCode = async () => {
       const orderNumber = order.orderNumber || order.id;
       
@@ -70,13 +70,13 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
       }
     };
 
-    // Générer le Code-barres
+    // Generate Barcode
     const generateBarcode = () => {
       try {
         const canvas = document.createElement('canvas');
         const orderNumber = order.orderNumber || order.id;
         
-        // Utiliser le numéro de commande ou tracking pour le barcode
+        // Use order number or tracking for barcode
         const barcodeValue = order.trackingNumber || orderNumber.replace(/[^0-9]/g, '').padStart(12, '0').slice(0, 12);
         
         JsBarcode(canvas, barcodeValue, {
@@ -103,21 +103,21 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const day = date.getDate();
-    const month = date.toLocaleDateString('fr-FR', { month: 'long' });
+    const month = date.toLocaleDateString('en-US', { month: 'long' });
     const year = date.getFullYear();
-    return `${day} ${month} ${year}`;
+    return `${month} ${day}, ${year}`;
   };
 
   const getCountryName = (country: string) => {
     const countries: { [key: string]: string } = {
-      'US': 'ÉTATS-UNIS',
+      'US': 'UNITED STATES',
       'CA': 'CANADA',
-      'MX': 'MEXIQUE',
+      'MX': 'MEXICO',
       'FR': 'FRANCE',
-      'UK': 'ROYAUME-UNI',
-      'DE': 'ALLEMAGNE',
-      'ES': 'ESPAGNE',
-      'IT': 'ITALIE'
+      'UK': 'UNITED KINGDOM',
+      'DE': 'GERMANY',
+      'ES': 'SPAIN',
+      'IT': 'ITALY'
     };
     return countries[country] || country.toUpperCase();
   };
@@ -136,7 +136,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
       gap: 0,
       overflow: 'hidden'
     }}>
-      {/* Header avec logo et badge */}
+      {/* Header with logo and badge */}
       <div style={{
         display: 'flex',
         flexDirection: 'row',
@@ -217,7 +217,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
         }}>STANDARD</div>
       </div>
 
-      {/* Barre de commande et date */}
+      {/* Order and date bar */}
       <div style={{
         display: 'flex',
         flexDirection: 'row',
@@ -234,7 +234,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
           alignItems: 'flex-start',
           gap: '0.02in'
         }}>
-          <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>COMMANDE</span>
+          <span style={{ fontWeight: 700, textTransform: 'uppercase' }}>ORDER</span>
           <span style={{ fontWeight: 400, fontFamily: 'monospace' }}>#{order.orderNumber || order.id}</span>
         </div>
         <div style={{
@@ -248,7 +248,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
         </div>
       </div>
 
-      {/* Section destinataire */}
+      {/* Recipient section */}
       <div style={{
         flex: 1,
         display: 'flex',
@@ -266,7 +266,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
           gap: '0.05in'
         }}>
           <span style={{ fontSize: '0.12in' }}>📦</span>
-          <span>DESTINATAIRE</span>
+          <span>SHIP TO</span>
         </div>
         
         <div style={{
@@ -276,7 +276,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
           flexDirection: 'column',
           gap: '0.08in'
         }}>
-          {/* Nom du client */}
+          {/* Customer name */}
           <div style={{
             fontSize: '0.18in',
             fontWeight: 900,
@@ -287,7 +287,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             {order.customerName || 'N/A'}
           </div>
           
-          {/* Adresse et QR Code côte à côte */}
+          {/* Address and QR Code side by side */}
           <div style={{
             display: 'flex',
             flexDirection: 'row',
@@ -296,7 +296,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             gap: '0.12in',
             width: '100%'
           }}>
-            {/* Informations adresse - GAUCHE */}
+            {/* Address information - LEFT */}
             <div style={{
               flex: 1,
               display: 'flex',
@@ -322,12 +322,12 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 </div>
               ) : (
                 <div style={{ fontSize: '0.1in', color: '#ef4444' }}>
-                  Adresse non disponible
+                  Address not available
                 </div>
               )}
             </div>
             
-            {/* QR Code - DROITE */}
+            {/* QR Code - RIGHT */}
             {qrCodeUrl && (
               <div style={{
                 flexShrink: 0,
@@ -352,7 +352,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
             )}
           </div>
           
-          {/* Ligne de séparation */}
+          {/* Separator line */}
           {order.shippingAddress && (
             <>
               <div style={{
@@ -361,7 +361,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 margin: '0.06in 0'
               }}></div>
               
-              {/* Pays */}
+              {/* Country */}
               <div style={{
                 fontSize: '0.12in',
                 fontWeight: 700,
@@ -371,7 +371,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 {getCountryName(order.shippingAddress.country || 'US')}
               </div>
               
-              {/* Téléphone */}
+              {/* Phone */}
               {order.customerPhone && (
                 <div style={{
                   display: 'flex',
@@ -389,7 +389,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
         </div>
       </div>
 
-      {/* Code-barres - NOUVEAU */}
+      {/* Barcode */}
       {barcodeUrl && (
         <div style={{
           display: 'flex',
@@ -412,7 +412,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
         </div>
       )}
 
-      {/* Section expéditeur */}
+      {/* Sender section */}
       <div style={{
         border: '1px solid #000',
         padding: '0.08in',
@@ -424,7 +424,7 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
           textTransform: 'uppercase',
           letterSpacing: '0.02em',
           marginBottom: '0.06in'
-        }}>EXPÉDITEUR</div>
+        }}>FROM</div>
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -447,21 +447,21 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
   );
 }
 
-// Exemple d'utilisation pour démonstration
+// Example usage for demonstration
 function ExampleUsage() {
   const sampleOrder: Order = {
     id: 'ORD-2025-001',
     orderNumber: 'MON-12345678',
-    customerName: 'Jean Dupont',
-    customerPhone: '+33 6 12 34 56 78',
+    customerName: 'John Smith',
+    customerPhone: '+1 (555) 123-4567',
     date: '2025-12-25',
     trackingNumber: '1Z999AA10123456784',
     shippingAddress: {
-      street: '123 Rue de la Paix',
-      city: 'Paris',
-      state: 'Île-de-France',
-      zip: '75001',
-      country: 'FR'
+      street: '123 Main Street',
+      city: 'New York',
+      state: 'NY',
+      zip: '10001',
+      country: 'US'
     }
   };
 

@@ -8,9 +8,225 @@ interface InvoiceProps {
     order: Order;
 }
 
+// Dictionnaire de traductions
+const translations = {
+    en: {
+        invoice: 'INVOICE',
+        issueDate: 'Issue Date',
+        tracking: 'Tracking',
+        status: 'Status',
+        paid: 'PAID',
+        customerInfo: 'CUSTOMER INFORMATION',
+        privilegedCustomer: 'Valued Customer',
+        shippingAddress: 'Shipping Address',
+        orderedItems: 'ORDERED ITEMS',
+        product: 'Product',
+        size: 'Size',
+        qty: 'Qty',
+        unitPrice: 'Unit Price',
+        total: 'Total',
+        summary: 'SUMMARY',
+        subtotal: 'Subtotal (Products)',
+        shippingCost: 'Shipping Cost',
+        taxes: 'Taxes',
+        grandTotal: 'TOTAL PAID BY CUSTOMER',
+        paymentInfo: 'PAYMENT INFORMATION',
+        paymentMethod: 'Payment Method',
+        paymentStatus: 'Payment Status',
+        paymentConfirmed: 'Payment Confirmed',
+        thankYouTitle: 'Thank you for your trust!',
+        thankYouText: 'Your satisfaction is our priority. For any questions, our team is at your disposal.',
+        footerNote: '📄 This invoice must be kept with the package',
+        tagline: 'E-Commerce Excellence Worldwide'
+    },
+    fr: {
+        invoice: 'FACTURE',
+        issueDate: 'Date d\'émission',
+        tracking: 'Suivi',
+        status: 'Statut',
+        paid: 'PAYÉ',
+        customerInfo: 'INFORMATIONS CLIENT',
+        privilegedCustomer: 'Client Privilégié',
+        shippingAddress: 'Adresse de Livraison',
+        orderedItems: 'ARTICLES COMMANDÉS',
+        product: 'Produit',
+        size: 'Taille',
+        qty: 'Qté',
+        unitPrice: 'Prix Unit.',
+        total: 'Total',
+        summary: 'RÉCAPITULATIF',
+        subtotal: 'Sous-total (Produits)',
+        shippingCost: 'Frais de livraison',
+        taxes: 'Taxes',
+        grandTotal: 'TOTAL PAYÉ PAR LE CLIENT',
+        paymentInfo: 'INFORMATIONS DE PAIEMENT',
+        paymentMethod: 'Méthode de paiement',
+        paymentStatus: 'Statut du paiement',
+        paymentConfirmed: 'Paiement confirmé',
+        thankYouTitle: 'Merci pour votre confiance !',
+        thankYouText: 'Votre satisfaction est notre priorité. Pour toute question, notre équipe est à votre disposition.',
+        footerNote: '📄 Cette facture doit être conservée avec le colis',
+        tagline: 'E-Commerce Excellence Mondiale'
+    },
+    es: {
+        invoice: 'FACTURA',
+        issueDate: 'Fecha de emisión',
+        tracking: 'Seguimiento',
+        status: 'Estado',
+        paid: 'PAGADO',
+        customerInfo: 'INFORMACIÓN DEL CLIENTE',
+        privilegedCustomer: 'Cliente Privilegiado',
+        shippingAddress: 'Dirección de Envío',
+        orderedItems: 'ARTÍCULOS PEDIDOS',
+        product: 'Producto',
+        size: 'Talla',
+        qty: 'Cant.',
+        unitPrice: 'Precio Unit.',
+        total: 'Total',
+        summary: 'RESUMEN',
+        subtotal: 'Subtotal (Productos)',
+        shippingCost: 'Gastos de envío',
+        taxes: 'Impuestos',
+        grandTotal: 'TOTAL PAGADO POR EL CLIENTE',
+        paymentInfo: 'INFORMACIÓN DE PAGO',
+        paymentMethod: 'Método de pago',
+        paymentStatus: 'Estado del pago',
+        paymentConfirmed: 'Pago confirmado',
+        thankYouTitle: '¡Gracias por su confianza!',
+        thankYouText: 'Su satisfacción es nuestra prioridad. Para cualquier pregunta, nuestro equipo está a su disposición.',
+        footerNote: '📄 Esta factura debe conservarse con el paquete',
+        tagline: 'Excelencia en E-Commerce Mundial'
+    },
+    de: {
+        invoice: 'RECHNUNG',
+        issueDate: 'Ausstellungsdatum',
+        tracking: 'Verfolgung',
+        status: 'Status',
+        paid: 'BEZAHLT',
+        customerInfo: 'KUNDENINFORMATIONEN',
+        privilegedCustomer: 'Bevorzugter Kunde',
+        shippingAddress: 'Lieferadresse',
+        orderedItems: 'BESTELLTE ARTIKEL',
+        product: 'Produkt',
+        size: 'Größe',
+        qty: 'Menge',
+        unitPrice: 'Stückpreis',
+        total: 'Gesamt',
+        summary: 'ZUSAMMENFASSUNG',
+        subtotal: 'Zwischensumme (Produkte)',
+        shippingCost: 'Versandkosten',
+        taxes: 'Steuern',
+        grandTotal: 'VOM KUNDEN GEZAHLTER GESAMTBETRAG',
+        paymentInfo: 'ZAHLUNGSINFORMATIONEN',
+        paymentMethod: 'Zahlungsmethode',
+        paymentStatus: 'Zahlungsstatus',
+        paymentConfirmed: 'Zahlung bestätigt',
+        thankYouTitle: 'Vielen Dank für Ihr Vertrauen!',
+        thankYouText: 'Ihre Zufriedenheit ist unsere Priorität. Bei Fragen steht Ihnen unser Team zur Verfügung.',
+        footerNote: '📄 Diese Rechnung muss mit dem Paket aufbewahrt werden',
+        tagline: 'E-Commerce Exzellenz Weltweit'
+    },
+    it: {
+        invoice: 'FATTURA',
+        issueDate: 'Data di emissione',
+        tracking: 'Tracciamento',
+        status: 'Stato',
+        paid: 'PAGATO',
+        customerInfo: 'INFORMAZIONI CLIENTE',
+        privilegedCustomer: 'Cliente Privilegiato',
+        shippingAddress: 'Indirizzo di Spedizione',
+        orderedItems: 'ARTICOLI ORDINATI',
+        product: 'Prodotto',
+        size: 'Taglia',
+        qty: 'Qtà',
+        unitPrice: 'Prezzo Unit.',
+        total: 'Totale',
+        summary: 'RIEPILOGO',
+        subtotal: 'Subtotale (Prodotti)',
+        shippingCost: 'Spese di spedizione',
+        taxes: 'Tasse',
+        grandTotal: 'TOTALE PAGATO DAL CLIENTE',
+        paymentInfo: 'INFORMAZIONI DI PAGAMENTO',
+        paymentMethod: 'Metodo di pagamento',
+        paymentStatus: 'Stato del pagamento',
+        paymentConfirmed: 'Pagamento confermato',
+        thankYouTitle: 'Grazie per la vostra fiducia!',
+        thankYouText: 'La vostra soddisfazione è la nostra priorità. Per qualsiasi domanda, il nostro team è a vostra disposizione.',
+        footerNote: '📄 Questa fattura deve essere conservata con il pacco',
+        tagline: 'Eccellenza E-Commerce Mondiale'
+    }
+};
+
+// Noms de pays traduits
+const countryNames = {
+    en: {
+        'US': 'United States',
+        'CA': 'Canada',
+        'MX': 'Mexico',
+        'FR': 'France',
+        'UK': 'United Kingdom',
+        'DE': 'Germany',
+        'ES': 'Spain',
+        'IT': 'Italy'
+    },
+    fr: {
+        'US': 'États-Unis',
+        'CA': 'Canada',
+        'MX': 'Mexique',
+        'FR': 'France',
+        'UK': 'Royaume-Uni',
+        'DE': 'Allemagne',
+        'ES': 'Espagne',
+        'IT': 'Italie'
+    },
+    es: {
+        'US': 'Estados Unidos',
+        'CA': 'Canadá',
+        'MX': 'México',
+        'FR': 'Francia',
+        'UK': 'Reino Unido',
+        'DE': 'Alemania',
+        'ES': 'España',
+        'IT': 'Italia'
+    },
+    de: {
+        'US': 'Vereinigte Staaten',
+        'CA': 'Kanada',
+        'MX': 'Mexiko',
+        'FR': 'Frankreich',
+        'UK': 'Vereinigtes Königreich',
+        'DE': 'Deutschland',
+        'ES': 'Spanien',
+        'IT': 'Italien'
+    },
+    it: {
+        'US': 'Stati Uniti',
+        'CA': 'Canada',
+        'MX': 'Messico',
+        'FR': 'Francia',
+        'UK': 'Regno Unito',
+        'DE': 'Germania',
+        'ES': 'Spagna',
+        'IT': 'Italia'
+    }
+};
+
 export default function Invoice({ order }: InvoiceProps) {
+    // Déterminer la langue à partir de l'ordre (par défaut 'en')
+    const language = (order.language || 'en') as keyof typeof translations;
+    const t = translations[language] || translations.en;
+    const countries = countryNames[language] || countryNames.en;
+
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleString('fr-FR', {
+        const locales = {
+            en: 'en-US',
+            fr: 'fr-FR',
+            es: 'es-ES',
+            de: 'de-DE',
+            it: 'it-IT'
+        };
+        
+        return new Date(dateString).toLocaleString(locales[language] || 'en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -20,58 +236,45 @@ export default function Invoice({ order }: InvoiceProps) {
     };
 
     const formatCurrency = (amount: number, currency: string) => {
-        return new Intl.NumberFormat('fr-FR', {
+        const locales = {
+            en: 'en-US',
+            fr: 'fr-FR',
+            es: 'es-ES',
+            de: 'de-DE',
+            it: 'it-IT'
+        };
+        
+        return new Intl.NumberFormat(locales[language] || 'en-US', {
             style: 'currency',
             currency: currency
         }).format(amount);
     };
 
     const getCountryName = (country: string) => {
-        const countries: { [key: string]: string } = {
-            'US': 'États-Unis',
-            'CA': 'Canada',
-            'MX': 'Mexique',
-            'FR': 'France',
-            'UK': 'Royaume-Uni',
-            'DE': 'Allemagne',
-            'ES': 'Espagne',
-            'IT': 'Italie'
-        };
-        return countries[country] || country;
+        return (countries as Record<string, string>)[country] || country.toUpperCase();
     };
 
     const calculateItemTotal = (price: number, quantity: number) => {
         return price * quantity;
     };
 
-    // Calculer le total final : sous-total + shipping + taxe
-    // Gère aussi les anciennes commandes qui pourraient ne pas avoir ces valeurs séparées
     const calculateGrandTotal = () => {
         const subtotal = order.subtotal || 0;
         const shipping = order.shippingCost || 0;
         const tax = order.tax || 0;
         
-        // Calculer la somme des composants (ce que le client a réellement payé)
         const calculatedTotal = subtotal + shipping + tax;
         
-        // Pour les nouvelles commandes : utiliser toujours la somme calculée
-        // car c'est le montant réel payé par le client (produit + shipping + taxe)
         if (order.subtotal !== undefined && order.subtotal !== null && 
             order.shippingCost !== undefined && order.shippingCost !== null &&
             order.tax !== undefined && order.tax !== null) {
-            // Les valeurs séparées existent, utiliser la somme calculée
-            // C'est le montant réel payé par le client
             return calculatedTotal;
         }
         
-        // Pour les anciennes commandes qui n'ont pas les valeurs séparées :
-        // utiliser order.total comme fallback
-        // Mais si calculatedTotal est > 0 (même partiellement), le privilégier
         if (calculatedTotal > 0) {
             return calculatedTotal;
         }
         
-        // Dernier recours : utiliser order.total
         return order.total || 0;
     };
 
@@ -97,7 +300,7 @@ export default function Invoice({ order }: InvoiceProps) {
                         </div>
                         <div className={styles.companyDetails}>
                             <div className={styles.companyName}>MONICAN</div>
-                            <div className={styles.companyTagline}>E-Commerce Excellence Mondiale</div>
+                            <div className={styles.companyTagline}>{t.tagline}</div>
                             <div className={styles.companyAddress}>
                                 <div className={styles.addressLine}>
                                     <span className={styles.icon}>📧</span>
@@ -115,24 +318,24 @@ export default function Invoice({ order }: InvoiceProps) {
                         </div>
                     </div>
                     <div className={styles.invoiceMetadata}>
-                        <div className={styles.invoiceTitle}>FACTURE</div>
+                        <div className={styles.invoiceTitle}>{t.invoice}</div>
                         <div className={styles.invoiceNumber}>N° {order.orderNumber || order.id}</div>
                         <div className={styles.metadataGrid}>
                             <div className={styles.metadataItem}>
-                                <div className={styles.metadataLabel}>Date d'émission</div>
+                                <div className={styles.metadataLabel}>{t.issueDate}</div>
                                 <div className={styles.metadataValue}>{formatDate(order.date)}</div>
                             </div>
                             {order.trackingNumber && (
                                 <div className={styles.metadataItem}>
-                                    <div className={styles.metadataLabel}>Suivi</div>
+                                    <div className={styles.metadataLabel}>{t.tracking}</div>
                                     <div className={styles.metadataValue}>{order.trackingNumber}</div>
                                 </div>
                             )}
                             <div className={styles.metadataItem}>
-                                <div className={styles.metadataLabel}>Statut</div>
+                                <div className={styles.metadataLabel}>{t.status}</div>
                                 <div className={styles.statusPaid}>
                                     <span className={styles.statusIcon}>✓</span>
-                                    PAYÉ
+                                    {t.paid}
                                 </div>
                             </div>
                         </div>
@@ -144,12 +347,12 @@ export default function Invoice({ order }: InvoiceProps) {
             <div className={styles.customerSection}>
                 <div className={styles.sectionTitle}>
                     <span className={styles.titleIcon}>👤</span>
-                    INFORMATIONS CLIENT
+                    {t.customerInfo}
                 </div>
                 <div className={styles.customerCard}>
                     <div className={styles.customerHeader}>
                         <div className={styles.customerName}>{order.customerName}</div>
-                        <div className={styles.customerBadge}>Client Privilégié</div>
+                        <div className={styles.customerBadge}>{t.privilegedCustomer}</div>
                     </div>
                     <div className={styles.customerInfo}>
                         <div className={styles.infoRow}>
@@ -166,7 +369,7 @@ export default function Invoice({ order }: InvoiceProps) {
                     <div className={styles.shippingBlock}>
                         <div className={styles.shippingTitle}>
                             <span className={styles.shippingIcon}>📦</span>
-                            Adresse de Livraison
+                            {t.shippingAddress}
                         </div>
                         <div className={styles.shippingAddress}>
                             <div>{order.shippingAddress.street}</div>
@@ -181,17 +384,17 @@ export default function Invoice({ order }: InvoiceProps) {
             <div className={styles.productsSection}>
                 <div className={styles.sectionTitle}>
                     <span className={styles.titleIcon}>🛍️</span>
-                    ARTICLES COMMANDÉS
+                    {t.orderedItems}
                 </div>
                 <div className={styles.tableWrapper}>
                     <table className={styles.productsTable}>
                         <thead>
                             <tr>
-                                <th className={styles.thProduct}>Produit</th>
-                                <th className={styles.thCenter}>Taille</th>
-                                <th className={styles.thCenter}>Qté</th>
-                                <th className={styles.thRight}>Prix Unit.</th>
-                                <th className={styles.thRight}>Total</th>
+                                <th className={styles.thProduct}>{t.product}</th>
+                                <th className={styles.thCenter}>{t.size}</th>
+                                <th className={styles.thCenter}>{t.qty}</th>
+                                <th className={styles.thRight}>{t.unitPrice}</th>
+                                <th className={styles.thRight}>{t.total}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -227,29 +430,29 @@ export default function Invoice({ order }: InvoiceProps) {
             {/* Totaux avec design premium */}
             <div className={styles.totalsSection}>
                 <div className={styles.totalsCard}>
-                    <div className={styles.totalsTitle}>RÉCAPITULATIF</div>
+                    <div className={styles.totalsTitle}>{t.summary}</div>
                     <div className={styles.totalsGrid}>
                         <div className={styles.totalRow}>
-                            <span className={styles.totalLabel}>Sous-total (Produits)</span>
+                            <span className={styles.totalLabel}>{t.subtotal}</span>
                             <span className={styles.totalAmount}>{formatCurrency(order.subtotal || 0, order.currency)}</span>
                         </div>
                         <div className={styles.totalRow}>
                             <span className={styles.totalLabel}>
                                 <span className={styles.labelIcon}>🚚</span>
-                                Frais de livraison
+                                {t.shippingCost}
                             </span>
                             <span className={styles.totalAmount}>{formatCurrency(order.shippingCost || 0, order.currency)}</span>
                         </div>
                         <div className={styles.totalRow}>
                             <span className={styles.totalLabel}>
                                 <span className={styles.labelIcon}>💼</span>
-                                Taxes
+                                {t.taxes}
                             </span>
                             <span className={styles.totalAmount}>{formatCurrency(order.tax || 0, order.currency)}</span>
                         </div>
                         <div className={styles.totalDivider}></div>
                         <div className={styles.grandTotalRow}>
-                            <span className={styles.grandTotalLabel}>TOTAL PAYÉ PAR LE CLIENT</span>
+                            <span className={styles.grandTotalLabel}>{t.grandTotal}</span>
                             <span className={styles.grandTotalAmount}>
                                 {formatCurrency(calculateGrandTotal(), order.currency)}
                             </span>
@@ -263,18 +466,18 @@ export default function Invoice({ order }: InvoiceProps) {
                 <div className={styles.paymentCard}>
                     <div className={styles.paymentHeader}>
                         <span className={styles.paymentIcon}>💳</span>
-                        INFORMATIONS DE PAIEMENT
+                        {t.paymentInfo}
                     </div>
                     <div className={styles.paymentDetails}>
                         <div className={styles.paymentRow}>
-                            <span className={styles.paymentLabel}>Méthode de paiement</span>
+                            <span className={styles.paymentLabel}>{t.paymentMethod}</span>
                             <span className={styles.paymentValue}>{order.paymentMethod}</span>
                         </div>
                         <div className={styles.paymentRow}>
-                            <span className={styles.paymentLabel}>Statut du paiement</span>
+                            <span className={styles.paymentLabel}>{t.paymentStatus}</span>
                             <span className={styles.paymentStatus}>
                                 <span className={styles.statusDot}></span>
-                                Paiement confirmé
+                                {t.paymentConfirmed}
                             </span>
                         </div>
                     </div>
@@ -288,15 +491,15 @@ export default function Invoice({ order }: InvoiceProps) {
                     <div className={styles.thankYouMessage}>
                         <div className={styles.thankYouIcon}>🎉</div>
                         <div className={styles.thankYouText}>
-                            <div className={styles.thankYouTitle}>Merci pour votre confiance !</div>
+                            <div className={styles.thankYouTitle}>{t.thankYouTitle}</div>
                             <div className={styles.thankYouSubtext}>
-                                Votre satisfaction est notre priorité. Pour toute question, notre équipe est à votre disposition.
+                                {t.thankYouText}
                             </div>
                         </div>
                     </div>
                     <div className={styles.footerInfo}>
                         <div className={styles.footerNote}>
-                            📄 Cette facture doit être conservée avec le colis
+                            {t.footerNote}
                         </div>
                         <div className={styles.footerLinks}>
                             <span>support@monican.shop</span>
