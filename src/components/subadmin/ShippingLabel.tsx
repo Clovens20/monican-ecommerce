@@ -12,18 +12,13 @@ interface ShippingLabelProps {
 
 export default function ShippingLabel({ order }: ShippingLabelProps) {
     const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-    const [qrCodeReady, setQrCodeReady] = useState(false);
 
     useEffect(() => {
-        // Générer le QR code avec les informations de shipping
         const generateQRCode = async () => {
-            // Prioriser orderNumber (format ORD-MON-XXXXXX) au lieu de l'UUID
             const orderNumber = order.orderNumber || order.id;
             
             const shippingData = {
-                // Numéro de commande au format ORD-MON-XXXXXX (prioritaire)
                 orderNumber: orderNumber,
-                // ID technique (UUID) pour référence interne si nécessaire
                 orderId: order.id,
                 customerName: order.customerName,
                 address: {
@@ -36,12 +31,10 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 phone: order.customerPhone || '',
                 tracking: order.trackingNumber || '',
                 date: order.date,
-                // Métadonnées pour faciliter le scan
                 type: 'shipping_label',
                 version: '1.0'
             };
 
-            // Format JSON structuré pour faciliter le parsing
             const qrData = JSON.stringify(shippingData, null, 0);
             
             try {
@@ -52,14 +45,11 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                         dark: '#000000',
                         light: '#FFFFFF'
                     },
-                    errorCorrectionLevel: 'M' // Niveau de correction d'erreur moyen pour meilleure lisibilité
+                    errorCorrectionLevel: 'M'
                 });
                 setQrCodeUrl(dataUrl);
-                // Marquer le QR code comme prêt après un court délai pour laisser l'image se charger
-                setTimeout(() => setQrCodeReady(true), 50);
             } catch (error) {
                 console.error('Error generating QR code:', error);
-                setQrCodeReady(true); // Marquer comme prêt même en cas d'erreur pour ne pas bloquer l'impression
             }
         };
 
@@ -67,11 +57,11 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
     }, [order]);
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString('fr-FR', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const month = date.toLocaleDateString('fr-FR', { month: 'long' });
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
     };
 
     const getCountryName = (country: string) => {
@@ -88,15 +78,9 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
         return countries[country] || country.toUpperCase();
     };
 
-    const getShippingPriority = () => {
-        // Logique pour déterminer la priorité d'expédition
-        const itemCount = order.items.reduce((sum, item) => sum + item.quantity, 0);
-        return itemCount > 5 ? 'PRIORITAIRE' : 'STANDARD';
-    };
-
     return (
         <div className={styles.shippingLabel}>
-            {/* En-tête avec branding fort */}
+            {/* Header avec logo et badge */}
             <div className={styles.labelHeader}>
                 <div className={styles.brandSection}>
                     <div className={styles.logoContainer}>
@@ -113,16 +97,15 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                     </div>
                     <div className={styles.companyInfo}>
                         <div className={styles.companyName}>MONICAN</div>
-                        <div className={styles.tagline}>E-Commerce Excellence</div>
+                        <div className={styles.tagline}>E-COMMERCE EXCELLENCE</div>
                     </div>
                 </div>
                 <div className={styles.priorityBadge}>
-                    <div className={styles.badgeIcon}>🚀</div>
-                    <div className={styles.badgeText}>{getShippingPriority()}</div>
+                    <div className={styles.badgeText}>STANDARD</div>
                 </div>
             </div>
 
-            {/* Informations de commande */}
+            {/* Barre de commande et date */}
             <div className={styles.orderBar}>
                 <div className={styles.orderDetail}>
                     <span className={styles.orderLabel}>COMMANDE</span>
@@ -134,99 +117,88 @@ export default function ShippingLabel({ order }: ShippingLabelProps) {
                 </div>
             </div>
 
-            {/* Section destinataire - Grande et lisible */}
+            {/* Section destinataire */}
             <div className={styles.recipientSection}>
                 <div className={styles.sectionHeader}>
-                    <div className={styles.headerTitle}>SHIP TO:</div>
+                    <span className={styles.headerIcon}>📦</span>
+                    <span className={styles.headerTitle}>DESTINATAIRE</span>
                 </div>
+                
                 <div className={styles.recipientBox}>
-                    <div className={styles.recipientNameRow}>
-                        <div className={styles.recipientName}>{order.customerName || 'N/A'}</div>
+                    {/* Nom du client en haut */}
+                    <div className={styles.recipientName}>
+                        {order.customerName || 'N/A'}
+                    </div>
+                    
+                    {/* Adresse et QR Code côte à côte */}
+                    <div className={styles.addressAndQrRow}>
+                        {/* Informations adresse - GAUCHE */}
+                        <div className={styles.recipientInfo}>
+                            {order.shippingAddress ? (
+                                <div className={styles.addressLines}>
+                                    <div className={styles.addressLine}>
+                                        {order.shippingAddress.street || ''}
+                                    </div>
+                                    <div className={styles.addressLine}>
+                                        {order.shippingAddress.city || ''}, {order.shippingAddress.state || ''}
+                                    </div>
+                                    <div className={styles.addressLine}>
+                                        {order.shippingAddress.zip || ''}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className={styles.addressLines}>
+                                    <div className={styles.addressLine} style={{ color: '#ef4444' }}>
+                                        Adresse non disponible
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* QR Code - DROITE */}
                         {qrCodeUrl && (
-                            <div className={styles.qrCodeInline}>
+                            <div className={styles.qrCodeContainer}>
                                 <img 
                                     src={qrCodeUrl} 
                                     alt="QR Code Shipping" 
                                     className={styles.qrCodeImage}
-                                    onLoad={() => setQrCodeReady(true)}
-                                    onError={() => setQrCodeReady(true)}
                                 />
                             </div>
                         )}
                     </div>
-                    {order.shippingAddress ? (
-                        <div className={styles.addressLines}>
-                            <div className={styles.addressLine}>{order.shippingAddress.street || ''}</div>
-                            <div className={styles.addressLine}>
-                                {order.shippingAddress.city || ''}, {order.shippingAddress.state || ''}
+                    
+                    {/* Ligne de séparation */}
+                    {order.shippingAddress && (
+                        <>
+                            <div className={styles.separatorLine}></div>
+                            
+                            {/* Pays */}
+                            <div className={styles.countryLine}>
+                                {getCountryName(order.shippingAddress.country || 'US')}
                             </div>
-                            <div className={styles.addressLine}>
-                                {order.shippingAddress.zip || ''}
-                            </div>
-                            <div className={styles.countryLine}>{getCountryName(order.shippingAddress.country || 'US')}</div>
-                        </div>
-                    ) : (
-                        <div className={styles.addressLines}>
-                            <div className={styles.addressLine} style={{ color: '#ef4444' }}>Adresse non disponible</div>
-                        </div>
-                    )}
-                    {order.customerPhone && (
-                        <div className={styles.contactLine}>
-                            <span className={styles.phoneNumber}>{order.customerPhone}</span>
-                        </div>
+                            
+                            {/* Téléphone */}
+                            {order.customerPhone && (
+                                <div className={styles.contactLine}>
+                                    <span className={styles.phoneIcon}>📞</span>
+                                    <span className={styles.phoneNumber}>{order.customerPhone}</span>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
 
-            {/* Section expéditeur - Compacte */}
+            {/* Section expéditeur */}
             <div className={styles.senderSection}>
                 <div className={styles.senderHeader}>EXPÉDITEUR</div>
                 <div className={styles.senderBox}>
                     <div className={styles.senderName}>MONICAN</div>
                     <div className={styles.senderContact}>support@monican.shop</div>
                     <div className={styles.senderContact}>www.monican.shop</div>
-                    <div className={styles.senderContact}>+1 717-880-1479</div>
+                    <div className={styles.senderContact}>+1717-880-1479</div>
                 </div>
-            </div>
-
-            {/* Code-barres et suivi */}
-            <div className={styles.trackingSection}>
-                {order.trackingNumber && (
-                    <div className={styles.trackingBox}>
-                        <div className={styles.trackingLabel}>TRACKING #:</div>
-                        <div className={styles.trackingNumber}>{order.trackingNumber}</div>
-                        <div className={styles.trackingBarcode}>
-                            {Array.from({ length: 60 }).map((_, i) => (
-                                <div 
-                                    key={i} 
-                                    className={styles.barcodeLine}
-                                    style={{ 
-                                        height: `${Math.random() * 35 + 25}px`,
-                                        opacity: Math.random() > 0.1 ? 1 : 0.3
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Informations supplémentaires */}
-            <div className={styles.labelFooter}>
-                <div className={styles.itemsBadge}>
-                    <span className={styles.itemsIcon}>📋</span>
-                    <span className={styles.itemsText}>
-                        {order.items.reduce((sum, item) => sum + item.quantity, 0)} article{order.items.reduce((sum, item) => sum + item.quantity, 0) > 1 ? 's' : ''}
-                    </span>
-                </div>
-            </div>
-
-            {/* Avertissement d'impression */}
-            <div className={styles.printWarning}>
-                <div className={styles.warningIcon}>⚠️</div>
-                <div className={styles.warningText}>
-                    Apposer cette étiquette sur le colis avant expédition
-                </div>
+                <div className={styles.senderSignatureBox}></div>
             </div>
         </div>
     );
