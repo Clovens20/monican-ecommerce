@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import styles from './page.module.css';
 
 interface Settings {
@@ -31,13 +30,40 @@ interface Settings {
     };
     abandonedCart: {
         enabled: boolean;
-        popupDelay: number; // en minutes
-        reminderDelay: number; // en heures
+        popupDelay: number;
+        reminderDelay: number;
     };
 }
 
+interface ConfigStatus {
+    emailService?: string;
+    emailFrom?: string;
+    emailFromName?: string;
+    stripeEnabled?: boolean;
+    stripeMode?: string;
+    shippingOriginStreet?: string;
+    shippingOriginCity?: string;
+    shippingOriginState?: string;
+    shippingOriginZip?: string;
+    shippingOriginCountry?: string;
+    uspsEnabled?: boolean;
+    fedexEnabled?: boolean;
+    resendConfigured?: boolean;
+    resendApiKeyExists?: boolean;
+    resendApiKeyFormat?: string;
+    stripeSecretConfigured?: boolean;
+    stripePublishableConfigured?: boolean;
+    supabaseConfigured?: boolean;
+    supabaseUrlConfigured?: boolean;
+    serviceRoleKeyConfigured?: boolean;
+    serviceRoleKeyLength?: number;
+    databaseConnected?: boolean;
+    databaseError?: string;
+    databaseErrorCode?: string;
+    environment?: string;
+}
+
 function SettingsPageContent() {
-    const searchParams = useSearchParams();
     const [settings, setSettings] = useState<Settings>({
         general: {
             siteName: 'Monican',
@@ -70,19 +96,16 @@ function SettingsPageContent() {
         },
     });
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
+    const [success] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [configStatus, setConfigStatus] = useState<any>({});
+    const [configStatus, setConfigStatus] = useState<ConfigStatus>({});
 
     useEffect(() => {
-        // Charger les statuts de configuration depuis l'API
         fetch('/api/admin/settings/status')
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     setConfigStatus(data.status);
-                    // Mettre à jour les settings avec les valeurs réelles
                     setSettings(prev => ({
                         ...prev,
                         email: {
@@ -114,7 +137,7 @@ function SettingsPageContent() {
             });
     }, []);
 
-    const handleChange = (section: keyof Settings, field: string, value: any) => {
+    const handleChange = (section: keyof Settings, field: string, value: string | boolean | number) => {
         setSettings(prev => ({
             ...prev,
             [section]: {
@@ -123,23 +146,6 @@ function SettingsPageContent() {
             },
         }));
         setError(null);
-        setSuccess(false);
-    };
-
-    const handleSave = async (section: keyof Settings) => {
-        try {
-            setSaving(true);
-            setError(null);
-
-            // Note: Les paramètres sont stockés dans .env, donc on ne peut pas les modifier via l'interface
-            // On affiche juste un message informatif
-            setSuccess(true);
-            setTimeout(() => setSuccess(false), 3000);
-        } catch (err: any) {
-            setError(err.message || 'Erreur lors de la sauvegarde');
-        } finally {
-            setSaving(false);
-        }
     };
 
     if (loading) {
@@ -221,8 +227,8 @@ function SettingsPageContent() {
                         </div>
                         <div className={styles.infoBox}>
                             <p className={styles.infoText}>
-                                ℹ️ <strong>Note:</strong> Ces paramètres sont définis dans les variables d'environnement (.env).
-                                Pour les modifier, éditez le fichier .env.local et redémarrez l'application.
+                                ℹ️ <strong>Note:</strong> Ces paramètres sont définis dans les variables d&apos;environnement (.env).
+                                Pour les modifier, éditez le fichier .env.local et redémarrez l&apos;application.
                             </p>
                         </div>
                     </div>
@@ -233,12 +239,12 @@ function SettingsPageContent() {
                     <div className={styles.sectionHeader}>
                         <h2 className={styles.sectionTitle}>📧 Configuration Email</h2>
                         <p className={styles.sectionDescription}>
-                            Paramètres pour l'envoi d'emails (confirmations, notifications, etc.)
+                            Paramètres pour l&apos;envoi d&apos;emails (confirmations, notifications, etc.)
                         </p>
                     </div>
                     <div className={styles.sectionContent}>
                         <div className={styles.formGroup}>
-                            <label className={styles.label}>Service d'email</label>
+                            <label className={styles.label}>Service d&apos;email</label>
                             <select
                                 className={styles.select}
                                 value={settings.email.service}
@@ -278,7 +284,7 @@ function SettingsPageContent() {
                                 </div>
                                 {!configStatus.resendConfigured && configStatus.resendApiKeyExists && configStatus.resendApiKeyFormat === 'incorrect' && (
                                     <span className={styles.statusDetail} style={{ color: '#f59e0b', display: 'block', marginTop: '0.5rem', fontSize: '0.8rem' }}>
-                                        ⚠️ Format incorrect - la clé doit commencer par "re_" (ex: re_123abc...)
+                                        ⚠️ Format incorrect - la clé doit commencer par &quot;re_&quot; (ex: re_123abc...)
                                     </span>
                                 )}
                                 {!configStatus.resendConfigured && !configStatus.resendApiKeyExists && (
@@ -340,11 +346,11 @@ function SettingsPageContent() {
                     <div className={styles.sectionHeader}>
                         <h2 className={styles.sectionTitle}>🚚 Configuration Livraison</h2>
                         <p className={styles.sectionDescription}>
-                            Adresse d'origine et paramètres des transporteurs
+                            Adresse d&apos;origine et paramètres des transporteurs
                         </p>
                     </div>
                     <div className={styles.sectionContent}>
-                        <h3 className={styles.subsectionTitle}>Adresse d'origine (Entrepôt)</h3>
+                        <h3 className={styles.subsectionTitle}>Adresse d&apos;origine (Entrepôt)</h3>
                         <div className={styles.formGrid}>
                             <div className={styles.formGroup}>
                                 <label className={styles.label}>Rue</label>
@@ -448,7 +454,7 @@ function SettingsPageContent() {
                             <>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>
-                                        Délai d'affichage du popup (minutes)
+                                        Délai d&apos;affichage du popup (minutes)
                                     </label>
                                     <input
                                         type="number"
@@ -459,12 +465,12 @@ function SettingsPageContent() {
                                         max="60"
                                     />
                                     <p className={styles.helpText}>
-                                        Le popup s'affichera après ce délai si le panier n'est pas vide
+                                        Le popup s&apos;affichera après ce délai si le panier n&apos;est pas vide
                                     </p>
                                 </div>
                                 <div className={styles.formGroup}>
                                     <label className={styles.label}>
-                                        Délai d'envoi du rappel (heures)
+                                        Délai d&apos;envoi du rappel (heures)
                                     </label>
                                     <input
                                         type="number"
@@ -475,7 +481,7 @@ function SettingsPageContent() {
                                         max="24"
                                     />
                                     <p className={styles.helpText}>
-                                        L'email de rappel sera envoyé après ce délai si le panier n'est pas finalisé
+                                        L&apos;email de rappel sera envoyé après ce délai si le panier n&apos;est pas finalisé
                                     </p>
                                 </div>
                             </>
@@ -537,7 +543,7 @@ function SettingsPageContent() {
                                         {(configStatus.databaseError?.includes('Invalid API key') || configStatus.databaseError?.includes('JWT') || configStatus.databaseError?.includes('invalid')) && (
                                             <span className={styles.statusDetail} style={{ display: 'block', marginTop: '0.5rem', fontSize: '0.75rem', color: '#6b7280' }}>
                                                 → Vérifiez que <code style={{ background: '#f3f4f6', padding: '0.125rem 0.25rem', borderRadius: '0.25rem' }}>SUPABASE_SERVICE_ROLE_KEY</code> est la bonne clé depuis votre dashboard Supabase (Settings → API → service_role key)
-                                                <br />→ Assurez-vous d'utiliser la clé <strong>service_role</strong> (pas la clé anon)
+                                                <br />→ Assurez-vous d&apos;utiliser la clé <strong>service_role</strong> (pas la clé anon)
                                                 <br />→ Longueur détectée: {configStatus.serviceRoleKeyLength} caractères
                                             </span>
                                         )}

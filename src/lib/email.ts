@@ -921,7 +921,7 @@ function getAbandonedCartTemplate(data: {
                     <tr>
                         <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                             <p style="margin: 0 0 10px; font-size: 14px; color: #6b7280;">
-                                Des questions ? Contactez-nous à <a href="mailto:support@monican.shop" style="color: #10B981; text-decoration: none;">support@monican.shop</a>
+                                Des questions ? Contactez-nous à <a href="mailto:${contactInfo?.email || 'support@monican.shop'}" style="color: #10B981; text-decoration: none;">${contactInfo?.email || 'support@monican.shop'}</a>
                             </p>
                             <p style="margin: 0; font-size: 12px; color: #9ca3af;">
                                 © ${new Date().getFullYear()} Monican.shop. Tous droits réservés.
