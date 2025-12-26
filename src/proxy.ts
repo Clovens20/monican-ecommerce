@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 const publicRoutes = ['/admin/login', '/admin/sousadmin', '/api/auth/login', '/api/auth/logout'];
 const adminRoutes = ['/admin'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Permettre l'accès public à la page sous-admin et son API d'authentification (authentification par code)
@@ -51,3 +51,4 @@ export const config = {
     '/api/admin/:path*',
   ],
 };
+
