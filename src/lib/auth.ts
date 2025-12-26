@@ -30,16 +30,61 @@ export interface AuthResult {
  */
 export async function loginAdmin(credentials: LoginCredentials): Promise<AuthResult> {
     try {
+        // Vérifier que Supabase est configuré
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co' || 
+            !supabaseAnonKey || supabaseAnonKey === 'placeholder-anon-key') {
+            console.error('❌ Supabase not configured:', {
+                url: supabaseUrl ? 'present' : 'missing',
+                anonKey: supabaseAnonKey ? 'present' : 'missing'
+            });
+            return {
+                success: false,
+                error: 'Configuration Supabase manquante. Vérifiez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY',
+            };
+        }
+
+        // Créer un client Supabase temporaire pour l'authentification avec les variables actuelles
+        // Cela évite les problèmes de cache avec le client global
+        const { createClient } = await import('@supabase/supabase-js');
+        const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: {
+                persistSession: false,
+                autoRefreshToken: false,
+            }
+        });
+
         // Authentifier avec Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
             email: credentials.email,
             password: credentials.password,
         });
 
         if (authError) {
+            console.error('❌ Auth error:', {
+                message: authError.message,
+                status: authError.status,
+                name: authError.name
+            });
+            
+            // Messages d'erreur plus clairs
+            if (authError.message?.includes('Invalid API key') || authError.message?.includes('JWT') || authError.message?.includes('invalid')) {
+                return {
+                    success: false,
+                    error: 'Clé API Supabase invalide. Vérifiez NEXT_PUBLIC_SUPABASE_ANON_KEY dans .env (doit commencer par eyJ...)',
+                };
+            }
+            if (authError.message?.includes('Invalid login credentials') || authError.message?.includes('email') || authError.status === 400) {
+                return {
+                    success: false,
+                    error: 'Email ou mot de passe incorrect',
+                };
+            }
             return {
                 success: false,
-                error: authError.message,
+                error: authError.message || 'Erreur d\'authentification',
             };
         }
 
@@ -50,14 +95,28 @@ export async function loginAdmin(credentials: LoginCredentials): Promise<AuthRes
             };
         }
 
-        // Récupérer le profil utilisateur
-        const { data: profile, error: profileError } = await supabase
+        // Récupérer le profil utilisateur avec supabaseAdmin pour bypasser RLS
+        const { data: profile, error: profileError } = await supabaseAdmin
             .from('user_profiles')
             .select('*')
             .eq('id', authData.user.id)
             .single();
 
-        if (profileError || !profile) {
+        if (profileError) {
+            console.error('❌ Profile error:', profileError);
+            if (profileError.message?.includes('Invalid API key')) {
+                return {
+                    success: false,
+                    error: 'Clé API Supabase invalide. Vérifiez SUPABASE_SERVICE_ROLE_KEY dans .env',
+                };
+            }
+            return {
+                success: false,
+                error: profileError.message || 'Profil utilisateur non trouvé',
+            };
+        }
+
+        if (!profile) {
             return {
                 success: false,
                 error: 'Profil utilisateur non trouvé',

@@ -366,6 +366,11 @@ async function getProductSalesStats(): Promise<Record<string, number>> {
  * Utilise supabaseAdmin pour bypasser RLS côté serveur
  */
 export async function getBestSellingProducts(limit: number = 4): Promise<Product[]> {
+    // Retourner un tableau vide si Supabase n'est pas configuré (pendant le build)
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-role-key') {
+        console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not configured, returning empty array');
+        return [];
+    }
     try {
         const productSales = await getProductSalesStats();
 
@@ -431,6 +436,11 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
  * Retourne les produits avec leur quantité vendue
  */
 export async function getFeaturedProductsWithSales(limit: number = 5): Promise<Array<Product & { salesCount: number }>> {
+    // Retourner un tableau vide si Supabase n'est pas configuré (pendant le build)
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY === 'placeholder-service-role-key') {
+        console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not configured, returning empty array');
+        return [];
+    }
     try {
         const productSales = await getProductSalesStats();
 
