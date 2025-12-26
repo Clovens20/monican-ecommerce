@@ -25,10 +25,29 @@ export async function GET(request: NextRequest) {
       .eq('language', language)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+    if (error) {
+      // PGRST116 = no rows returned (c'est normal si le contenu n'existe pas encore)
+      if (error.code === 'PGRST116') {
+        return NextResponse.json({
+          success: true,
+          data: { page_id: pageId, language, content: {} }
+        });
+      }
+      
       console.error('Error fetching site content:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      
       return NextResponse.json(
-        { success: false, error: 'Database error' },
+        { 
+          success: false, 
+          error: 'Database error',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        },
         { status: 500 }
       );
     }
@@ -63,12 +82,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Vérifier si le contenu existe déjà
-    const { data: existingData } = await supabaseAdmin
+    const { data: existingData, error: checkError } = await supabaseAdmin
       .from('site_content')
       .select('id')
       .eq('page_id', pageId)
       .eq('language', language)
-      .single();
+      .maybeSingle(); // Utiliser maybeSingle() au lieu de single() pour éviter les erreurs si pas de résultat
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      console.error('Error checking existing content:', checkError);
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Database error',
+          details: process.env.NODE_ENV === 'development' ? checkError.message : undefined
+        },
+        { status: 500 }
+      );
+    }
 
     let data, error;
 
@@ -106,8 +137,19 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error saving site content:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      
       return NextResponse.json(
-        { success: false, error: 'Database error', details: error.message },
+        { 
+          success: false, 
+          error: 'Database error',
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        },
         { status: 500 }
       );
     }

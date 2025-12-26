@@ -804,6 +804,183 @@ function getOrderConfirmationTextTemplate(data: {
     return text;
 }
 
+/**
+ * Template HTML pour les emails de panier abandonné
+ */
+function getAbandonedCartTemplate(data: {
+    customerName?: string;
+    items: Array<{ name: string; quantity: number; price: number; size?: string; image?: string }>;
+    total: number;
+    currency: string;
+    recoveryUrl: string;
+}): string {
+    const formatCurrency = (amount: number) => {
+        const locale = data.currency === 'USD' ? 'en-US' : data.currency === 'CAD' ? 'en-CA' : 'es-MX';
+        return new Intl.NumberFormat(locale, { 
+            style: 'currency', 
+            currency: data.currency 
+        }).format(amount);
+    };
+
+    const customerName = data.customerName || 'Cher client';
+    const itemCount = data.items.reduce((sum, item) => sum + item.quantity, 0);
+
+    return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vous avez oublié quelque chose...</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <!-- Header avec gradient -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10B981 0%, #3B82F6 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; line-height: 1.2;">
+                                🛒 Vous avez oublié quelque chose !
+                            </h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Contenu principal -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #111827;">
+                                Bonjour ${customerName},
+                            </p>
+                            
+                            <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #4b5563;">
+                                Nous avons remarqué que vous avez laissé <strong style="color: #10B981;">${itemCount} article${itemCount > 1 ? 's' : ''}</strong> dans votre panier d'une valeur de <strong style="color: #10B981;">${formatCurrency(data.total)}</strong>.
+                            </p>
+                            
+                            <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.6; color: #4b5563;">
+                                Ne manquez pas cette occasion ! Vos articles vous attendent. Finalisez votre commande maintenant et profitez de nos produits de qualité.
+                            </p>
+                            
+                            <!-- Bouton CTA -->
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 30px 0;">
+                                <tr>
+                                    <td align="center" style="padding: 0;">
+                                        <a href="${data.recoveryUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: all 0.3s;">
+                                            Récupérer mon panier →
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Liste des articles -->
+                            <div style="background: #f9fafb; border-radius: 12px; padding: 24px; margin: 30px 0;">
+                                <h2 style="margin: 0 0 20px; font-size: 18px; font-weight: 700; color: #111827;">
+                                    Vos articles :
+                                </h2>
+                                ${data.items.map(item => `
+                                    <div style="display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #e5e7eb;">
+                                        ${item.image ? `
+                                            <img src="${item.image}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 16px;">
+                                        ` : ''}
+                                        <div style="flex: 1;">
+                                            <p style="margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #111827;">
+                                                ${item.name}
+                                            </p>
+                                            ${item.size ? `<p style="margin: 0 0 4px; font-size: 14px; color: #6b7280;">Taille: ${item.size}</p>` : ''}
+                                            <p style="margin: 0; font-size: 14px; color: #6b7280;">
+                                                Quantité: ${item.quantity} × ${formatCurrency(item.price)}
+                                            </p>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <p style="margin: 0; font-size: 18px; font-weight: 700; color: #10B981;">
+                                                ${formatCurrency(item.price * item.quantity)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 20px; margin-top: 20px; border-top: 2px solid #e5e7eb;">
+                                    <p style="margin: 0; font-size: 18px; font-weight: 700; color: #111827;">
+                                        Total :
+                                    </p>
+                                    <p style="margin: 0; font-size: 24px; font-weight: 800; color: #10B981;">
+                                        ${formatCurrency(data.total)}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280; text-align: center;">
+                                ⏰ Cette offre est valable pendant 7 jours. Ne manquez pas cette occasion !
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0 0 10px; font-size: 14px; color: #6b7280;">
+                                Des questions ? Contactez-nous à <a href="mailto:support@monican.shop" style="color: #10B981; text-decoration: none;">support@monican.shop</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                                © ${new Date().getFullYear()} Monican.shop. Tous droits réservés.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+}
+
+/**
+ * Template texte pour les emails de panier abandonné
+ */
+function getAbandonedCartTextTemplate(data: {
+    customerName?: string;
+    items: Array<{ name: string; quantity: number; price: number; size?: string }>;
+    total: number;
+    currency: string;
+    recoveryUrl: string;
+}): string {
+    const formatCurrency = (amount: number) => {
+        const locale = data.currency === 'USD' ? 'en-US' : data.currency === 'CAD' ? 'en-CA' : 'es-MX';
+        return new Intl.NumberFormat(locale, { 
+            style: 'currency', 
+            currency: data.currency 
+        }).format(amount);
+    };
+
+    const customerName = data.customerName || 'Cher client';
+    const itemCount = data.items.reduce((sum, item) => sum + item.quantity, 0);
+
+    let text = `🛒 Vous avez oublié quelque chose !\n\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    text += `Bonjour ${customerName},\n\n`;
+    text += `Nous avons remarqué que vous avez laissé ${itemCount} article${itemCount > 1 ? 's' : ''} dans votre panier d'une valeur de ${formatCurrency(data.total)}.\n\n`;
+    text += `Ne manquez pas cette occasion ! Vos articles vous attendent.\n\n`;
+    text += `Récupérez votre panier : ${data.recoveryUrl}\n\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    text += `VOS ARTICLES :\n\n`;
+    
+    data.items.forEach(item => {
+        text += `• ${item.name}`;
+        if (item.size) text += ` (Taille: ${item.size})`;
+        text += ` - Quantité: ${item.quantity} × ${formatCurrency(item.price)} = ${formatCurrency(item.price * item.quantity)}\n`;
+    });
+    
+    text += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    text += `TOTAL : ${formatCurrency(data.total)}\n\n`;
+    text += `⏰ Cette offre est valable pendant 7 jours.\n\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    text += `Des questions ? Contactez-nous à support@monican.shop\n\n`;
+    text += `© ${new Date().getFullYear()} Monican.shop. Tous droits réservés.\n`;
+
+    return text;
+}
+
 // ============================================================================
 // EMAIL FUNCTIONS
 // ============================================================================
@@ -858,6 +1035,24 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
                         trackingNumber: string;
                         carrier?: string;
                     });
+                    break;
+                case 'abandoned_cart':
+                    html = getAbandonedCartTemplate(options.data as {
+                        customerName?: string;
+                        items: Array<{ name: string; quantity: number; price: number; size?: string; image?: string }>;
+                        total: number;
+                        currency: string;
+                        recoveryUrl: string;
+                    });
+                    if (!text) {
+                        text = getAbandonedCartTextTemplate(options.data as {
+                            customerName?: string;
+                            items: Array<{ name: string; quantity: number; price: number; size?: string }>;
+                            total: number;
+                            currency: string;
+                            recoveryUrl: string;
+                        });
+                    }
                     break;
                 default:
                     html = options.html || '';

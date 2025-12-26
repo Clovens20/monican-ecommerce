@@ -71,6 +71,12 @@ export default function PageEditor({ pageId, pageName, onClose, onSave }: PageEd
     try {
       setLoading(true);
       const response = await fetch(`/api/admin/site-content?pageId=${pageId}&language=fr`);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors du chargement');
+      }
+
       const data = await response.json();
 
       if (data.success && data.data?.content) {
@@ -83,9 +89,17 @@ export default function PageEditor({ pageId, pageName, onClose, onSave }: PageEd
         });
         setContent(initialContent);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading content:', err);
-      setError('Erreur lors du chargement du contenu');
+      const errorMessage = err.message || 'Erreur lors du chargement du contenu';
+      setError(errorMessage);
+      
+      // Initialiser quand même avec des valeurs vides pour permettre l'édition
+      const initialContent: Record<string, string> = {};
+      fields.forEach(field => {
+        initialContent[field.key] = '';
+      });
+      setContent(initialContent);
     } finally {
       setLoading(false);
     }
@@ -114,20 +128,26 @@ export default function PageEditor({ pageId, pageName, onClose, onSave }: PageEd
         }),
       });
 
-      const data = await response.json();
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || errorData.details || 'Erreur lors de la sauvegarde');
+      }
 
-      if (data.success) {
+      const responseData = await response.json();
+
+      if (responseData.success) {
         setSuccess(true);
+        setError(null);
         if (onSave) onSave();
         setTimeout(() => {
           setSuccess(false);
         }, 3000);
       } else {
-        setError(data.error || 'Erreur lors de la sauvegarde');
+        setError(responseData.error || responseData.details || 'Erreur lors de la sauvegarde');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving content:', err);
-      setError('Erreur lors de la sauvegarde');
+      setError(err.message || 'Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }

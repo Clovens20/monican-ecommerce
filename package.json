@@ -18,6 +18,7 @@
     "check:admin": "node scripts/check-admin.js",
     "test:supabase": "node scripts/test-supabase-connection.js",
     "test:verify-auth": "node scripts/test-verify-auth.js",
+    "check:supabase": "node scripts/check-supabase-config.js",
     "change:password": "node scripts/change-admin-password.js",
     "server": "node server.mjs",
     "server:dev": "node --watch server.mjs"

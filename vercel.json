@@ -1,0 +1,9 @@
+{
+  "crons": [
+    {
+      "path": "/api/cart/abandoned/remind",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
+
