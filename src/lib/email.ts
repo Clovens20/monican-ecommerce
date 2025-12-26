@@ -2,6 +2,8 @@
 // EMAIL SERVICE - Resend/SendGrid Integration
 // ============================================================================
 
+import { getContactInfoServer, type ContactInfo } from './contact-info';
+
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -36,7 +38,7 @@ function getOrderConfirmationTemplate(data: {
     currency: string;
     shippingAddress: any;
     orderDate?: string;
-}): string {
+}, contactInfo?: ContactInfo): string {
     const formatCurrency = (amount: number) => {
         const locale = data.currency === 'USD' ? 'en-US' : data.currency === 'CAD' ? 'en-CA' : 'es-MX';
         return new Intl.NumberFormat(locale, { 
@@ -435,13 +437,13 @@ function getOrderConfirmationTemplate(data: {
         <div class="footer">
             <p style="font-size: 16px; font-weight: 600; color: #ffffff; margin-bottom: 15px;">Monican.shop</p>
             <div class="footer-links">
-                <a href="https://monican.shop">Notre site web</a>
-                <a href="https://monican.shop/contact">Contact</a>
-                <a href="https://monican.shop/faq">FAQ</a>
+                <a href="${contactInfo?.siteUrl || 'https://monican.shop'}">Notre site web</a>
+                <a href="${contactInfo?.siteUrl || 'https://monican.shop'}/contact">Contact</a>
+                <a href="${contactInfo?.siteUrl || 'https://monican.shop'}/faq">FAQ</a>
             </div>
             <p style="margin-top: 20px;">
-                Email : <a href="mailto:support@monican.shop">support@monican.shop</a><br>
-                Téléphone : <a href="tel:+17178801479">+1 717-880-1479</a>
+                Email : <a href="mailto:${contactInfo?.email || 'support@monican.shop'}">${contactInfo?.email || 'support@monican.shop'}</a><br>
+                Téléphone : <a href="tel:${contactInfo?.phone?.replace(/\D/g, '') || '17178801479'}">${contactInfo?.phone || '+1 717-880-1479'}</a>
             </p>
             <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">
                 © ${new Date().getFullYear()} Monican.shop. Tous droits réservés.
@@ -458,7 +460,7 @@ function getShippingNotificationTemplate(data: {
     customerName: string;
     trackingNumber: string;
     carrier?: string;
-}): string {
+}, contactInfo?: ContactInfo): string {
     return `
 <!DOCTYPE html>
 <html lang="fr">
@@ -697,9 +699,9 @@ function getShippingNotificationTemplate(data: {
                 <p><strong>MONICAN</strong></p>
                 <p>E-Commerce Excellence</p>
                 <div class="footer-links">
-                    <a href="https://monican.shop">www.monican.shop</a>
-                    <a href="mailto:support@monican.shop">support@monican.shop</a>
-                    <a href="tel:+17178801479">+1 717-880-1479</a>
+                    <a href="${contactInfo?.siteUrl || 'https://monican.shop'}">www.monican.shop</a>
+                    <a href="mailto:${contactInfo?.email || 'support@monican.shop'}">${contactInfo?.email || 'support@monican.shop'}</a>
+                    <a href="tel:${contactInfo?.phone?.replace(/\D/g, '') || '17178801479'}">${contactInfo?.phone || '+1 717-880-1479'}</a>
                 </div>
                 <p style="margin-top: 20px; font-size: 12px; opacity: 0.7;">
                     © ${new Date().getFullYear()} Monican.shop. Tous droits réservés.
@@ -723,7 +725,7 @@ function getOrderConfirmationTextTemplate(data: {
     currency: string;
     shippingAddress: any;
     orderDate?: string;
-}): string {
+}, contactInfo?: ContactInfo): string {
     const formatCurrency = (amount: number) => {
         const locale = data.currency === 'USD' ? 'en-US' : data.currency === 'CAD' ? 'en-CA' : 'es-MX';
         return new Intl.NumberFormat(locale, { 
@@ -795,9 +797,9 @@ function getOrderConfirmationTextTemplate(data: {
     text += `Si vous avez des questions concernant votre commande, n'hésitez pas à nous contacter.\n\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `MONICAN.SHOP\n`;
-    text += `Email : support@monican.shop\n`;
-    text += `Téléphone : +1 717-880-1479\n`;
-    text += `Site web : https://monican.shop\n`;
+    text += `Email : ${contactInfo?.email || 'support@monican.shop'}\n`;
+    text += `Téléphone : ${contactInfo?.phone || '+1 717-880-1479'}\n`;
+    text += `Site web : ${contactInfo?.siteUrl || 'https://monican.shop'}\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
     text += `© ${new Date().getFullYear()} Monican.shop. Tous droits réservés.\n`;
 
@@ -813,7 +815,7 @@ function getAbandonedCartTemplate(data: {
     total: number;
     currency: string;
     recoveryUrl: string;
-}): string {
+}, contactInfo?: ContactInfo): string {
     const formatCurrency = (amount: number) => {
         const locale = data.currency === 'USD' ? 'en-US' : data.currency === 'CAD' ? 'en-CA' : 'es-MX';
         return new Intl.NumberFormat(locale, { 
@@ -944,7 +946,7 @@ function getAbandonedCartTextTemplate(data: {
     total: number;
     currency: string;
     recoveryUrl: string;
-}): string {
+}, contactInfo?: ContactInfo): string {
     const formatCurrency = (amount: number) => {
         const locale = data.currency === 'USD' ? 'en-US' : data.currency === 'CAD' ? 'en-CA' : 'es-MX';
         return new Intl.NumberFormat(locale, { 
@@ -975,7 +977,7 @@ function getAbandonedCartTextTemplate(data: {
     text += `TOTAL : ${formatCurrency(data.total)}\n\n`;
     text += `⏰ Cette offre est valable pendant 7 jours.\n\n`;
     text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-    text += `Des questions ? Contactez-nous à support@monican.shop\n\n`;
+    text += `Des questions ? Contactez-nous à ${contactInfo?.email || 'support@monican.shop'}\n\n`;
     text += `© ${new Date().getFullYear()} Monican.shop. Tous droits réservés.\n`;
 
     return text;
@@ -993,6 +995,15 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
         const emailService = process.env.EMAIL_SERVICE || 'resend';
         const emailFrom = process.env.EMAIL_FROM || 'noreply@monican.com';
         const emailFromName = process.env.EMAIL_FROM_NAME || 'Monican E-commerce';
+
+        // Récupérer les informations de contact depuis la base de données
+        let contactInfo: ContactInfo | undefined;
+        try {
+            contactInfo = await getContactInfoServer('fr');
+        } catch (error) {
+            console.error('Error fetching contact info for email:', error);
+            // Continuer avec les valeurs par défaut
+        }
 
         let html = options.html;
         let text = options.text;
@@ -1012,7 +1023,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
                         currency: string;
                         shippingAddress: any;
                         orderDate?: string;
-                    });
+                    }, contactInfo);
                     if (!text) {
                         text = getOrderConfirmationTextTemplate(options.data as {
                             orderNumber: string;
@@ -1025,7 +1036,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
                             currency: string;
                             shippingAddress: any;
                             orderDate?: string;
-                        });
+                        }, contactInfo);
                     }
                     break;
                 case 'shipping_notification':
@@ -1034,7 +1045,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
                         customerName: string;
                         trackingNumber: string;
                         carrier?: string;
-                    });
+                    }, contactInfo);
                     break;
                 case 'abandoned_cart':
                     html = getAbandonedCartTemplate(options.data as {
@@ -1043,7 +1054,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
                         total: number;
                         currency: string;
                         recoveryUrl: string;
-                    });
+                    }, contactInfo);
                     if (!text) {
                         text = getAbandonedCartTextTemplate(options.data as {
                             customerName?: string;
@@ -1051,7 +1062,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
                             total: number;
                             currency: string;
                             recoveryUrl: string;
-                        });
+                        }, contactInfo);
                     }
                     break;
                 default:

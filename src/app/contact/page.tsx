@@ -1,11 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import styles from './page.module.css';
 
+interface ContactContent {
+    title?: string;
+    subtitle?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    openingHours?: string;
+}
+
 export default function ContactPage() {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -13,6 +22,40 @@ export default function ContactPage() {
         message: '',
     });
     const [submitted, setSubmitted] = useState(false);
+    const [contactInfo, setContactInfo] = useState<ContactContent>({
+        email: 'support@monican.shop',
+        phone: '717-880-1479',
+        openingHours: '24/7',
+    });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadContactInfo();
+    }, [language]);
+
+    const loadContactInfo = async () => {
+        try {
+            setLoading(true);
+            // Utiliser l'API publique pour le contenu du site
+            const response = await fetch(`/api/site-content?pageId=contact&language=${language || 'fr'}`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data?.content) {
+                    setContactInfo({
+                        email: data.data.content.email || 'support@monican.shop',
+                        phone: data.data.content.phone || '717-880-1479',
+                        openingHours: data.data.content.openingHours || '24/7',
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error loading contact info:', error);
+            // Garder les valeurs par défaut en cas d'erreur
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -96,29 +139,35 @@ export default function ContactPage() {
 
                 <div className={styles.infoSection}>
                     <h2 className={styles.sectionTitle}>{t('contactInfo')}</h2>
-                    <div className={styles.contactInfo}>
-                        <div className={styles.contactItem}>
-                            <div className={styles.contactIcon}>📧</div>
-                            <div>
-                                <h3>{t('email')}</h3>
-                                <p>support@monican.com</p>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                            <p>Chargement...</p>
+                        </div>
+                    ) : (
+                        <div className={styles.contactInfo}>
+                            <div className={styles.contactItem}>
+                                <div className={styles.contactIcon}>📧</div>
+                                <div>
+                                    <h3>{t('email')}</h3>
+                                    <p>{contactInfo.email || 'support@monican.shop'}</p>
+                                </div>
+                            </div>
+                            <div className={styles.contactItem}>
+                                <div className={styles.contactIcon}>📞</div>
+                                <div>
+                                    <h3>{t('phone')}</h3>
+                                    <p>{contactInfo.phone || '717-880-1479'}</p>
+                                </div>
+                            </div>
+                            <div className={styles.contactItem}>
+                                <div className={styles.contactIcon}>🕒</div>
+                                <div>
+                                    <h3>{t('openingHours')}</h3>
+                                    <p>{contactInfo.openingHours || '24/7'}</p>
+                                </div>
                             </div>
                         </div>
-                        <div className={styles.contactItem}>
-                            <div className={styles.contactIcon}>📞</div>
-                            <div>
-                                <h3>{t('phone')}</h3>
-                                <p>717-880-1479</p>
-                            </div>
-                        </div>
-                        <div className={styles.contactItem}>
-                            <div className={styles.contactIcon}>🕒</div>
-                            <div>
-                                <h3>{t('openingHours')}</h3>
-                                <p>24/7</p>
-                            </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

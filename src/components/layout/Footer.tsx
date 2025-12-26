@@ -84,15 +84,31 @@ export default function Footer() {
       setLoading(true);
       // Ajouter un timestamp pour éviter le cache navigateur
       const timestamp = new Date().getTime();
-      const response = await fetch(`/api/legal-content?pageId=footer&language=${language}&_t=${timestamp}`, {
-        cache: 'no-store',
-      });
-      const data = await response.json();
+      const [footerResponse, contactResponse] = await Promise.all([
+        fetch(`/api/legal-content?pageId=footer&language=${language}&_t=${timestamp}`, {
+          cache: 'no-store',
+        }),
+        fetch(`/api/site-content?pageId=contact&language=${language}`, {
+          cache: 'no-store',
+        }),
+      ]);
       
-      if (data.success && data.content) {
+      const footerData = await footerResponse.json();
+      const contactData = await contactResponse.json();
+      
+      if (footerData.success && footerData.content) {
         // Prioriser ABSOLUMENT le contenu de la base de données, ne fusionner que pour les champs réellement absents
         const defaultContent = getDefaultContent();
-        const dbContent = data.content;
+        const dbContent = footerData.content;
+        
+        // Récupérer les informations de contact depuis l'API site-content
+        let contactInfo = defaultContent.contact;
+        if (contactData.success && contactData.data?.content) {
+          contactInfo = {
+            email: contactData.data.content.email || defaultContent.contact.email,
+            phone: contactData.data.content.phone || defaultContent.contact.phone,
+          };
+        }
         
                // Utiliser les catégories actives pour shopLinks (priorité sur DB)
                const shopLinksFromCategories = activeCategories.length > 0
@@ -114,11 +130,7 @@ export default function Footer() {
           legalLinks: (dbContent.legalLinks && Array.isArray(dbContent.legalLinks) && dbContent.legalLinks.length > 0) 
             ? dbContent.legalLinks 
             : defaultContent.legalLinks,
-          contact: {
-            // Si contact existe dans la base, utiliser ses valeurs même si elles sont vides (pour permettre de vider un champ)
-            email: dbContent.contact?.email !== undefined ? dbContent.contact.email : defaultContent.contact.email,
-            phone: dbContent.contact?.phone !== undefined ? dbContent.contact.phone : defaultContent.contact.phone,
-          },
+          contact: contactInfo,
           socialLinks: {
             facebook: dbContent.socialLinks?.facebook !== undefined ? dbContent.socialLinks.facebook : (defaultContent.socialLinks?.facebook || 'https://www.facebook.com/share/15pBVyu1Fd/'),
             whatsapp: dbContent.socialLinks?.whatsapp !== undefined ? dbContent.socialLinks.whatsapp : (defaultContent.socialLinks?.whatsapp || 'https://wa.me/17178801479'),
@@ -178,8 +190,8 @@ export default function Footer() {
         { label: t('contact'), href: '/contact' },
       ],
       contact: {
-        email: 'support@monican.com',
-        phone: '717-880-1479', // Numéro par défaut mis à jour
+        email: content?.contact?.email || 'support@monican.shop',
+        phone: content?.contact?.phone || '717-880-1479',
       },
       socialLinks: {
         facebook: 'https://www.facebook.com/share/15pBVyu1Fd/',

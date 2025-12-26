@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getContactInfo } from '@/lib/contact-info';
 import styles from './page.module.css';
 
 function PaymentFailedContent() {
@@ -11,6 +12,7 @@ function PaymentFailedContent() {
     const paymentIntentId = searchParams.get('payment_intent');
 
     const [errorMessage, setErrorMessage] = useState('Le paiement n\'a pas pu être finalisé');
+    const [contactInfo, setContactInfo] = useState({ email: 'support@monican.shop', phone: '717-880-1479' });
 
     useEffect(() => {
         // Messages d'erreur personnalisés
@@ -34,6 +36,11 @@ function PaymentFailedContent() {
                 'error_type': errorType || 'unknown',
             });
         }
+
+        // Charger les informations de contact
+        getContactInfo('fr').then(info => {
+            setContactInfo({ email: info.email, phone: info.phone });
+        });
     }, [errorType]);
 
     return (
@@ -88,8 +95,8 @@ function PaymentFailedContent() {
                 <div className={styles.contactInfo}>
                     <p><strong>Besoin d'aide ?</strong></p>
                     <div className={styles.contactLinks}>
-                        <a href="mailto:support@monican.com">📧 support@monican.com</a>
-                        <a href="tel:7178801479">📞 717-880-1479</a>
+                        <a href={`mailto:${contactInfo.email}`}>📧 {contactInfo.email}</a>
+                        <a href={`tel:${contactInfo.phone.replace(/\D/g, '')}`}>📞 {contactInfo.phone}</a>
                         <Link href="/contact">💬 Chat en direct</Link>
                     </div>
                 </div>
