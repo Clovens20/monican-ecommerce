@@ -14,6 +14,15 @@ export interface ProductVariant {
     size: string;
     stock: number;
     sku: string;
+    color?: string; // Optionnel pour rétrocompatibilité
+}
+
+// Nouvelle structure pour gérer le stock par couleur et taille
+export interface ColorSizeStock {
+    color: string;
+    size: string;
+    stock: number;
+    sku: string;
 }
 
 export interface ProductFeature {

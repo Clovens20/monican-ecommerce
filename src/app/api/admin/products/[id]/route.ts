@@ -56,7 +56,8 @@ export async function PUT(
     if (body.category !== undefined) updateData.category = body.category;
     if (body.brand !== undefined) updateData.brand = body.brand;
     if (body.images !== undefined) updateData.images = body.images;
-    if (body.variants !== undefined) updateData.variants = body.variants;
+    if (body.variants !== undefined) updateData.variants = body.variants; // Rétrocompatibilité
+    if (body.colorSizeStocks !== undefined) updateData.color_size_stocks = body.colorSizeStocks; // Nouvelle structure
     if (body.features !== undefined) updateData.features = body.features;
     if (body.colors !== undefined) updateData.colors = body.colors;
     if (body.isNew !== undefined) updateData.is_new = body.isNew;
@@ -80,8 +81,8 @@ export async function PUT(
       );
     }
 
-    // Mettre à jour l'inventaire si des variants sont fournis
-    if (body.variants && body.variants.length > 0) {
+    // Mettre à jour l'inventaire si des colorSizeStocks sont fournis
+    if (body.colorSizeStocks && body.colorSizeStocks.length > 0) {
       // Supprimer les anciennes entrées d'inventaire pour ce produit
       await supabaseAdmin
         .from('inventory')
@@ -89,6 +90,30 @@ export async function PUT(
         .eq('product_id', id);
 
       // Créer les nouvelles entrées d'inventaire
+      const inventoryEntries = body.colorSizeStocks.map((entry: any) => ({
+        product_id: id,
+        color: entry.color,
+        size: entry.size,
+        sku: entry.sku || `${body.sku || id}-${entry.color}-${entry.size}`,
+        stock_quantity: entry.stock || 0,
+        reserved_quantity: 0,
+      }));
+
+      const { error: inventoryError } = await supabaseAdmin
+        .from('inventory')
+        .insert(inventoryEntries);
+
+      if (inventoryError) {
+        console.error('Error updating inventory entries:', inventoryError);
+        // Ne pas faire échouer la mise à jour du produit si l'inventaire échoue
+      }
+    } else if (body.variants && body.variants.length > 0) {
+      // Fallback pour rétrocompatibilité avec l'ancienne structure
+      await supabaseAdmin
+        .from('inventory')
+        .delete()
+        .eq('product_id', id);
+
       const inventoryEntries = body.variants.map((variant: any) => ({
         product_id: id,
         size: variant.size,
@@ -103,7 +128,6 @@ export async function PUT(
 
       if (inventoryError) {
         console.error('Error updating inventory entries:', inventoryError);
-        // Ne pas faire échouer la mise à jour du produit si l'inventaire échoue
       }
     }
 
@@ -170,6 +194,7 @@ export async function GET(
         brand: product.brand || '',
         images: Array.isArray(product.images) ? product.images : [],
         variants: Array.isArray(product.variants) ? product.variants : [],
+        colorSizeStocks: Array.isArray(product.color_size_stocks) ? product.color_size_stocks : [],
         features: Array.isArray(product.features) ? product.features : [],
         colors: Array.isArray(product.colors) ? product.colors : [],
         isNew: product.is_new || false,

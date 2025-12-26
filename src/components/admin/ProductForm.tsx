@@ -16,6 +16,15 @@ interface ProductVariant {
     size: string;
     stock: number;
     sku: string;
+    color?: string; // Optionnel pour rétrocompatibilité
+}
+
+// Nouvelle structure pour gérer le stock par couleur et taille
+interface ColorSizeStock {
+    color: string;
+    size: string;
+    stock: number;
+    sku: string;
 }
 
 interface ProductFeature {
@@ -41,6 +50,7 @@ interface ProductFormData {
     brand: string;
     images: ProductImage[];
     variants: ProductVariant[];
+    colorSizeStocks: ColorSizeStock[]; // Nouvelle structure pour stock par couleur/taille
     features: ProductFeature[];
     colors: string[];
     isNew: boolean;
@@ -69,6 +79,24 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
     
     const [formData, setFormData] = useState<ProductFormData>(() => {
         if (initialData) {
+            // Convertir les anciens variants en colorSizeStocks si nécessaire
+            let colorSizeStocks: ColorSizeStock[] = [];
+            if (initialData.colorSizeStocks && Array.isArray(initialData.colorSizeStocks)) {
+                colorSizeStocks = initialData.colorSizeStocks;
+            } else if (initialData.variants && initialData.colors && initialData.colors.length > 0) {
+                // Migration: créer des entrées pour chaque couleur et taille
+                initialData.colors.forEach((color: string) => {
+                    initialData.variants.forEach((variant: ProductVariant) => {
+                        colorSizeStocks.push({
+                            color,
+                            size: variant.size,
+                            stock: variant.stock || 0,
+                            sku: variant.sku || `${initialData.sku || 'PROD'}-${color}-${variant.size}`.toUpperCase()
+                        });
+                    });
+                });
+            }
+            
             return {
                 name: initialData.name || '',
                 category: initialData.category || 'tennis',
@@ -80,6 +108,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 brand: initialData.brand || '',
                 images: initialData.images || [],
                 variants: initialData.variants || [],
+                colorSizeStocks: colorSizeStocks,
                 features: initialData.features || [],
                 colors: initialData.colors || [],
                 isNew: initialData.isNew || false,
@@ -97,6 +126,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
             brand: '',
             images: [],
             variants: [],
+            colorSizeStocks: [],
             features: [],
             colors: [],
             isNew: false,
@@ -174,10 +204,10 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
         return [];
     }, [formData.category]);
 
-    // Calculer le stock total
+    // Calculer le stock total (depuis colorSizeStocks)
     const totalStock = useMemo(() => {
-        return formData.variants.reduce((sum, variant) => sum + (variant.stock || 0), 0);
-    }, [formData.variants]);
+        return formData.colorSizeStocks.reduce((sum, entry) => sum + (entry.stock || 0), 0);
+    }, [formData.colorSizeStocks]);
 
     // Obtenir le statut du stock
     const getStockStatus = useCallback((stock: number) => {
@@ -418,10 +448,98 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
     };
 
     const removeColor = (color: string) => {
+        // Supprimer la couleur et toutes les entrées de stock associées
         setFormData({
             ...formData,
             colors: formData.colors.filter(c => c !== color),
+            colorSizeStocks: formData.colorSizeStocks.filter(entry => entry.color !== color),
         });
+    };
+
+    // Gestion des stocks par couleur et taille
+    const addStockEntry = (color: string, size: string) => {
+        const sku = `${formData.sku || 'PROD'}-${color}-${size}`.toUpperCase();
+        const newEntry: ColorSizeStock = {
+            color,
+            size,
+            stock: 0,
+            sku
+        };
+        
+        // Vérifier si l'entrée existe déjà
+        const exists = formData.colorSizeStocks.some(
+            e => e.color === color && e.size === size
+        );
+        
+        if (!exists) {
+            setFormData({
+                ...formData,
+                colorSizeStocks: [...formData.colorSizeStocks, newEntry],
+            });
+        }
+    };
+
+    const updateStockEntry = (index: number, field: keyof ColorSizeStock, value: string | number) => {
+        const newStocks = [...formData.colorSizeStocks];
+        newStocks[index] = { ...newStocks[index], [field]: value };
+        
+        // Régénérer le SKU si la couleur ou la taille change
+        if ((field === 'color' || field === 'size') && formData.sku) {
+            newStocks[index].sku = `${formData.sku}-${newStocks[index].color}-${newStocks[index].size}`.toUpperCase();
+        }
+        
+        setFormData({ ...formData, colorSizeStocks: newStocks });
+    };
+
+    const removeStockEntry = (index: number) => {
+        setFormData({
+            ...formData,
+            colorSizeStocks: formData.colorSizeStocks.filter((_, i) => i !== index),
+        });
+    };
+
+    // Obtenir les tailles disponibles pour une couleur donnée
+    const getSizesForColor = (color: string) => {
+        const usedSizes = formData.colorSizeStocks
+            .filter(e => e.color === color)
+            .map(e => e.size);
+        return getAvailableSizes().filter(size => !usedSizes.includes(size));
+    };
+
+    // Obtenir les entrées de stock pour une couleur donnée
+    const getStockEntriesForColor = (color: string) => {
+        return formData.colorSizeStocks.filter(e => e.color === color);
+    };
+
+    // Convertir le nom de couleur en code hex approximatif pour l'affichage
+    const getColorHex = (colorName: string): string => {
+        const colorMap: Record<string, string> = {
+            // Français
+            'Noir': '#000000',
+            'Blanc': '#FFFFFF',
+            'Rouge': '#FF0000',
+            'Bleu': '#0000FF',
+            'Vert': '#00FF00',
+            'Jaune': '#FFFF00',
+            'Orange': '#FFA500',
+            'Violet': '#800080',
+            'Rose': '#FFC0CB',
+            'Gris': '#808080',
+            'Marron': '#A52A2A',
+            'Beige': '#F5F5DC',
+            // Anglais
+            'White': '#FFFFFF',
+            'Red': '#FF0000',
+            'Blue': '#0000FF',
+            'Green': '#00FF00',
+            'Yellow': '#FFFF00',
+            'Purple': '#800080',
+            'Pink': '#FFC0CB',
+            'Gray': '#808080',
+            'Grey': '#808080',
+            'Brown': '#A52A2A',
+        };
+        return colorMap[colorName] || '#CCCCCC';
     };
 
     // Validation complète avant soumission
@@ -452,17 +570,25 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
             errors.images = 'Veuillez ajouter au moins une image';
         }
 
-        if (categoryRequiresSizes && formData.variants.length === 0) {
-            errors.variants = 'Veuillez ajouter au moins une taille';
+        if (categoryRequiresSizes) {
+            if (formData.colors.length === 0) {
+                errors.colors = 'Veuillez ajouter au moins une couleur';
+            }
+            if (formData.colorSizeStocks.length === 0) {
+                errors.variants = 'Veuillez ajouter au moins une combinaison couleur/taille avec stock';
+            }
         }
 
-        // Vérifier que toutes les variantes ont une taille et un stock valides
-        formData.variants.forEach((variant, index) => {
-            if (!variant.size || variant.size.trim().length === 0) {
-                errors[`variant_${index}_size`] = 'La taille est requise';
+        // Vérifier que toutes les entrées de stock ont une couleur, taille et stock valides
+        formData.colorSizeStocks.forEach((entry, index) => {
+            if (!entry.color || entry.color.trim().length === 0) {
+                errors[`stock_${index}_color`] = 'La couleur est requise';
             }
-            if (variant.stock < 0) {
-                errors[`variant_${index}_stock`] = 'Le stock ne peut pas être négatif';
+            if (!entry.size || entry.size.trim().length === 0) {
+                errors[`stock_${index}_size`] = 'La taille est requise';
+            }
+            if (entry.stock < 0) {
+                errors[`stock_${index}_stock`] = 'Le stock ne peut pas être négatif';
             }
         });
 
@@ -498,7 +624,8 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     alt: img.alt,
                     isPrimary: img.isPrimary,
                 })),
-                variants: formData.variants,
+                variants: formData.variants, // Garder pour rétrocompatibilité
+                colorSizeStocks: formData.colorSizeStocks, // Nouvelle structure
                 features: formData.features,
                 colors: formData.colors,
                 isNew: formData.isNew,
@@ -870,7 +997,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     )}
                 </section>
 
-                {/* Gestion des stocks intelligente */}
+                {/* Gestion des stocks intelligente par couleur et taille */}
                 <section className={styles.section}>
                     <h2 className={styles.sectionTitle}>
                         Gestion des stocks
@@ -883,97 +1010,142 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
 
                     {categoryRequiresSizes ? (
                         <>
-                            <div className={styles.stockTableContainer}>
-                                <table className={styles.stockTable}>
-                                    <thead>
-                                        <tr>
-                                            <th>Taille</th>
-                                            <th>Quantité en stock</th>
-                                            <th>SKU Variant</th>
-                                            <th>Statut</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {formData.variants.map((variant, index) => {
-                                            const stockStatus = getStockStatus(variant.stock);
-                                            return (
-                                                <tr key={index}>
-                                                    <td>
+                            {formData.colors.length === 0 ? (
+                                <div className={styles.infoBox}>
+                                    <p>⚠️ Veuillez d'abord ajouter des couleurs dans la section "Couleurs" ci-dessous pour gérer les stocks.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {formData.colors.map((color) => {
+                                        const colorStocks = getStockEntriesForColor(color);
+                                        const availableSizes = getSizesForColor(color);
+                                        const colorTotalStock = colorStocks.reduce((sum, e) => sum + (e.stock || 0), 0);
+                                        
+                                        return (
+                                            <div key={color} className={styles.colorStockSection}>
+                                                <div className={styles.colorStockHeader}>
+                                                    <h3 className={styles.colorStockTitle}>
+                                                        <span className={styles.colorIndicator} style={{ backgroundColor: getColorHex(color) }}></span>
+                                                        {color}
+                                                        {colorTotalStock > 0 && (
+                                                            <span className={styles.colorStockTotal}>
+                                                                ({colorTotalStock} unités)
+                                                            </span>
+                                                        )}
+                                                    </h3>
+                                                </div>
+                                                
+                                                <div className={styles.stockTableContainer}>
+                                                    <table className={styles.stockTable}>
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Taille</th>
+                                                                <th>Quantité en stock</th>
+                                                                <th>SKU Variant</th>
+                                                                <th>Statut</th>
+                                                                <th>Actions</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {colorStocks.map((entry, index) => {
+                                                                const globalIndex = formData.colorSizeStocks.findIndex(
+                                                                    e => e.color === entry.color && e.size === entry.size
+                                                                );
+                                                                const stockStatus = getStockStatus(entry.stock);
+                                                                return (
+                                                                    <tr key={`${color}-${entry.size}`}>
+                                                                        <td>
+                                                                            <select
+                                                                                className={styles.variantSelect}
+                                                                                value={entry.size}
+                                                                                onChange={(e) => {
+                                                                                    const newSize = e.target.value;
+                                                                                    updateStockEntry(globalIndex, 'size', newSize);
+                                                                                }}
+                                                                            >
+                                                                                <option value="">Sélectionner une taille</option>
+                                                                                {getAvailableSizes().map(size => (
+                                                                                    <option 
+                                                                                        key={size} 
+                                                                                        value={size}
+                                                                                        disabled={formData.colorSizeStocks.some(
+                                                                                            e => e.color === color && e.size === size && e.size !== entry.size
+                                                                                        )}
+                                                                                    >
+                                                                                        {size}
+                                                                                    </option>
+                                                                                ))}
+                                                                            </select>
+                                                                        </td>
+                                                                        <td>
+                                                                            <input
+                                                                                type="number"
+                                                                                min="0"
+                                                                                className={`${styles.stockInput} ${stockStatus.class === 'critical' ? styles.stockCritical : stockStatus.class === 'low' ? styles.stockLow : ''}`}
+                                                                                value={entry.stock}
+                                                                                onChange={(e) => updateStockEntry(globalIndex, 'stock', parseInt(e.target.value) || 0)}
+                                                                            />
+                                                                        </td>
+                                                                        <td>
+                                                                            <input
+                                                                                type="text"
+                                                                                className={styles.variantInput}
+                                                                                value={entry.sku}
+                                                                                onChange={(e) => updateStockEntry(globalIndex, 'sku', e.target.value)}
+                                                                                placeholder="SKU variant"
+                                                                            />
+                                                                        </td>
+                                                                        <td>
+                                                                            <span className={`${styles.stockBadge} ${styles[stockStatus.class]}`}>
+                                                                                {stockStatus.label}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => removeStockEntry(globalIndex)}
+                                                                                className={`${styles.removeBtn} ${styles.dangerBtn}`}
+                                                                                title="Supprimer cette taille"
+                                                                            >
+                                                                                ➖
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                
+                                                {availableSizes.length > 0 && (
+                                                    <div className={styles.addSizeForColor}>
                                                         <select
-                                                            className={styles.variantSelect}
-                                                            value={variant.size}
+                                                            className={styles.sizeSelect}
+                                                            value=""
                                                             onChange={(e) => {
-                                                                const newSize = e.target.value;
-                                                                updateVariant(index, 'size', newSize);
-                                                                // Générer automatiquement le SKU
-                                                                if (formData.sku) {
-                                                                    updateVariant(index, 'sku', `${formData.sku}-${newSize}`.toUpperCase());
+                                                                if (e.target.value) {
+                                                                    addStockEntry(color, e.target.value);
+                                                                    e.target.value = '';
                                                                 }
                                                             }}
                                                         >
-                                                            <option value="">Sélectionner une taille</option>
-                                                            {getAvailableSizes().map(size => (
-                                                                <option 
-                                                                    key={size} 
-                                                                    value={size}
-                                                                    disabled={formData.variants.some(v => v.size === size && formData.variants.indexOf(v) !== index)}
-                                                                >
+                                                            <option value="">➕ Ajouter une taille pour {color}</option>
+                                                            {availableSizes.map(size => (
+                                                                <option key={size} value={size}>
                                                                     {size}
                                                                 </option>
                                                             ))}
                                                         </select>
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            type="number"
-                                                            min="0"
-                                                            className={`${styles.stockInput} ${stockStatus.class === 'critical' ? styles.stockCritical : stockStatus.class === 'low' ? styles.stockLow : ''}`}
-                                                            value={variant.stock}
-                                                            onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <input
-                                                            type="text"
-                                                            className={styles.variantInput}
-                                                            value={variant.sku}
-                                                            onChange={(e) => updateVariant(index, 'sku', e.target.value)}
-                                                            placeholder="SKU variant"
-                                                        />
-                                                    </td>
-                                                    <td>
-                                                        <span className={`${styles.stockBadge} ${styles[stockStatus.class]}`}>
-                                                            {stockStatus.label}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeVariant(index)}
-                                                            className={`${styles.removeBtn} ${styles.dangerBtn}`}
-                                                            title="Supprimer cette taille"
-                                                        >
-                                                            ➖
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <button
-                                type="button"
-                                onClick={addVariant}
-                                className={styles.addButton}
-                                disabled={formData.variants.length >= getAvailableSizes().length}
-                            >
-                                ➕ Ajouter une taille
-                            </button>
-                            {formData.variants.length >= getAvailableSizes().length && (
-                                <p className={styles.hint}>Toutes les tailles disponibles ont été ajoutées</p>
+                                                    </div>
+                                                )}
+                                                
+                                                {availableSizes.length === 0 && colorStocks.length > 0 && (
+                                                    <p className={styles.hint}>Toutes les tailles disponibles ont été ajoutées pour {color}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </>
                             )}
                         </>
                     ) : (
@@ -1016,6 +1188,63 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     )}
                 </section>
 
+                {/* Couleurs - DOIT ÊTRE AVANT LA GESTION DES STOCKS */}
+                <section className={styles.section}>
+                    <h2 className={styles.sectionTitle}>Couleurs</h2>
+                    <p className={styles.sectionHint}>
+                        Ajoutez d'abord les couleurs disponibles pour ce produit, puis vous pourrez gérer les stocks par couleur et taille.
+                    </p>
+                    
+                    <div className={styles.colorInputGroup}>
+                        <input
+                            type="text"
+                            placeholder="Ajouter une couleur (ex: Rouge, Bleu, Noir)"
+                            className={styles.colorInput}
+                            onKeyPress={(e) => {
+                                if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const input = e.currentTarget;
+                                    if (input.value.trim()) {
+                                        addColor(input.value.trim());
+                                        input.value = '';
+                                    }
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                if (input.value.trim()) {
+                                    addColor(input.value.trim());
+                                    input.value = '';
+                                }
+                            }}
+                            className={styles.addColorBtn}
+                        >
+                            Ajouter
+                        </button>
+                    </div>
+
+                    {formData.colors.length > 0 && (
+                        <div className={styles.colorTags}>
+                            {formData.colors.map((color, index) => (
+                                <span key={index} className={styles.colorTag}>
+                                    <span className={styles.colorIndicator} style={{ backgroundColor: getColorHex(color) }}></span>
+                                    {color}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeColor(color)}
+                                        className={styles.colorRemove}
+                                    >
+                                        ✕
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
                 {/* Caractéristiques */}
                 <section className={styles.section}>
                     <h2 className={styles.sectionTitle}>Caractéristiques</h2>
@@ -1053,59 +1282,6 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     >
                         ➕ Ajouter une caractéristique
                     </button>
-                </section>
-
-                {/* Couleurs */}
-                <section className={styles.section}>
-                    <h2 className={styles.sectionTitle}>Couleurs</h2>
-                    
-                    <div className={styles.colorInputGroup}>
-                        <input
-                            type="text"
-                            placeholder="Ajouter une couleur (ex: Rouge, Bleu, Noir)"
-                            className={styles.colorInput}
-                            onKeyPress={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    const input = e.currentTarget;
-                                    if (input.value.trim()) {
-                                        addColor(input.value.trim());
-                                        input.value = '';
-                                    }
-                                }
-                            }}
-                        />
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                                if (input.value.trim()) {
-                                    addColor(input.value.trim());
-                                    input.value = '';
-                                }
-                            }}
-                            className={styles.addColorBtn}
-                        >
-                            Ajouter
-                        </button>
-                    </div>
-
-                    {formData.colors.length > 0 && (
-                        <div className={styles.colorTags}>
-                            {formData.colors.map((color, index) => (
-                                <span key={index} className={styles.colorTag}>
-                                    {color}
-                                    <button
-                                        type="button"
-                                        onClick={() => removeColor(color)}
-                                        className={styles.colorRemove}
-                                    >
-                                        ✕
-                                    </button>
-                                </span>
-                            ))}
-                        </div>
-                    )}
                 </section>
 
                 {/* Actions */}

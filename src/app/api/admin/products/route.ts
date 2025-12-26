@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
         category: body.category,
         brand: body.brand || null,
         images: body.images || [],
-        variants: body.variants || [],
+        variants: body.variants || [], // Garder pour rétrocompatibilité
+        color_size_stocks: body.colorSizeStocks || [], // Nouvelle structure
         features: body.features || [],
         colors: body.colors || [],
         is_new: body.isNew || false,
@@ -127,8 +128,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Si des variants sont fournis, créer les entrées d'inventaire
-    if (body.variants && body.variants.length > 0) {
+    // Si des colorSizeStocks sont fournis, créer les entrées d'inventaire
+    if (body.colorSizeStocks && body.colorSizeStocks.length > 0) {
+      const inventoryEntries = body.colorSizeStocks.map((entry: any) => ({
+        product_id: product.id,
+        color: entry.color,
+        size: entry.size,
+        sku: entry.sku || `${body.sku || product.id}-${entry.color}-${entry.size}`,
+        stock_quantity: entry.stock || 0,
+        reserved_quantity: 0,
+      }));
+
+      const { error: inventoryError } = await supabaseAdmin
+        .from('inventory')
+        .insert(inventoryEntries);
+
+      if (inventoryError) {
+        console.error('Error creating inventory entries:', inventoryError);
+        // Ne pas faire échouer la création du produit si l'inventaire échoue
+        // On pourra le corriger plus tard
+      }
+    } else if (body.variants && body.variants.length > 0) {
+      // Fallback pour rétrocompatibilité avec l'ancienne structure
       const inventoryEntries = body.variants.map((variant: any) => ({
         product_id: product.id,
         size: variant.size,
@@ -143,8 +164,6 @@ export async function POST(request: NextRequest) {
 
       if (inventoryError) {
         console.error('Error creating inventory entries:', inventoryError);
-        // Ne pas faire échouer la création du produit si l'inventaire échoue
-        // On pourra le corriger plus tard
       }
     }
 
