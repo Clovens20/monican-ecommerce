@@ -62,6 +62,8 @@ export async function POST(request: NextRequest) {
             fedExApiKey: process.env.FEDEX_API_KEY,
             fedExApiSecret: process.env.FEDEX_API_SECRET,
             fedExAccountNumber: process.env.FEDEX_ACCOUNT_NUMBER,
+            fedExEnvironment: (process.env.FEDEX_ENVIRONMENT as 'sandbox' | 'production') || 'production',
+            uspsEnvironment: (process.env.USPS_ENVIRONMENT as 'production' | 'test') || 'production',
         };
 
         // Get all shipping options
@@ -83,12 +85,19 @@ export async function POST(request: NextRequest) {
 
         const exchangeRate = exchangeRates[currency as keyof typeof exchangeRates] || 1;
 
+        // Formater les options avec la devise correcte
+        // Retourner à la fois 'cost' (USD) et 'price' (devise locale) pour compatibilité
         const optionsWithCurrency = shippingOptions.map(option => ({
-            ...option,
-            cost: option.cost * exchangeRate,
-            currency,
+            carrier: option.carrier,
+            service: option.service,
+            serviceName: option.serviceName,
+            cost: option.cost, // En USD (pour calculs internes)
+            price: Math.round((option.cost * exchangeRate) * 100) / 100, // En devise locale (pour affichage)
+            currency: currency,
+            estimatedDays: option.estimatedDays,
         }));
 
+        // Les options sont déjà triées par prix croissant dans getAllShippingOptions
         return NextResponse.json({
             success: true,
             options: optionsWithCurrency,

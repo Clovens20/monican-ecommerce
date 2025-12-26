@@ -204,7 +204,11 @@ export default function CheckoutPage() {
                 paymentSourceId: String(token),
                 currency: currency,
                 subtotal: Math.max(0, Number(total) || 0),
-                shippingCost: Math.max(0, Number(selectedShippingOption.cost / (settings.exchangeRate || 1)) || 0),
+                shippingCost: Math.max(0, Number(
+                    selectedShippingOption.cost !== undefined 
+                        ? selectedShippingOption.cost 
+                        : ((selectedShippingOption as any).price / (settings.exchangeRate || 1))
+                ) || 0),
                 tax: Math.max(0, Number(taxAmount / settings.exchangeRate) || 0),
                 total: Math.max(0, Number(totalUSD) || 0),
             };
@@ -279,8 +283,12 @@ export default function CheckoutPage() {
     const [taxRate, setTaxRate] = useState<{ rate: number; name: string } | null>(null);
     const [calculatingTax, setCalculatingTax] = useState(false);
 
-    // Calculate shipping
-    const shippingCostUSD = selectedShippingOption ? selectedShippingOption.cost / (settings.exchangeRate || 1) : 0;
+    // Calculate shipping (utiliser cost si disponible, sinon price converti en USD)
+    const shippingCostUSD = selectedShippingOption 
+        ? (selectedShippingOption.cost !== undefined 
+            ? selectedShippingOption.cost 
+            : (selectedShippingOption as any).price / (settings.exchangeRate || 1))
+        : 0;
 
     // Calculate tax when address is complete
     useEffect(() => {
@@ -345,8 +353,10 @@ export default function CheckoutPage() {
         }
     };
 
-    // Calculate total with tax
-    const totalUSD = total + shippingCostUSD + (taxAmount / settings.exchangeRate);
+    // Calculate total with tax (vérifier que shippingCostUSD n'est pas NaN)
+    const validShippingCost = (isNaN(shippingCostUSD) || !isFinite(shippingCostUSD)) ? 0 : Math.max(0, shippingCostUSD);
+    const validTaxAmount = (isNaN(taxAmount) || !isFinite(taxAmount)) ? 0 : Math.max(0, taxAmount);
+    const totalUSD = Math.max(0, total + validShippingCost + (validTaxAmount / (settings.exchangeRate || 1)));
 
     if (items.length === 0) {
         return (
@@ -521,14 +531,20 @@ export default function CheckoutPage() {
                                                             {option.carrier === 'USPS' ? '📮' : '🚚'} {option.serviceName}
                                                         </div>
                                                         <div style={{ fontWeight: 700, fontSize: '1rem', color: '#111827' }}>
-                                                            {formatPrice(option.cost / settings.exchangeRate)}
+                                                            {formatPrice(
+                                                                option.cost !== undefined
+                                                                    ? option.cost
+                                                                    : ((option as any).price / settings.exchangeRate)
+                                                            )}
                                                         </div>
                                                     </div>
-                                                    <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
-                                                        {option.estimatedDays.min === option.estimatedDays.max 
-                                                            ? `${option.estimatedDays.min} jour${option.estimatedDays.min > 1 ? 's' : ''}`
-                                                            : `${option.estimatedDays.min}-${option.estimatedDays.max} jours ouvrables`}
-                                                    </div>
+                                                    {option.estimatedDays && (
+                                                        <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+                                                            {option.estimatedDays.min === option.estimatedDays.max 
+                                                                ? `${option.estimatedDays.min} jour${option.estimatedDays.min > 1 ? 's' : ''}`
+                                                                : `${option.estimatedDays.min}-${option.estimatedDays.max} jours ouvrables`}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </label>
                                         ))}
@@ -554,14 +570,26 @@ export default function CheckoutPage() {
                                     Entrez les informations de votre carte de crédit. Le paiement est sécurisé par Stripe.
                                 </p>
                                 
-                                <StripePaymentForm
-                                    onTokenReceived={handlePaymentTokenReceived}
-                                    onError={handlePaymentError}
-                                    amount={Math.round(totalUSD * 100)}
-                                    currency={shippingAddress.country === 'US' ? 'USD' : 
-                                             shippingAddress.country === 'CA' ? 'CAD' : 'MXN'}
-                                    disabled={loading}
-                                />
+                                {totalUSD > 0 && isFinite(totalUSD) ? (
+                                    <StripePaymentForm
+                                        onTokenReceived={handlePaymentTokenReceived}
+                                        onError={handlePaymentError}
+                                        amount={Math.round(totalUSD * 100)}
+                                        currency={shippingAddress.country === 'US' ? 'USD' : 
+                                                 shippingAddress.country === 'CA' ? 'CAD' : 'MXN'}
+                                        disabled={loading}
+                                    />
+                                ) : (
+                                    <div style={{
+                                        padding: '1rem',
+                                        background: '#fee2e2',
+                                        borderRadius: '0.5rem',
+                                        color: '#991b1b',
+                                        fontSize: '0.9rem'
+                                    }}>
+                                        ⚠️ Impossible de calculer le montant total. Veuillez vérifier votre adresse de livraison et réessayer.
+                                    </div>
+                                )}
 
                                 {paymentError && (
                                     <div style={{ 
@@ -615,7 +643,11 @@ export default function CheckoutPage() {
                         <span>{t('shipping')}</span>
                         <span>
                             {selectedShippingOption 
-                                ? formatPrice(selectedShippingOption.cost / settings.exchangeRate)
+                                ? formatPrice(
+                                    selectedShippingOption.cost !== undefined
+                                        ? selectedShippingOption.cost
+                                        : ((selectedShippingOption as any).price / settings.exchangeRate)
+                                )
                                 : calculatingShipping 
                                     ? t('calculating') 
                                     : shippingError 

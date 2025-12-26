@@ -3,11 +3,29 @@
  * 
  * This module calculates shipping costs using USPS and FedEx APIs
  * based on the shipping address and selected shipping method.
+ * 
+ * Logic:
+ * - Si USPS peut livrer dans le pays de destination: USPS + FedEx (client peut comparer et choisir le moins cher)
+ * - Si USPS ne peut pas livrer: FedEx only
+ * - Options are automatically sorted by price (cheapest first)
  */
 
-// Import USPS and FedEx API functions (will be created)
-// import { getUSPSRates } from './usps-api';
-// import { getFedExRates } from './fedex-api';
+import { 
+    calculateUSPSRates, 
+    isDomesticDestination,
+    canUSPSDeliverToCountry,
+    USPSConfig,
+    USPSAddress as USPSAddr,
+    USPSPackage as USPSPkg,
+} from './shipping/usps-service';
+
+import {
+    calculateFedExRates,
+    isInternationalDestination,
+    FedExConfig,
+    FedExAddress as FedExAddr,
+    FedExPackage as FedExPkg,
+} from './shipping/fedex-service';
 
 export interface ShippingAddress {
     street: string;
@@ -29,7 +47,7 @@ export interface ShippingOption {
     service: string;
     serviceName: string;
     cost: number; // in USD
-    estimatedDays: {
+    estimatedDays?: {
         min: number;
         max: number;
     };
@@ -48,6 +66,8 @@ export interface ShippingCalculatorConfig {
     fedExApiKey?: string; // FedEx API Key
     fedExApiSecret?: string; // FedEx API Secret
     fedExAccountNumber?: string; // FedEx Account Number
+    fedExEnvironment?: 'sandbox' | 'production'; // FedEx environment
+    uspsEnvironment?: 'production' | 'test'; // USPS environment
 }
 
 /**
@@ -80,48 +100,135 @@ export function calculatePackageDimensions(items: Array<{ quantity: number; weig
 
 /**
  * Calculate shipping costs using USPS API
+ * USPS peut livrer aux destinations domestiques ET à certains pays internationaux
  */
 export async function calculateUSPSShipping(
     destination: ShippingAddress,
     packageDimensions: PackageDimensions,
     config: ShippingCalculatorConfig
 ): Promise<ShippingOption[]> {
+    // Vérifier si USPS peut livrer dans ce pays
+    if (!canUSPSDeliverToCountry(config.originAddress.country, destination.country)) {
+        // USPS ne peut pas livrer dans ce pays
+        return [];
+    }
+
     if (!config.uspsUserId) {
         console.warn('USPS User ID not configured, using fallback rates');
         return getUSPSFallbackRates(destination, packageDimensions);
     }
 
     try {
-        // TODO: Implement actual USPS Rate API integration
-        // For now, using fallback rates with improved calculation
-        // In production, call: https://secure.shippingapis.com/ShippingAPI.dll
-        return getUSPSFallbackRates(destination, packageDimensions);
+        const uspsConfig: USPSConfig = {
+            userId: config.uspsUserId,
+            environment: config.uspsEnvironment || 'production',
+        };
+
+        const uspsOrigin: USPSAddr = {
+            street: config.originAddress.street,
+            city: config.originAddress.city,
+            state: config.originAddress.state,
+            zip: config.originAddress.zip,
+            country: config.originAddress.country,
+        };
+
+        const uspsDestination: USPSAddr = {
+            street: destination.street,
+            city: destination.city,
+            state: destination.state,
+            zip: destination.zip,
+            country: destination.country,
+        };
+
+        const uspsPackage: USPSPkg = {
+            weight: packageDimensions.weight,
+            length: packageDimensions.length,
+            width: packageDimensions.width,
+            height: packageDimensions.height,
+        };
+
+        const uspsRates = await calculateUSPSRates(uspsOrigin, uspsDestination, uspsPackage, uspsConfig);
+
+        // Convertir en format ShippingOption
+        return uspsRates.map(rate => ({
+            carrier: rate.carrier,
+            service: rate.service,
+            serviceName: rate.serviceName,
+            cost: rate.price,
+            estimatedDays: rate.estimatedDays || { min: 3, max: 7 }, // Valeur par défaut si non fournie
+            currency: rate.currency as 'USD' | 'CAD' | 'MXN',
+        }));
     } catch (error) {
         console.error('Error calculating USPS rates:', error);
+        // En cas d'erreur, utiliser les fallback rates
         return getUSPSFallbackRates(destination, packageDimensions);
     }
 }
 
 /**
  * Calculate shipping costs using FedEx API
+ * FedEx peut être utilisé pour les destinations domestiques ET internationales
  */
 export async function calculateFedExShipping(
     destination: ShippingAddress,
     packageDimensions: PackageDimensions,
     config: ShippingCalculatorConfig
 ): Promise<ShippingOption[]> {
-    if (!config.fedExApiKey || !config.fedExApiSecret) {
+    // FedEx peut être utilisé pour toutes les destinations (domestiques et internationales)
+    if (!config.fedExApiKey || !config.fedExApiSecret || !config.fedExAccountNumber) {
         console.warn('FedEx credentials not configured, using fallback rates');
         return getFedExFallbackRates(destination, packageDimensions);
     }
 
     try {
-        // TODO: Implement actual FedEx Rate API integration
-        // For now, using fallback rates with improved calculation
-        // In production, call: https://apis.fedex.com/rate/v1/rates/quotes
-        return getFedExFallbackRates(destination, packageDimensions);
+        const fedExConfig: FedExConfig = {
+            apiKey: config.fedExApiKey,
+            apiSecret: config.fedExApiSecret,
+            accountNumber: config.fedExAccountNumber,
+            environment: config.fedExEnvironment || 'production',
+            // URLs depuis .env (production uniquement)
+            oauthUrl: process.env.FEDEX_OAUTH_URL,
+            rateUrl: process.env.FEDEX_RATE_URL,
+        };
+
+        const fedExOrigin: FedExAddr = {
+            street: config.originAddress.street,
+            city: config.originAddress.city,
+            state: config.originAddress.state,
+            zip: config.originAddress.zip,
+            country: config.originAddress.country,
+        };
+
+        const fedExDestination: FedExAddr = {
+            street: destination.street,
+            city: destination.city,
+            state: destination.state,
+            zip: destination.zip,
+            country: destination.country,
+        };
+
+        const fedExPackage: FedExPkg = {
+            weight: packageDimensions.weight,
+            length: packageDimensions.length,
+            width: packageDimensions.width,
+            height: packageDimensions.height,
+        };
+
+        const fedExRates = await calculateFedExRates(fedExOrigin, fedExDestination, fedExPackage, fedExConfig);
+
+        // Convertir en format ShippingOption
+        // Note: rate.price de FedEx est en USD, on le garde comme cost
+        return fedExRates.map(rate => ({
+            carrier: rate.carrier,
+            service: rate.service,
+            serviceName: rate.serviceName,
+            cost: rate.price, // FedEx retourne toujours en USD
+            estimatedDays: rate.estimatedDays || { min: 3, max: 7 }, // Valeur par défaut si non fournie
+            currency: 'USD', // FedEx retourne toujours en USD, la conversion se fait dans l'API
+        }));
     } catch (error) {
         console.error('Error calculating FedEx rates:', error);
+        // En cas d'erreur, utiliser les fallback rates
         return getFedExFallbackRates(destination, packageDimensions);
     }
 }
@@ -232,18 +339,55 @@ function getZoneMultiplier(zip: string): number {
 }
 
 /**
- * Get all available shipping options (USPS + FedEx)
+ * Get all available shipping options
+ * 
+ * Logic:
+ * - Si USPS peut livrer dans le pays de destination: Proposer USPS + FedEx (client peut comparer et choisir le moins cher)
+ * - Si USPS ne peut pas livrer dans le pays: Proposer FedEx uniquement
+ * - Options triées automatiquement par prix croissant
  */
 export async function getAllShippingOptions(
     destination: ShippingAddress,
     packageDimensions: PackageDimensions,
     config: ShippingCalculatorConfig
 ): Promise<ShippingOption[]> {
-    const [uspsOptions, fedExOptions] = await Promise.all([
-        calculateUSPSShipping(destination, packageDimensions, config),
-        calculateFedExShipping(destination, packageDimensions, config),
-    ]);
+    const canUSPSDeliver = canUSPSDeliverToCountry(config.originAddress.country, destination.country);
+    const isInternational = isInternationalDestination(config.originAddress.country, destination.country);
 
-    return [...uspsOptions, ...fedExOptions].sort((a, b) => a.cost - b.cost);
+    const options: ShippingOption[] = [];
+
+    try {
+        // Si USPS peut livrer dans ce pays, proposer USPS ET FedEx
+        if (canUSPSDeliver) {
+            // Calculer les options USPS
+            const uspsOptions = await calculateUSPSShipping(destination, packageDimensions, config);
+            options.push(...uspsOptions);
+
+            // Calculer les options FedEx (pour comparaison)
+            const fedExOptions = await calculateFedExShipping(destination, packageDimensions, config);
+            options.push(...fedExOptions);
+        } else if (isInternational) {
+            // Si USPS ne peut pas livrer et c'est international, utiliser FedEx uniquement
+            const fedExOptions = await calculateFedExShipping(destination, packageDimensions, config);
+            options.push(...fedExOptions);
+        }
+
+        // Trier par prix croissant (le moins cher en premier)
+        return options.sort((a, b) => a.cost - b.cost);
+    } catch (error) {
+        console.error('Error getting shipping options:', error);
+        // En cas d'erreur, retourner les fallback rates
+        const fallbackOptions: ShippingOption[] = [];
+        
+        // Ajouter USPS fallback si USPS peut livrer dans ce pays
+        if (canUSPSDeliver) {
+            fallbackOptions.push(...getUSPSFallbackRates(destination, packageDimensions));
+        }
+        
+        // Toujours ajouter FedEx fallback
+        fallbackOptions.push(...getFedExFallbackRates(destination, packageDimensions));
+        
+        return fallbackOptions.sort((a, b) => a.cost - b.cost);
+    }
 }
 
