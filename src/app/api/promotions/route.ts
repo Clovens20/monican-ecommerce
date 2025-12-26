@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Filtrer les promotions selon les critères
-    let filteredPromotions = data.filter(p => {
+    const filteredPromotions = data.filter(p => {
       // Filtrer celles qui ont atteint leur limite d'utilisation
       if (p.max_uses && p.current_uses >= p.max_uses) {
         return false;

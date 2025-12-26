@@ -59,7 +59,7 @@ interface ReservedItem {
 
 export async function POST(request: NextRequest) {
   let paymentId: string | null = null;
-  let reservedItems: ReservedItem[] = [];
+  const reservedItems: ReservedItem[] = [];
   const startTime = Date.now();
 
   console.log('\n' + '='.repeat(80));

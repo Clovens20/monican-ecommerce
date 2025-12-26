@@ -95,7 +95,7 @@ function RefundPageContent() {
       setSearchValue(orderId);
       handleAutoSearch(orderId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [searchParams]);
 
   const handleSearch = async (e: React.FormEvent) => {

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
         console.log('[Settings Status] Service Role Key configured:', hasServiceRoleKey, 'Length:', serviceRoleKey?.length || 0);
         
         if (!hasSupabaseUrl || !hasServiceRoleKey) {
-            let missingVars = [];
+            const missingVars = [];
             if (!hasSupabaseUrl) missingVars.push('NEXT_PUBLIC_SUPABASE_URL');
             if (!hasServiceRoleKey) missingVars.push('SUPABASE_SERVICE_ROLE_KEY');
             

@@ -83,7 +83,7 @@ export async function POST(
 
         // Récupérer l'utilisateur actuel si connecté
         const authHeader = request.headers.get('authorization');
-        let userId = null;
+        const userId = null;
         
         if (authHeader) {
             // TODO: Extraire userId depuis le token JWT
