@@ -11,11 +11,37 @@ interface HomePageClientProps {
   featuredProductsWithSales: Array<Product & { salesCount: number }>;
 }
 
-export default function HomePageClient({ bestSellers, featuredProductsWithSales }: HomePageClientProps) {
+export default function HomePageClient({
+  bestSellers,
+  featuredProductsWithSales,
+}: HomePageClientProps) {
   const { t } = useLanguage();
+
+  const renderProducts = (
+    products: Array<Product & { salesCount?: number }>,
+    sales: boolean = false
+  ) => {
+    if (!products.length) {
+      return (
+        <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
+          <p>{t('noProductsAvailable')}</p>
+          <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
+            {t('checkBackSoon')}
+          </p>
+        </div>
+      );
+    }
+
+    return products.map((product, index) => (
+      <AnimatedSection key={product.id} delay={index * 100} direction="up">
+        <ProductCard product={product} salesCount={sales ? product.salesCount : undefined} />
+      </AnimatedSection>
+    ));
+  };
 
   return (
     <>
+      {/* Best Sellers */}
       <section className={`container ${styles.productsSection}`}>
         <AnimatedSection direction="up" delay={100}>
           <div className={styles.sectionHeader}>
@@ -24,23 +50,11 @@ export default function HomePageClient({ bestSellers, featuredProductsWithSales 
           </div>
         </AnimatedSection>
         <div className={styles.productsGrid}>
-          {bestSellers.length > 0 ? (
-            bestSellers.map((product, index) => (
-              <AnimatedSection key={product.id} delay={index * 100} direction="up">
-                <ProductCard product={product} />
-              </AnimatedSection>
-            ))
-          ) : (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
-              <p>{t('noProductsAvailable')}</p>
-              <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-                {t('checkBackSoon')}
-              </p>
-            </div>
-          )}
+          {renderProducts(bestSellers)}
         </div>
       </section>
 
+      {/* Featured Products */}
       <section className={`container ${styles.productsSection}`}>
         <AnimatedSection direction="up" delay={200}>
           <div className={styles.sectionHeader}>
@@ -49,23 +63,9 @@ export default function HomePageClient({ bestSellers, featuredProductsWithSales 
           </div>
         </AnimatedSection>
         <div className={styles.productsGrid}>
-          {featuredProductsWithSales.length > 0 ? (
-            featuredProductsWithSales.map((product, index) => (
-              <AnimatedSection key={product.id} delay={index * 100} direction="up">
-                <ProductCard product={product} salesCount={product.salesCount} />
-              </AnimatedSection>
-            ))
-          ) : (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem' }}>
-              <p>{t('noProductsAvailable')}</p>
-              <p style={{ fontSize: '0.9rem', color: '#666', marginTop: '0.5rem' }}>
-                {t('checkBackSoon')}
-              </p>
-            </div>
-          )}
+          {renderProducts(featuredProductsWithSales, true)}
         </div>
       </section>
     </>
   );
 }
-

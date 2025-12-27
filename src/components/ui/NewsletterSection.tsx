@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AnimatedSection from './AnimatedSection';
 import { useLanguage } from '@/contexts/LanguageContext';
 import styles from './NewsletterSection.module.css';
@@ -14,6 +14,14 @@ export default function NewsletterSection() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (submitted) {
+      timer = setTimeout(() => setSubmitted(false), 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [submitted]);
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
@@ -22,13 +30,8 @@ export default function NewsletterSection() {
     try {
       const response = await fetch('/api/newsletter/subscribe', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          name: name.trim() || undefined,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name: name.trim() || undefined }),
       });
 
       const data = await response.json();
@@ -37,7 +40,6 @@ export default function NewsletterSection() {
         setSubmitted(true);
         setEmail('');
         setName('');
-        setTimeout(() => setSubmitted(false), 5000);
       } else {
         setError(data.error || 'Une erreur est survenue');
       }
@@ -58,16 +60,10 @@ export default function NewsletterSection() {
       <div className="container">
         <AnimatedSection direction="up">
           <div className={styles.content}>
-            <h2 className={styles.title}>
-              {t('newsletterTitle')}
-            </h2>
-
-            <p className={styles.subtitle}>
-              {t('newsletterSubtitle')}
-            </p>
+            <h2 className={styles.title}>{t('newsletterTitle')}</h2>
+            <p className={styles.subtitle}>{t('newsletterSubtitle')}</p>
 
             <form onSubmit={handleSubmit} className={styles.form}>
-              {/* Champ NOM - sécurisé contre traduction manquante */}
               <input
                 type="text"
                 placeholder={
@@ -85,7 +81,6 @@ export default function NewsletterSection() {
                 style={{ marginBottom: '10px' }}
               />
 
-              {/* Champ EMAIL */}
               <input
                 type="email"
                 placeholder={t('newsletterPlaceholder')}
@@ -99,7 +94,6 @@ export default function NewsletterSection() {
                 disabled={loading}
               />
 
-              {/* Bouton SUBMIT */}
               <button
                 type="submit"
                 className={styles.submitBtn}
@@ -113,17 +107,8 @@ export default function NewsletterSection() {
               </button>
             </form>
 
-            {submitted && (
-              <p className={styles.successMessage}>
-                {t('newsletterThankYou')}
-              </p>
-            )}
-
-            {error && (
-              <p className={styles.errorMessage}>
-                {error}
-              </p>
-            )}
+            {submitted && <p className={styles.successMessage}>{t('newsletterThankYou')}</p>}
+            {error && <p className={styles.errorMessage}>{error}</p>}
           </div>
         </AnimatedSection>
       </div>

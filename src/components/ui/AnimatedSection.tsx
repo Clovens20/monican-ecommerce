@@ -4,47 +4,43 @@ import { useEffect, useRef, useState } from 'react';
 import styles from './AnimatedSection.module.css';
 
 interface AnimatedSectionProps {
-    children: React.ReactNode;
-    delay?: number;
-    direction?: 'up' | 'down' | 'left' | 'right';
+  children: React.ReactNode;
+  delay?: number;
+  direction?: 'up' | 'down' | 'left' | 'right';
 }
 
-export default function AnimatedSection({ 
-    children, 
-    delay = 0, 
-    direction = 'up' 
+export default function AnimatedSection({
+  children,
+  delay = 0,
+  direction = 'up',
 }: AnimatedSectionProps) {
-    const [isVisible, setIsVisible] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setTimeout(() => setIsVisible(true), delay);
-                }
-            },
-            { threshold: 0.1 }
-        );
+  useEffect(() => {
+    if (!ref.current) return;
 
-        if (ref.current) {
-            observer.observe(ref.current);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          const timer = setTimeout(() => setIsVisible(true), delay);
+          return () => clearTimeout(timer);
         }
-
-        return () => {
-            if (ref.current) {
-                observer.unobserve(ref.current);
-            }
-        };
-    }, [delay]);
-
-    return (
-        <div 
-            ref={ref}
-            className={`${styles.animatedSection} ${styles[direction]} ${isVisible ? styles.visible : ''}`}
-        >
-            {children}
-        </div>
+      },
+      { threshold: 0.1 }
     );
-}
 
+    observer.observe(ref.current);
+
+    return () => observer.disconnect();
+  }, [delay]);
+
+  return (
+    <div
+      ref={ref}
+      className={`${styles.animatedSection} ${styles[direction]} ${isVisible ? styles.visible : ''}`}
+    >
+      {children}
+    </div>
+  );
+}

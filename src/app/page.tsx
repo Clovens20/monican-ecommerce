@@ -17,6 +17,7 @@ export default async function Home() {
     bestSellers = await getBestSellingProducts(4);
   } catch (error) {
     console.error("Error fetching best sellers:", error);
+    bestSellers = [];
   }
 
   // Produits vedettes avec quantité vendue (top 5)
@@ -25,6 +26,7 @@ export default async function Home() {
     featuredProductsWithSales = await getFeaturedProductsWithSales(5);
   } catch (error) {
     console.error("Error fetching featured products:", error);
+    featuredProductsWithSales = [];
   }
 
   return (
