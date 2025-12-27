@@ -167,6 +167,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ✅ NOUVEAU : Envoyer un email à tous les abonnés
+    try {
+      const { sendNewProductNotification } = await import('@/lib/email');
+      await sendNewProductNotification({
+        id: product.id,
+        name: product.name,
+        description: product.description || '',
+        price: parseFloat(product.price.toString()),
+        image: Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : undefined,
+        currency: 'USD', // ou récupérer depuis les settings
+      });
+      console.log('✅ Email de nouveau produit envoyé aux abonnés');
+    } catch (emailError) {
+      console.error('Error sending new product email:', emailError);
+      // Ne pas bloquer la création du produit si l'email échoue
+    }
+
     return NextResponse.json({
       success: true,
       product: {

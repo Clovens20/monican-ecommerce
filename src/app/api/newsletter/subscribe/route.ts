@@ -50,12 +50,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ✅ CORRECTION : Gérer les erreurs de connexion Supabase
     if (checkError && checkError.code !== 'PGRST116') {
       console.error('Error checking existing subscriber:', checkError);
-      return NextResponse.json(
-        { error: 'Erreur lors de la vérification' },
-        { status: 500 }
-      );
+      
+      // Si c'est une erreur de connexion ou d'authentification
+      if (checkError.message?.includes('JWT') || checkError.message?.includes('Invalid API key')) {
+        return NextResponse.json(
+          { error: 'Configuration serveur manquante. Veuillez contacter le support.' },
+          { status: 500 }
+        );
+      }
+      
+      // Pour les autres erreurs, continuer avec l'insertion (peut être une erreur temporaire)
+      console.warn('Warning: Error checking subscriber, attempting to insert anyway:', checkError);
     }
 
     if (existing) {
@@ -127,6 +135,18 @@ export async function POST(request: NextRequest) {
         { error: 'Erreur lors de l\'inscription. Veuillez réessayer.' },
         { status: 500 }
       );
+    }
+
+    // ✅ NOUVEAU : Envoyer un email de bienvenue
+    try {
+      const { sendWelcomeEmail } = await import('@/lib/email');
+      await sendWelcomeEmail({
+        email: normalizedEmail,
+        subscriberName: normalizedEmail.split('@')[0],
+      });
+    } catch (emailError) {
+      console.error('Error sending welcome email:', emailError);
+      // Ne pas bloquer l'inscription si l'email échoue
     }
 
     return NextResponse.json({

@@ -983,6 +983,171 @@ function getAbandonedCartTextTemplate(data: {
     return text;
 }
 
+/**
+ * Template HTML pour l'email de bienvenue newsletter
+ */
+function getWelcomeEmailTemplate(data: {
+  subscriberName: string;
+  email: string;
+}, contactInfo?: ContactInfo): string {
+  const siteUrl = contactInfo?.siteUrl || 'https://monican.shop';
+  
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenue chez Monican !</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <!-- Header avec gradient -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10B981 0%, #3B82F6 100%); padding: 50px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 800; line-height: 1.2;">
+                                🎉 Bienvenue chez Monican !
+                            </h1>
+                            <p style="margin: 15px 0 0; color: #ffffff; font-size: 18px; opacity: 0.95;">
+                                Merci de nous rejoindre
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Contenu principal -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 20px; font-size: 18px; line-height: 1.6; color: #111827; font-weight: 600;">
+                                Bonjour ${data.subscriberName},
+                            </p>
+                            
+                            <p style="margin: 0 0 25px; font-size: 16px; line-height: 1.8; color: #4b5563;">
+                                Nous sommes ravis de vous accueillir dans la communauté <strong style="color: #10B981;">Monican</strong> ! 🎊
+                            </p>
+                            
+                            <p style="margin: 0 0 25px; font-size: 16px; line-height: 1.8; color: #4b5563;">
+                                En vous abonnant à notre newsletter, vous avez maintenant accès à :
+                            </p>
+                            
+                            <ul style="margin: 0 0 30px; padding-left: 20px; color: #4b5563; font-size: 16px; line-height: 1.8;">
+                                <li style="margin-bottom: 12px;">✨ <strong>Offres exclusives</strong> réservées aux membres</li>
+                                <li style="margin-bottom: 12px;">🆕 <strong>Nouveautés</strong> en avant-première</li>
+                                <li style="margin-bottom: 12px;">💡 <strong>Conseils de style</strong> et tendances mode</li>
+                                <li style="margin-bottom: 12px;">🎁 <strong>Codes promo</strong> et réductions spéciales</li>
+                            </ul>
+                            
+                            <!-- Boutons CTA -->
+                            <table role="presentation" style="width: 100%; border-collapse: collapse; margin: 35px 0;">
+                                <tr>
+                                    <td align="center" style="padding: 0 0 15px;">
+                                        <a href="${siteUrl}/catalog" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                                            🛍️ Découvrir notre catalogue
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center" style="padding: 0;">
+                                        <a href="${siteUrl}/about" style="display: inline-block; padding: 14px 35px; background: transparent; color: #10B981; text-decoration: none; border: 2px solid #10B981; border-radius: 12px; font-weight: 600; font-size: 15px;">
+                                            📖 En savoir plus sur nous
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 4px solid #10B981;">
+                                <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #065f46;">
+                                    <strong style="color: #10B981;">💎 Offre spéciale pour les nouveaux membres :</strong><br>
+                                    Profitez de <strong>10% de réduction</strong> sur votre première commande avec le code <strong style="background: #ffffff; padding: 4px 8px; border-radius: 6px; color: #10B981;">WELCOME10</strong>
+                                </p>
+                            </div>
+                            
+                            <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280; text-align: center;">
+                                Restez connecté avec nous sur les réseaux sociaux pour ne rien manquer !
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <div style="margin-bottom: 20px;">
+                                <a href="${siteUrl}" style="display: inline-block; margin: 0 10px; color: #10B981; text-decoration: none; font-weight: 600;">Accueil</a>
+                                <span style="color: #d1d5db;">|</span>
+                                <a href="${siteUrl}/catalog" style="display: inline-block; margin: 0 10px; color: #10B981; text-decoration: none; font-weight: 600;">Catalogue</a>
+                                <span style="color: #d1d5db;">|</span>
+                                <a href="${siteUrl}/contact" style="display: inline-block; margin: 0 10px; color: #10B981; text-decoration: none; font-weight: 600;">Contact</a>
+                            </div>
+                            <p style="margin: 0 0 10px; font-size: 14px; color: #6b7280;">
+                                Des questions ? Contactez-nous à <a href="mailto:${contactInfo?.email || 'support@monican.shop'}" style="color: #10B981; text-decoration: none;">${contactInfo?.email || 'support@monican.shop'}</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                                © ${new Date().getFullYear()} Monican.shop. Tous droits réservés.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+}
+
+/**
+ * Template texte pour l'email de bienvenue
+ */
+function getWelcomeEmailTextTemplate(data: {
+  subscriberName: string;
+  email: string;
+}, contactInfo?: ContactInfo): string {
+  const siteUrl = contactInfo?.siteUrl || 'https://monican.shop';
+  
+  let text = `🎉 BIENVENUE CHEZ MONICAN !\n\n`;
+  text += `Bonjour ${data.subscriberName},\n\n`;
+  text += `Nous sommes ravis de vous accueillir dans la communauté Monican ! 🎊\n\n`;
+  text += `En vous abonnant à notre newsletter, vous avez maintenant accès à :\n\n`;
+  text += `✨ Offres exclusives réservées aux membres\n`;
+  text += `🆕 Nouveautés en avant-première\n`;
+  text += `💡 Conseils de style et tendances mode\n`;
+  text += `🎁 Codes promo et réductions spéciales\n\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  text += `💎 OFFRE SPÉCIALE POUR LES NOUVEAUX MEMBRES :\n`;
+  text += `Profitez de 10% de réduction sur votre première commande avec le code WELCOME10\n\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  text += `🛍️ Découvrir notre catalogue : ${siteUrl}/catalog\n`;
+  text += `📖 En savoir plus sur nous : ${siteUrl}/about\n\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  text += `Des questions ? Contactez-nous à ${contactInfo?.email || 'support@monican.shop'}\n\n`;
+  text += `© ${new Date().getFullYear()} Monican.shop. Tous droits réservés.\n`;
+
+  return text;
+}
+
+/**
+ * Envoie un email de bienvenue pour la newsletter
+ */
+export async function sendWelcomeEmail(data: {
+  email: string;
+  subscriberName?: string;
+}): Promise<EmailResult> {
+  const contactInfo = await getContactInfoServer('fr');
+  const subscriberName = data.subscriberName || data.email.split('@')[0];
+  
+  const html = getWelcomeEmailTemplate({ subscriberName, email: data.email }, contactInfo);
+  const text = getWelcomeEmailTextTemplate({ subscriberName, email: data.email }, contactInfo);
+  
+  return sendEmail({
+    to: data.email,
+    subject: '🎉 Bienvenue chez Monican - Offre spéciale pour vous !',
+    html,
+    text,
+  });
+}
+
 // ============================================================================
 // EMAIL FUNCTIONS
 // ============================================================================
@@ -1295,4 +1460,163 @@ export async function sendShippingNotification(shippingData: {
         template: 'shipping_notification',
         data: shippingData,
     });
+}
+
+/**
+ * Template HTML pour l'email de nouveau produit
+ */
+function getNewProductEmailTemplate(data: {
+  productName: string;
+  productDescription: string;
+  productPrice: number;
+  productImage?: string;
+  productUrl: string;
+  currency: string;
+}, contactInfo?: ContactInfo): string {
+  const siteUrl = contactInfo?.siteUrl || 'https://monican.shop';
+  const formatCurrency = (amount: number) => {
+    const locale = data.currency === 'USD' ? 'en-US' : data.currency === 'CAD' ? 'en-CA' : 'es-MX';
+    return new Intl.NumberFormat(locale, { 
+      style: 'currency', 
+      currency: data.currency 
+    }).format(amount);
+  };
+  
+  return `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouveau produit disponible !</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+    <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table role="presentation" style="max-width: 600px; width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10B981 0%, #3B82F6 100%); padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; line-height: 1.2;">
+                                🆕 Nouveau produit disponible !
+                            </h1>
+                        </td>
+                    </tr>
+                    
+                    <!-- Contenu -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <p style="margin: 0 0 25px; font-size: 18px; line-height: 1.6; color: #111827; font-weight: 600;">
+                                Bonne nouvelle ! 🎉
+                            </p>
+                            
+                            <p style="margin: 0 0 30px; font-size: 16px; line-height: 1.8; color: #4b5563;">
+                                Nous avons le plaisir de vous présenter notre nouveau produit :
+                            </p>
+                            
+                            <!-- Produit -->
+                            <div style="background: #f9fafb; border-radius: 12px; padding: 25px; margin: 30px 0; border: 1px solid #e5e7eb;">
+                                ${data.productImage ? `
+                                    <img src="${data.productImage}" alt="${data.productName}" style="width: 100%; max-width: 400px; height: auto; border-radius: 8px; margin-bottom: 20px; display: block; margin-left: auto; margin-right: auto;">
+                                ` : ''}
+                                <h2 style="margin: 0 0 15px; font-size: 24px; font-weight: 700; color: #111827; text-align: center;">
+                                    ${data.productName}
+                                </h2>
+                                <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.7; color: #4b5563; text-align: center;">
+                                    ${data.productDescription}
+                                </p>
+                                <div style="text-align: center; margin: 25px 0;">
+                                    <span style="font-size: 28px; font-weight: 800; color: #10B981;">
+                                        ${formatCurrency(data.productPrice)}
+                                    </span>
+                                </div>
+                                <div style="text-align: center; margin-top: 25px;">
+                                    <a href="${data.productUrl}" style="display: inline-block; padding: 16px 40px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                                        Voir le produit →
+                                    </a>
+                                </div>
+                            </div>
+                            
+                            <p style="margin: 30px 0 0; font-size: 14px; line-height: 1.6; color: #6b7280; text-align: center;">
+                                Ne manquez pas cette occasion ! Quantités limitées disponibles.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0 0 10px; font-size: 14px; color: #6b7280;">
+                                Des questions ? Contactez-nous à <a href="mailto:${contactInfo?.email || 'support@monican.shop'}" style="color: #10B981; text-decoration: none;">${contactInfo?.email || 'support@monican.shop'}</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #9ca3af;">
+                                © ${new Date().getFullYear()} Monican.shop. Tous droits réservés.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+    `.trim();
+}
+
+/**
+ * Envoie un email de nouveau produit à tous les abonnés
+ */
+export async function sendNewProductNotification(productData: {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image?: string;
+  currency?: string;
+}): Promise<EmailResult> {
+  const contactInfo = await getContactInfoServer('fr');
+  const siteUrl = contactInfo?.siteUrl || 'https://monican.shop';
+  const productUrl = `${siteUrl}/product/${productData.id}`;
+  
+  const html = getNewProductEmailTemplate({
+    productName: productData.name,
+    productDescription: productData.description,
+    productPrice: productData.price,
+    productImage: productData.image,
+    productUrl,
+    currency: productData.currency || 'USD',
+  }, contactInfo);
+  
+  // Récupérer tous les abonnés actifs
+  const { supabaseAdmin } = await import('@/lib/supabase');
+  const { data: subscribers, error } = await supabaseAdmin
+    .from('newsletter_subscribers')
+    .select('email')
+    .eq('status', 'active');
+  
+  if (error || !subscribers || subscribers.length === 0) {
+    console.error('Error fetching subscribers:', error);
+    return {
+      success: false,
+      error: 'Aucun abonné trouvé',
+    };
+  }
+  
+  // Envoyer l'email à tous les abonnés
+  const emailPromises = subscribers.map(subscriber =>
+    sendEmail({
+      to: subscriber.email,
+      subject: `🆕 Nouveau produit : ${productData.name}`,
+      html,
+    })
+  );
+  
+  const results = await Promise.allSettled(emailPromises);
+  const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+  
+  return {
+    success: true,
+    messageId: `sent-to-${successCount}-subscribers`,
+  };
 }
