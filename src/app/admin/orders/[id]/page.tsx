@@ -41,6 +41,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     const [loading, setLoading] = useState(true);
     const [status, setStatus] = useState<OrderStatus>('pending');
     const [tracking, setTracking] = useState('');
+    const [cancelling, setCancelling] = useState(false);
 
     useEffect(() => {
         async function fetchOrder() {
@@ -137,6 +138,62 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         } catch (err) {
             console.error('Error saving tracking:', err);
             alert('Erreur lors de la sauvegarde du numéro de suivi');
+        }
+    };
+
+    const handleCancelOrder = async () => {
+        // Demander confirmation
+        const reason = prompt(
+            'Êtes-vous sûr de vouloir annuler cette commande ?\n\n' +
+            'Cette action libérera le stock réservé.\n\n' +
+            'Raison de l\'annulation (optionnel):'
+        );
+
+        if (reason === null) {
+            return; // L'utilisateur a annulé
+        }
+
+        setCancelling(true);
+        
+        try {
+            const response = await fetch(`/api/admin/orders/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ reason: reason || undefined }),
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                setStatus('cancelled');
+                if (order) {
+                    setOrder({ ...order, status: 'cancelled' });
+                }
+                
+                // Construire le message de succès détaillé
+                let successMessage = '✅ Commande annulée avec succès.\n\n';
+                successMessage += '• Le stock a été libéré\n';
+                if (data.refundId) {
+                    successMessage += `• Remboursement effectué (ID: ${data.refundId})\n`;
+                    successMessage += '  Le remboursement apparaîtra sur le compte du client dans 5-10 jours ouvrables\n';
+                }
+                if (data.emailSent) {
+                    successMessage += '• Email de notification envoyé au client\n';
+                }
+                
+                alert(successMessage);
+                // Recharger la page pour mettre à jour l'affichage
+                window.location.reload();
+            } else {
+                alert(`❌ Erreur: ${data.error || 'Impossible d\'annuler la commande'}`);
+            }
+        } catch (err) {
+            console.error('Error cancelling order:', err);
+            alert('❌ Erreur lors de l\'annulation de la commande');
+        } finally {
+            setCancelling(false);
         }
     };
 
@@ -298,6 +355,38 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                             <div style={{ textAlign: 'center', color: '#059669', fontWeight: 600 }}>
                                 ✅ Commande Expédiée<br />
                                 <span style={{ fontSize: '0.9rem', color: '#6b7280' }}>Suivi: {tracking}</span>
+                            </div>
+                        )}
+
+                        {status === 'cancelled' && (
+                            <div style={{ textAlign: 'center', color: '#dc2626', fontWeight: 600 }}>
+                                ❌ Commande Annulée
+                            </div>
+                        )}
+
+                        {/* Bouton d'annulation - disponible pour les commandes en attente ou en traitement */}
+                        {(status === 'pending' || status === 'processing') && (
+                            <div style={{ marginTop: '1rem', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+                                <button
+                                    className={`${styles.btn} ${styles.btnDanger || ''}`}
+                                    onClick={handleCancelOrder}
+                                    disabled={cancelling}
+                                    style={{
+                                        width: '100%',
+                                        background: '#dc2626',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '0.75rem',
+                                        borderRadius: '0.5rem',
+                                        cursor: cancelling ? 'not-allowed' : 'pointer',
+                                        opacity: cancelling ? 0.6 : 1
+                                    }}
+                                >
+                                    {cancelling ? '⏳ Annulation...' : '🗑️ Annuler la Commande'}
+                                </button>
+                                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem', textAlign: 'center' }}>
+                                    Cette action libérera le stock réservé
+                                </p>
                             </div>
                         )}
                     </div>

@@ -64,6 +64,7 @@ const CATEGORIES_WITHOUT_SIZES = ['accessoires'];
 // Tailles prédéfinies
 const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const SHOES_SIZES = ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+const JEANS_SIZES = ['28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '46', '48'];
 
 export default function ProductForm({ initialData }: { initialData?: any }) {
     const router = useRouter();
@@ -197,8 +198,11 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
         // Les tennis et chaussures utilisent des numéros (35-45)
         if (formData.category === 'tennis' || formData.category === 'chaussures') {
             return SHOES_SIZES;
+        } else if (formData.category === 'jeans') {
+            // Les jeans utilisent des tailles numériques (28-46)
+            return JEANS_SIZES;
         } else if (CATEGORIES_WITH_SIZES.includes(formData.category)) {
-            // Les autres catégories (chemises, jeans, maillots) utilisent XS, S, M, L, XL, XXL
+            // Les autres catégories (chemises, maillots) utilisent XS, S, M, L, XL, XXL
             return CLOTHING_SIZES;
         }
         return [];
@@ -726,12 +730,13 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                                 value={formData.category}
                                 onChange={(e) => {
                                     const newCategory = e.target.value;
-                                    // Réinitialiser les variants quand on change de catégorie
+                                    // Réinitialiser les variants et colorSizeStocks quand on change de catégorie
                                     // car les tailles disponibles peuvent être différentes
                                     setFormData({ 
                                         ...formData, 
                                         category: newCategory,
-                                        variants: [] // Réinitialiser les variants
+                                        variants: [], // Réinitialiser les variants
+                                        colorSizeStocks: [] // Réinitialiser les stocks par couleur/taille
                                     });
                                 }}
                                 required

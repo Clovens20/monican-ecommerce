@@ -20,6 +20,7 @@ import { useWishlist } from '@/lib/wishlist';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { findBestPromotion, calculateDiscountedPrice, Promotion } from '@/lib/promotions';
 import { filterVariantsByCategory } from '@/lib/product-utils';
+import { getJeansSizeEquivalent, formatSizeWithEquivalents } from '@/lib/size-equivalents';
 
 type TabType = 'description' | 'features' | 'shipping';
 
@@ -414,18 +415,62 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                     {/* Size Selection */}
                     <div className={styles.section}>
                         <span className={styles.sectionTitle}>Taille</span>
+                        {product.category === 'jeans' && (
+                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                                Tailles avec équivalences (EU / US)
+                            </p>
+                        )}
                         <div className={styles.sizeGrid}>
-                            {filteredVariants.map((variant) => (
-                                <button
-                                    key={variant.size}
-                                    className={`${styles.sizeBtn} ${selectedSize === variant.size ? styles.selected : ''}`}
-                                    onClick={() => setSelectedSize(variant.size)}
-                                    disabled={variant.stock === 0}
-                                >
-                                    {variant.size}
-                                </button>
-                            ))}
+                            {filteredVariants.map((variant) => {
+                                const sizeEquivalent = product.category === 'jeans' 
+                                    ? getJeansSizeEquivalent(variant.size) 
+                                    : null;
+                                
+                                return (
+                                    <button
+                                        key={variant.size}
+                                        className={`${styles.sizeBtn} ${selectedSize === variant.size ? styles.selected : ''}`}
+                                        onClick={() => setSelectedSize(variant.size)}
+                                        disabled={variant.stock === 0}
+                                        title={sizeEquivalent 
+                                            ? `EU: ${sizeEquivalent.eu} | US: ${sizeEquivalent.us} | UK: ${sizeEquivalent.uk} | Waist: ${sizeEquivalent.waist}`
+                                            : variant.size
+                                        }
+                                    >
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                            <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{variant.size}</span>
+                                            {sizeEquivalent && (
+                                                <span style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '0.25rem' }}>
+                                                    EU: {sizeEquivalent.eu} | US: {sizeEquivalent.us}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
+                        {product.category === 'jeans' && selectedSize && (
+                            <div style={{ 
+                                marginTop: '1rem', 
+                                padding: '0.75rem', 
+                                background: '#f3f4f6', 
+                                borderRadius: '0.5rem',
+                                fontSize: '0.875rem'
+                            }}>
+                                <strong>Taille sélectionnée: {selectedSize}</strong>
+                                {(() => {
+                                    const equivalent = getJeansSizeEquivalent(selectedSize);
+                                    return equivalent ? (
+                                        <div style={{ marginTop: '0.5rem', color: '#4b5563' }}>
+                                            <div>🇪🇺 Europe: {equivalent.eu}</div>
+                                            <div>🇺🇸 USA: {equivalent.us}</div>
+                                            <div>🇬🇧 UK: {equivalent.uk}</div>
+                                            <div>📏 Tour de taille: {equivalent.waist}</div>
+                                        </div>
+                                    ) : null;
+                                })()}
+                            </div>
+                        )}
                     </div>
 
                     {/* Quantity Selector */}

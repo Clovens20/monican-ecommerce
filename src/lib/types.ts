@@ -100,6 +100,7 @@ export interface Order {
     date: string;
     trackingNumber?: string;
     paymentMethod: string;
+    paymentId?: string; // ID du paiement Stripe pour remboursement
     internalNotes?: string;
     language?: OrderLanguage; // NOUVEAU: Langue de la facture/documents
 }

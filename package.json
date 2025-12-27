@@ -15,6 +15,7 @@
     "seed:sales": "node scripts/seed-sales.js",
     "check:translations": "node scripts/check-translations.js",
     "check:env": "node scripts/check-env.js",
+    "check:vercel": "node scripts/check-vercel-config.js",
     "check:admin": "node scripts/check-admin.js",
     "test:supabase": "node scripts/test-supabase-connection.js",
     "test:verify-auth": "node scripts/test-verify-auth.js",

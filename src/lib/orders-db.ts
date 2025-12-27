@@ -4,6 +4,8 @@
 
 import { supabase, supabaseAdmin } from './supabase';
 import { Order, OrderStatus, OrderItem, ShippingAddress } from './types';
+import { sendOrderCancellationEmail } from './email';
+import { refundPayment } from './payments';
 
 // ============================================================================
 // TYPE CONVERSION HELPERS
@@ -55,6 +57,7 @@ function convertSupabaseToOrder(supabaseOrder: SupabaseOrder): Order {
         date: supabaseOrder.created_at,
         trackingNumber: supabaseOrder.tracking_number || undefined,
         paymentMethod: supabaseOrder.payment_method || 'Non spécifié',
+        paymentId: supabaseOrder.payment_id || undefined,
         internalNotes: supabaseOrder.internal_notes || undefined,
     };
 }
@@ -545,5 +548,165 @@ export async function updateOrder(
     } catch (error) {
         console.error('Error in updateOrder:', error);
         return null;
+    }
+}
+
+/**
+ * Annule une commande et libère le stock réservé (Admin uniquement)
+ * Utilise la fonction SQL rollback_order pour garantir l'atomicité
+ * Envoie un email au client et effectue le remboursement automatique si un paiement existe
+ */
+export async function cancelOrder(orderId: string, reason?: string): Promise<{ success: boolean; refundId?: string; emailSent?: boolean; error?: string }> {
+    try {
+        // Vérifier que la commande existe et peut être annulée
+        const order = await getOrderById(orderId);
+        if (!order) {
+            console.error('Order not found:', orderId);
+            return { success: false, error: 'Commande non trouvée' };
+        }
+
+        // Vérifier que la commande n'est pas déjà livrée ou annulée
+        if (order.status === 'delivered') {
+            console.error('Cannot cancel delivered order:', orderId);
+            return { success: false, error: 'Impossible d\'annuler une commande déjà livrée' };
+        }
+
+        if (order.status === 'cancelled') {
+            console.error('Order already cancelled:', orderId);
+            return { success: false, error: 'Commande déjà annulée' };
+        }
+
+        // Récupérer le payment_id depuis la base de données (pas dans le type Order actuel)
+        const { data: orderData, error: fetchError } = await supabaseAdmin
+            .from('orders')
+            .select('payment_id, payment_status')
+            .eq('id', orderId)
+            .single();
+
+        if (fetchError) {
+            console.error('Error fetching order payment info:', fetchError);
+        }
+
+        const paymentId = orderData?.payment_id;
+        const paymentStatus = orderData?.payment_status;
+
+        // Effectuer le remboursement si un paiement existe et n'a pas déjà été remboursé
+        let refundId: string | undefined;
+        let refundStatus: 'completed' | 'pending' | undefined = undefined;
+        
+        if (paymentId && paymentStatus !== 'refunded') {
+            try {
+                console.log('💰 [CANCEL ORDER] Remboursement du paiement:', paymentId);
+                
+                // Convertir le montant total en centimes pour Stripe
+                const amountInCents = Math.round(order.total * 100);
+                
+                const refundResult = await refundPayment({
+                    paymentId: paymentId,
+                    amount: amountInCents,
+                    reason: 'requested_by_customer',
+                });
+
+                if (refundResult.success) {
+                    refundId = refundResult.refundId;
+                    refundStatus = 'completed';
+                    console.log('✅ [CANCEL ORDER] Remboursement effectué:', refundId);
+                    
+                    // Mettre à jour le statut de paiement
+                    await supabaseAdmin
+                        .from('orders')
+                        .update({ payment_status: 'refunded' })
+                        .eq('id', orderId);
+                } else {
+                    console.error('❌ [CANCEL ORDER] Erreur remboursement:', refundResult.error);
+                    refundStatus = 'pending';
+                    // Continuer quand même avec l'annulation même si le remboursement échoue
+                }
+            } catch (refundError: any) {
+                console.error('❌ [CANCEL ORDER] Exception lors du remboursement:', refundError);
+                refundStatus = 'pending';
+                // Continuer avec l'annulation même si le remboursement échoue
+            }
+        } else if (!paymentId) {
+            console.log('ℹ️ [CANCEL ORDER] Aucun paiement associé à cette commande');
+        } else {
+            console.log('ℹ️ [CANCEL ORDER] Paiement déjà remboursé');
+        }
+
+        // Appeler la fonction SQL rollback_order qui libère le stock et annule la commande
+        const { error } = await supabaseAdmin.rpc('rollback_order', {
+            p_order_id: orderId
+        });
+
+        if (error) {
+            console.error('Error calling rollback_order:', error);
+            return { success: false, error: 'Erreur lors de l\'annulation de la commande' };
+        }
+
+        // Mettre à jour l'historique avec la raison de l'annulation
+        const updatedOrder = await getOrderById(orderId);
+        if (updatedOrder) {
+            const statusHistory = Array.isArray(updatedOrder.statusHistory) 
+                ? updatedOrder.statusHistory 
+                : [];
+            
+            const cancellationNote = reason 
+                ? `Commande annulée par l'administrateur. Raison: ${reason}${refundId ? ` Remboursement: ${refundId}` : ''}`
+                : `Commande annulée par l'administrateur${refundId ? `. Remboursement: ${refundId}` : ''}`;
+            
+            statusHistory.push({
+                status: 'cancelled',
+                timestamp: new Date().toISOString(),
+                note: cancellationNote,
+                updatedBy: 'admin',
+            });
+
+            await supabaseAdmin
+                .from('orders')
+                .update({ status_history: statusHistory })
+                .eq('id', orderId);
+        }
+
+        // Envoyer l'email de notification au client
+        let emailSent = false;
+        try {
+            console.log('📧 [CANCEL ORDER] Envoi de l\'email d\'annulation à:', order.customerEmail);
+            
+            const emailResult = await sendOrderCancellationEmail({
+                orderNumber: order.orderNumber || order.id,
+                customerEmail: order.customerEmail,
+                customerName: order.customerName,
+                items: order.items.map(item => ({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    size: item.size,
+                })),
+                total: order.total,
+                currency: order.currency,
+                reason: reason,
+                refundAmount: order.total,
+                refundStatus: refundStatus,
+            });
+
+            if (emailResult.success) {
+                emailSent = true;
+                console.log('✅ [CANCEL ORDER] Email d\'annulation envoyé avec succès');
+            } else {
+                console.error('❌ [CANCEL ORDER] Erreur envoi email:', emailResult.error);
+            }
+        } catch (emailError: any) {
+            console.error('❌ [CANCEL ORDER] Exception lors de l\'envoi de l\'email:', emailError);
+            // Ne pas faire échouer l'annulation si l'email échoue
+        }
+
+        return {
+            success: true,
+            refundId,
+            emailSent,
+        };
+    } catch (error: any) {
+        console.error('Error in cancelOrder:', error);
+        return { success: false, error: error.message || 'Erreur lors de l\'annulation de la commande' };
     }
 }

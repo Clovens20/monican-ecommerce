@@ -78,7 +78,6 @@ export default function NewsletterSection() {
                 }}
                 className={styles.input}
                 disabled={loading}
-                style={{ marginBottom: '10px' }}
               />
 
               <input

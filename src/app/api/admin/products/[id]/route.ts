@@ -214,3 +214,56 @@ export async function GET(
   }
 }
 
+/**
+ * Route pour supprimer un produit (admin)
+ * DELETE /api/admin/products/[id]
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authResult = await verifyAuth(request);
+    if (authResult.status !== 200 || authResult.user?.role !== 'admin') {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    
+    // Vérifier que le produit existe
+    const existingProduct = await getProductById(id);
+    if (!existingProduct) {
+      return NextResponse.json(
+        { error: 'Produit non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    // Supprimer le produit (soft delete - met is_active à false)
+    const { error: deleteError } = await supabaseAdmin
+      .from('products')
+      .update({ is_active: false })
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Error deleting product:', deleteError);
+      return NextResponse.json(
+        { error: deleteError.message || 'Erreur lors de la suppression du produit' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Produit supprimé avec succès',
+    });
+
+  } catch (error: any) {
+    console.error('Error deleting product:', error);
+    return NextResponse.json(
+      { error: error.message || 'Erreur lors de la suppression du produit' },
+      { status: 500 }
+    );
+  }
+}
+

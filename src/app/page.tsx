@@ -45,11 +45,6 @@ export default async function Home() {
       />
 
       <NewsletterSection />
-
-      {/* Test visuel pour confirmer le déploiement */}
-      <p style={{ color: "red", textAlign: "center", marginTop: 40 }}>
-        DEPLOY OK — {new Date().toISOString()}
-      </p>
     </main>
   );
 }

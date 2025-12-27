@@ -1566,6 +1566,161 @@ export async function sendShippingNotification(shippingData: {
 }
 
 /**
+ * Envoie une notification d'annulation de commande
+ */
+export async function sendOrderCancellationEmail(cancellationData: {
+    orderNumber: string;
+    customerEmail: string;
+    customerName: string;
+    items: Array<{ name: string; quantity: number; price: number; size?: string }>;
+    total: number;
+    currency: string;
+    reason?: string;
+    refundAmount?: number;
+    refundStatus?: 'pending' | 'completed';
+}): Promise<EmailResult> {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://monican.shop';
+    
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commande Annulée</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0;">Commande Annulée</h1>
+    </div>
+    
+    <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+        <p>Bonjour ${cancellationData.customerName},</p>
+        
+        <p>Nous vous informons que votre commande <strong>#${cancellationData.orderNumber}</strong> a été annulée.</p>
+        
+        ${cancellationData.reason ? `
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong>Raison de l'annulation :</strong><br>
+            ${cancellationData.reason}
+        </div>
+        ` : ''}
+        
+        <h2 style="color: #1f2937; margin-top: 30px;">Détails de la commande annulée</h2>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+                <tr style="background: #f3f4f6;">
+                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Article</th>
+                    <th style="padding: 12px; text-align: center; border-bottom: 2px solid #e5e7eb;">Qté</th>
+                    <th style="padding: 12px; text-align: right; border-bottom: 2px solid #e5e7eb;">Prix</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${cancellationData.items.map(item => `
+                <tr>
+                    <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
+                        ${item.name}${item.size ? ` (Taille: ${item.size})` : ''}
+                    </td>
+                    <td style="padding: 12px; text-align: center; border-bottom: 1px solid #e5e7eb;">${item.quantity}</td>
+                    <td style="padding: 12px; text-align: right; border-bottom: 1px solid #e5e7eb;">
+                        ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cancellationData.currency }).format(item.price)}
+                    </td>
+                </tr>
+                `).join('')}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2" style="padding: 12px; text-align: right; font-weight: bold; border-top: 2px solid #e5e7eb;">Total :</td>
+                    <td style="padding: 12px; text-align: right; font-weight: bold; border-top: 2px solid #e5e7eb;">
+                        ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cancellationData.currency }).format(cancellationData.total)}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+        
+        ${cancellationData.refundStatus === 'completed' ? `
+        <div style="background: #d1fae5; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong style="color: #065f46;">✅ Remboursement effectué</strong><br>
+            <p style="margin: 10px 0 0 0; color: #047857;">
+                Un remboursement de <strong>${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cancellationData.currency }).format(cancellationData.refundAmount || cancellationData.total)}</strong> 
+                a été effectué sur votre méthode de paiement originale.
+                <br><br>
+                <small>Le remboursement peut prendre 5 à 10 jours ouvrables pour apparaître sur votre relevé bancaire.</small>
+            </p>
+        </div>
+        ` : cancellationData.refundStatus === 'pending' ? `
+        <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong style="color: #92400e;">⏳ Remboursement en cours</strong><br>
+            <p style="margin: 10px 0 0 0; color: #78350f;">
+                Votre remboursement est en cours de traitement. Vous recevrez un email de confirmation une fois le remboursement complété.
+            </p>
+        </div>
+        ` : ''}
+        
+        <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+            <strong>📦 Stock libéré</strong><br>
+            <p style="margin: 10px 0 0 0; color: #1e40af;">
+                Le stock réservé pour cette commande a été libéré et est à nouveau disponible.
+            </p>
+        </div>
+        
+        <p style="margin-top: 30px;">
+            Si vous avez des questions concernant cette annulation, n'hésitez pas à nous contacter.
+        </p>
+        
+        <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+            <a href="${appUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                Retour au site
+            </a>
+        </div>
+        
+        <p style="margin-top: 30px; font-size: 0.9rem; color: #6b7280; text-align: center;">
+            Cordialement,<br>
+            <strong>L'équipe Monican.shop</strong>
+        </p>
+    </div>
+</body>
+</html>
+    `;
+
+    const text = `
+Bonjour ${cancellationData.customerName},
+
+Nous vous informons que votre commande #${cancellationData.orderNumber} a été annulée.
+
+${cancellationData.reason ? `Raison de l'annulation : ${cancellationData.reason}\n\n` : ''}
+
+Détails de la commande annulée :
+${cancellationData.items.map(item => `- ${item.name}${item.size ? ` (Taille: ${item.size})` : ''} x${item.quantity} : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cancellationData.currency }).format(item.price)}`).join('\n')}
+
+Total : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cancellationData.currency }).format(cancellationData.total)}
+
+${cancellationData.refundStatus === 'completed' ? `
+✅ Remboursement effectué
+Un remboursement de ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: cancellationData.currency }).format(cancellationData.refundAmount || cancellationData.total)} a été effectué sur votre méthode de paiement originale.
+Le remboursement peut prendre 5 à 10 jours ouvrables pour apparaître sur votre relevé bancaire.
+` : cancellationData.refundStatus === 'pending' ? `
+⏳ Remboursement en cours
+Votre remboursement est en cours de traitement. Vous recevrez un email de confirmation une fois le remboursement complété.
+` : ''}
+
+📦 Le stock réservé pour cette commande a été libéré et est à nouveau disponible.
+
+Si vous avez des questions concernant cette annulation, n'hésitez pas à nous contacter.
+
+Cordialement,
+L'équipe Monican.shop
+    `;
+
+    return sendEmail({
+        to: cancellationData.customerEmail,
+        subject: `Votre commande ${cancellationData.orderNumber} a été annulée - Monican.shop`,
+        html,
+        text,
+    });
+}
+
+/**
  * Template HTML pour l'email de nouveau produit
  */
 function getNewProductEmailTemplate(data: {

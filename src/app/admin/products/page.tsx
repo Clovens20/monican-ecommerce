@@ -29,6 +29,7 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [updatingProducts, setUpdatingProducts] = useState<Set<string>>(new Set());
+  const [deletingProducts, setDeletingProducts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function fetchProducts() {
@@ -90,6 +91,49 @@ export default function ProductsPage() {
       alert('Erreur de connexion au serveur');
     } finally {
       setUpdatingProducts(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleDelete = async (productId: string, productName: string) => {
+    // Demander confirmation avant de supprimer
+    const confirmed = window.confirm(
+      `Êtes-vous sûr de vouloir supprimer le produit "${productName}" ?\n\nCette action désactivera le produit (soft delete).`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setDeletingProducts(prev => new Set(prev).add(productId));
+      
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Retirer le produit de la liste
+        setProducts(prevProducts =>
+          prevProducts.filter(p => p.id !== productId)
+        );
+        alert('Produit supprimé avec succès');
+      } else {
+        alert(data.error || 'Erreur lors de la suppression');
+      }
+    } catch (err) {
+      console.error('Error deleting product:', err);
+      alert('Erreur de connexion au serveur');
+    } finally {
+      setDeletingProducts(prev => {
         const newSet = new Set(prev);
         newSet.delete(productId);
         return newSet;
@@ -281,8 +325,12 @@ export default function ProductsPage() {
                 <Link href={`/admin/products/edit/${product.id}`} className={styles.actionBtn}>
                   ✏️ Modifier
                 </Link>
-                <button className={`${styles.actionBtn} ${styles.danger}`}>
-                  🗑️ Supprimer
+                <button 
+                  className={`${styles.actionBtn} ${styles.danger}`}
+                  onClick={() => handleDelete(product.id, product.name)}
+                  disabled={deletingProducts.has(product.id)}
+                >
+                  {deletingProducts.has(product.id) ? '⏳ Suppression...' : '🗑️ Supprimer'}
                 </button>
               </div>
             </div>
