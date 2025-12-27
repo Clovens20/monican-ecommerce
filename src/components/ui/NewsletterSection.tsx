@@ -8,6 +8,7 @@ import styles from './NewsletterSection.module.css';
 export default function NewsletterSection() {
     const { t } = useLanguage();
     const [email, setEmail] = useState('');
+    const [name, setName] = useState('');
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function NewsletterSection() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, name: name.trim() || undefined }),
             });
 
             const data = await response.json();
@@ -31,6 +32,7 @@ export default function NewsletterSection() {
             if (data.success) {
                 setSubmitted(true);
                 setEmail('');
+                setName('');
                 setTimeout(() => {
                     setSubmitted(false);
                 }, 5000);
@@ -60,6 +62,18 @@ export default function NewsletterSection() {
                             {t('newsletterSubtitle')}
                         </p>
                         <form onSubmit={handleSubmit} className={styles.form}>
+                            <input
+                                type="text"
+                                placeholder={t('newsletterNamePlaceholder') || 'Votre nom (optionnel)'}
+                                value={name}
+                                onChange={(e) => {
+                                    setName(e.target.value);
+                                    setError(null);
+                                }}
+                                className={styles.input}
+                                disabled={loading}
+                                style={{ marginBottom: '10px' }}
+                            />
                             <input
                                 type="email"
                                 placeholder={t('newsletterPlaceholder')}

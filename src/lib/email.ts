@@ -1134,18 +1134,38 @@ export async function sendWelcomeEmail(data: {
   email: string;
   subscriberName?: string;
 }): Promise<EmailResult> {
-  const contactInfo = await getContactInfoServer('fr');
-  const subscriberName = data.subscriberName || data.email.split('@')[0];
-  
-  const html = getWelcomeEmailTemplate({ subscriberName, email: data.email }, contactInfo);
-  const text = getWelcomeEmailTextTemplate({ subscriberName, email: data.email }, contactInfo);
-  
-  return sendEmail({
-    to: data.email,
-    subject: '🎉 Bienvenue chez Monican - Offre spéciale pour vous !',
-    html,
-    text,
-  });
+  try {
+    console.log('📧 [sendWelcomeEmail] Début de l\'envoi pour:', data.email);
+    
+    const contactInfo = await getContactInfoServer('fr');
+    console.log('📧 [sendWelcomeEmail] Contact info récupérée:', contactInfo?.email || 'non disponible');
+    
+    const subscriberName = data.subscriberName || data.email.split('@')[0];
+    console.log('📧 [sendWelcomeEmail] Nom du subscriber:', subscriberName);
+    
+    const html = getWelcomeEmailTemplate({ subscriberName, email: data.email }, contactInfo);
+    const text = getWelcomeEmailTextTemplate({ subscriberName, email: data.email }, contactInfo);
+    
+    console.log('📧 [sendWelcomeEmail] Templates générés - HTML length:', html.length, 'Text length:', text.length);
+    
+    const result = await sendEmail({
+      to: data.email,
+      subject: '🎉 Bienvenue chez Monican - Offre spéciale pour vous !',
+      html,
+      text,
+    });
+    
+    console.log('📧 [sendWelcomeEmail] Résultat de l\'envoi:', result.success ? '✅ Succès' : '❌ Échec', result);
+    
+    return result;
+  } catch (error: any) {
+    console.error('❌ [sendWelcomeEmail] Erreur:', error);
+    console.error('❌ [sendWelcomeEmail] Stack:', error.stack);
+    return {
+      success: false,
+      error: error.message || 'Erreur lors de l\'envoi de l\'email de bienvenue',
+    };
+  }
 }
 
 // ============================================================================
@@ -1158,8 +1178,17 @@ export async function sendWelcomeEmail(data: {
 export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     try {
         const emailService = process.env.EMAIL_SERVICE || 'resend';
-        const emailFrom = process.env.EMAIL_FROM || 'noreply@monican.com';
+        // ✅ CORRECTION : Utiliser le domaine vérifié monican.shop au lieu de monican.com
+        const emailFrom = process.env.EMAIL_FROM || 'noreply@monican.shop';
         const emailFromName = process.env.EMAIL_FROM_NAME || 'Monican E-commerce';
+        
+        console.log('📧 [sendEmail] Configuration:', {
+            service: emailService,
+            from: emailFrom,
+            fromName: emailFromName,
+            to: options.to,
+            subject: options.subject,
+        });
 
         // Récupérer les informations de contact depuis la base de données
         let contactInfo: ContactInfo | undefined;
@@ -1172,6 +1201,24 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
         let html = options.html;
         let text = options.text;
+        
+        // ✅ CORRECTION : Si pas de texte, générer un texte basique depuis le HTML
+        if (!text && html) {
+            // Extraire le texte du HTML (simple conversion)
+            text = html
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            console.log('📧 [sendEmail] Texte généré depuis HTML (longueur:', text.length, 'caractères)');
+        }
+        
+        if (!html && text) {
+            // Si seulement du texte, créer un HTML simple
+            html = `<html><body><pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${text.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</pre></body></html>`;
+            console.log('📧 [sendEmail] HTML généré depuis texte');
+        }
 
         // Générer le contenu depuis un template si spécifié
         if (options.template && options.data) {
@@ -1272,48 +1319,104 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
  */
 async function sendEmailResend(options: EmailOptions & { html: string; text: string; from: string }): Promise<EmailResult> {
     try {
+        console.log('📧 [sendEmailResend] Tentative d\'envoi à:', options.to);
         const resendApiKey = process.env.RESEND_API_KEY;
 
         if (!resendApiKey) {
+            console.error('❌ [sendEmailResend] RESEND_API_KEY manquante');
             return {
                 success: false,
                 error: 'Clé API Resend manquante',
             };
         }
 
+        console.log('📧 [sendEmailResend] Envoi de la requête à Resend API...');
+        console.log('📧 [sendEmailResend] Payload:', {
+            from: options.from,
+            to: options.to,
+            subject: options.subject,
+            htmlLength: options.html?.length || 0,
+            textLength: options.text?.length || 0,
+        });
+        
+        // ✅ AMÉLIORATION : Configuration pour éviter le spam
+        // Récupérer l'email de contact pour Reply-To
+        let replyTo = process.env.EMAIL_FROM || 'noreply@monican.shop';
+        try {
+            const contactInfo = await getContactInfoServer('fr');
+            if (contactInfo?.email) {
+                replyTo = contactInfo.email;
+            }
+        } catch (error) {
+            console.warn('⚠️ Impossible de récupérer l\'email de contact pour Reply-To, utilisation de la valeur par défaut');
+        }
+        
+        const payload: any = {
+            from: options.from,
+            to: options.to,
+            subject: options.subject,
+            html: options.html,
+            reply_to: replyTo, // ✅ Ajouter Reply-To pour améliorer la délivrabilité
+            // ✅ AMÉLIORATION : Tags pour améliorer la délivrabilité et le tracking
+            tags: [
+                { name: 'category', value: 'newsletter' },
+                { name: 'source', value: 'monican-ecommerce' },
+            ],
+        };
+        
+        // Ajouter le texte si disponible
+        if (options.text && options.text.trim()) {
+            payload.text = options.text;
+        }
+        
+        // ✅ AMÉLIORATION : Headers personnalisés pour éviter le spam
+        payload.headers = {
+            'X-Entity-Ref-ID': `newsletter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            'List-Unsubscribe': `<${process.env.NEXT_PUBLIC_SITE_URL || 'https://monican.shop'}/unsubscribe>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        };
+        
+        console.log('📧 [sendEmailResend] Payload final:', {
+            from: payload.from,
+            to: payload.to,
+            subject: payload.subject,
+            replyTo: payload.reply_to,
+            hasHtml: !!payload.html,
+            hasText: !!payload.text,
+        });
+        
         const response = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${resendApiKey}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                from: options.from,
-                to: options.to,
-                subject: options.subject,
-                html: options.html,
-                text: options.text,
-            }),
+            body: JSON.stringify(payload),
         });
 
+        console.log('📧 [sendEmailResend] Status de la réponse:', response.status, response.statusText);
         const data = await response.json();
+        console.log('📧 [sendEmailResend] Réponse de Resend:', JSON.stringify(data, null, 2));
 
         if (!response.ok) {
+            console.error('❌ [sendEmailResend] Erreur de Resend:', data);
             return {
                 success: false,
                 error: data.message || 'Erreur lors de l\'envoi',
             };
         }
 
+        console.log('✅ [sendEmailResend] Email envoyé avec succès, ID:', data.id);
         return {
             success: true,
             messageId: data.id,
         };
-    } catch (error) {
-        console.error('Error sending email via Resend:', error);
+    } catch (error: any) {
+        console.error('❌ [sendEmailResend] Erreur de connexion à Resend:', error);
+        console.error('❌ [sendEmailResend] Stack:', error.stack);
         return {
             success: false,
-            error: 'Erreur de connexion à Resend',
+            error: 'Erreur de connexion à Resend: ' + (error.message || 'Erreur inconnue'),
         };
     }
 }
