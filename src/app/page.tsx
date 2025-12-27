@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import Hero from "@/components/ui/Hero";
 import FeaturedCategories from "@/components/ui/FeaturedCategories";
 import StatsSection from "@/components/ui/StatsSection";
@@ -6,46 +8,46 @@ import AnimatedSection from "@/components/ui/AnimatedSection";
 import HomePageClient from "@/components/HomePageClient";
 import { getBestSellingProducts, getFeaturedProductsWithSales } from "@/lib/products-db";
 import { Product } from "@/lib/types";
-import styles from './page.module.css';
+import styles from "./page.module.css";
 
 export default async function Home() {
-  // Récupérer les meilleures ventes (top 4) depuis la base de données
-  // Les produits sont automatiquement triés par nombre de commandes
-  // Gestion d'erreur pour éviter l'échec du build si Supabase n'est pas configuré
+  // Meilleures ventes (top 4)
   let bestSellers: Product[] = [];
   try {
     bestSellers = await getBestSellingProducts(4);
   } catch (error) {
-    console.error('Error fetching best sellers during build:', error);
-    // Continuer avec un tableau vide pour ne pas faire échouer le build
+    console.error("Error fetching best sellers:", error);
   }
-  
-  // Récupérer les produits vedettes (positions 1 à 5) avec leur quantité vendue
-  // Ces produits sont automatiquement les top 5 avec quantité affichée
+
+  // Produits vedettes avec quantité vendue (top 5)
   let featuredProductsWithSales: Array<Product & { salesCount: number }> = [];
   try {
     featuredProductsWithSales = await getFeaturedProductsWithSales(5);
   } catch (error) {
-    console.error('Error fetching featured products during build:', error);
-    // Continuer avec un tableau vide pour ne pas faire échouer le build
+    console.error("Error fetching featured products:", error);
   }
 
   return (
     <main className={styles.homePage}>
       <Hero />
-      
+
       <AnimatedSection direction="up" delay={200}>
         <FeaturedCategories />
       </AnimatedSection>
 
       <StatsSection />
 
-      <HomePageClient 
+      <HomePageClient
         bestSellers={bestSellers}
         featuredProductsWithSales={featuredProductsWithSales}
       />
 
       <NewsletterSection />
+
+      {/* Test visuel pour confirmer le déploiement */}
+      <p style={{ color: "red", textAlign: "center", marginTop: 40 }}>
+        DEPLOY OK — {new Date().toISOString()}
+      </p>
     </main>
   );
 }
