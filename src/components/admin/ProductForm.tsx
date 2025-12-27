@@ -48,6 +48,7 @@ interface ProductFormData {
     description: string;
     detailedDescription: string;
     brand: string;
+    model: string;
     images: ProductImage[];
     variants: ProductVariant[];
     colorSizeStocks: ColorSizeStock[]; // Nouvelle structure pour stock par couleur/taille
@@ -107,6 +108,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 description: initialData.description || '',
                 detailedDescription: initialData.detailedDescription || '',
                 brand: initialData.brand || '',
+                model: initialData.model || '',
                 images: initialData.images || [],
                 variants: initialData.variants || [],
                 colorSizeStocks: colorSizeStocks,
@@ -125,6 +127,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
             description: '',
             detailedDescription: '',
             brand: '',
+            model: '',
             images: [],
             variants: [],
             colorSizeStocks: [],
@@ -623,6 +626,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 sku: formData.sku,
                 category: formData.category,
                 brand: formData.brand || null,
+                model: formData.model || null,
                 images: formData.images.map(img => ({
                     url: img.url,
                     alt: img.alt,
@@ -850,6 +854,17 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                                 value={formData.brand}
                                 onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                                 placeholder="Nom de la marque"
+                            />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>Modèle</label>
+                            <input
+                                type="text"
+                                className={styles.input}
+                                value={formData.model}
+                                onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+                                placeholder="Nom du modèle"
                             />
                         </div>
                     </div>

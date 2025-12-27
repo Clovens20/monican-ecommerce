@@ -55,6 +55,7 @@ export async function PUT(
     if (body.sku !== undefined) updateData.sku = body.sku;
     if (body.category !== undefined) updateData.category = body.category;
     if (body.brand !== undefined) updateData.brand = body.brand;
+    if (body.model !== undefined) updateData.model = body.model;
     if (body.images !== undefined) updateData.images = body.images;
     if (body.variants !== undefined) updateData.variants = body.variants; // Rétrocompatibilité
     if (body.colorSizeStocks !== undefined) updateData.color_size_stocks = body.colorSizeStocks; // Nouvelle structure
@@ -192,6 +193,7 @@ export async function GET(
         sku: product.sku || '',
         category: product.category,
         brand: product.brand || '',
+        model: product.model || '',
         images: Array.isArray(product.images) ? product.images : [],
         variants: Array.isArray(product.variants) ? product.variants : [],
         colorSizeStocks: Array.isArray(product.color_size_stocks) ? product.color_size_stocks : [],

@@ -107,6 +107,7 @@ export async function POST(request: NextRequest) {
         sku: body.sku || null,
         category: body.category,
         brand: body.brand || null,
+        model: body.model || null,
         images: body.images || [],
         variants: body.variants || [], // Garder pour rétrocompatibilité
         color_size_stocks: body.colorSizeStocks || [], // Nouvelle structure
