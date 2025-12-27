@@ -113,6 +113,39 @@ export async function POST(request: NextRequest) {
       `.trim();
     };
 
+    // ✅ VÉRIFICATION : Vérifier la configuration email avant d'envoyer
+    const emailService = process.env.EMAIL_SERVICE || 'resend';
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const sendgridApiKey = process.env.SENDGRID_API_KEY;
+    
+    if (emailService === 'resend' && !resendApiKey) {
+      console.error('❌ RESEND_API_KEY n\'est pas configurée dans les variables d\'environnement');
+      return NextResponse.json(
+        { 
+          error: 'Configuration email manquante',
+          details: 'La clé API Resend (RESEND_API_KEY) n\'est pas configurée. Veuillez configurer les variables d\'environnement.',
+          sentCount: 0,
+          failedCount: subscribers.length,
+          totalRecipients: subscribers.length,
+        },
+        { status: 500 }
+      );
+    }
+    
+    if (emailService === 'sendgrid' && !sendgridApiKey) {
+      console.error('❌ SENDGRID_API_KEY n\'est pas configurée dans les variables d\'environnement');
+      return NextResponse.json(
+        { 
+          error: 'Configuration email manquante',
+          details: 'La clé API SendGrid (SENDGRID_API_KEY) n\'est pas configurée. Veuillez configurer les variables d\'environnement.',
+          sentCount: 0,
+          failedCount: subscribers.length,
+          totalRecipients: subscribers.length,
+        },
+        { status: 500 }
+      );
+    }
+
     // Envoyer les emails avec template professionnel
     const emailPromises = subscribers.map(async (subscriber) => {
       try {
@@ -142,10 +175,11 @@ export async function POST(request: NextRequest) {
           .replace(/&#39;/g, "'")
           .trim();
         
-        console.log(`📧 Envoi d'email à ${subscriber.email}${subscriber.name ? ` (${subscriber.name})` : ''}:`, {
+        console.log(`📧 [Newsletter] Tentative d'envoi à ${subscriber.email}${subscriber.name ? ` (${subscriber.name})` : ''}:`, {
           subject,
           htmlLength: htmlMessage.length,
           textLength: textMessage.length,
+          emailService,
         });
         
         const result = await sendEmail({
@@ -156,15 +190,25 @@ export async function POST(request: NextRequest) {
         });
         
         if (result.success) {
-          console.log(`✅ Email envoyé avec succès à ${subscriber.email}, ID: ${result.messageId}`);
+          console.log(`✅ [Newsletter] Email envoyé avec succès à ${subscriber.email}, ID: ${result.messageId}`);
         } else {
-          console.error(`❌ Échec de l'envoi à ${subscriber.email}:`, result.error);
+          console.error(`❌ [Newsletter] Échec de l'envoi à ${subscriber.email}:`, result.error);
         }
         
-        return result;
+        // ✅ AMÉLIORATION : Retourner un objet avec plus de détails
+        return {
+          ...result,
+          email: subscriber.email,
+          name: subscriber.name,
+        };
       } catch (error: any) {
-        console.error(`❌ Erreur lors de l'envoi à ${subscriber.email}:`, error);
-        throw error;
+        console.error(`❌ [Newsletter] Erreur lors de l'envoi à ${subscriber.email}:`, error);
+        return {
+          success: false,
+          error: error.message || 'Erreur inconnue lors de l\'envoi',
+          email: subscriber.email,
+          name: subscriber.name,
+        };
       }
     });
 
@@ -173,33 +217,62 @@ export async function POST(request: NextRequest) {
     // ✅ AMÉLIORATION : Compter les succès et échecs avec plus de détails
     let sentCount = 0;
     let failedCount = 0;
-    const failedEmails: string[] = [];
+    const failedEmails: Array<{ email: string; error: string }> = [];
+    const successfulEmails: string[] = [];
     
-    results.forEach((result, index) => {
+    results.forEach((result) => {
       if (result.status === 'fulfilled') {
         const emailResult = result.value;
         if (emailResult.success) {
           sentCount++;
+          successfulEmails.push(emailResult.email);
         } else {
           failedCount++;
-          failedEmails.push(subscribers[index].email);
-          console.error(`❌ Échec pour ${subscribers[index].email}:`, emailResult.error);
+          failedEmails.push({
+            email: emailResult.email,
+            error: emailResult.error || 'Erreur inconnue',
+          });
+          console.error(`❌ [Newsletter] Échec pour ${emailResult.email}:`, emailResult.error);
         }
       } else {
         failedCount++;
-        failedEmails.push(subscribers[index].email);
-        console.error(`❌ Erreur pour ${subscribers[index].email}:`, result.reason);
+        const email = result.reason?.email || 'email inconnu';
+        failedEmails.push({
+          email,
+          error: result.reason?.message || 'Erreur lors de l\'envoi',
+        });
+        console.error(`❌ [Newsletter] Erreur pour ${email}:`, result.reason);
       }
     });
     
-    console.log(`📊 Résumé de l'envoi: ${sentCount} succès, ${failedCount} échecs sur ${subscribers.length} destinataires`);
+    console.log(`📊 [Newsletter] Résumé de l'envoi: ${sentCount} succès, ${failedCount} échecs sur ${subscribers.length} destinataires`);
+    
+    if (failedCount > 0) {
+      console.error(`❌ [Newsletter] Emails en échec:`, failedEmails);
+    }
+
+    // ✅ AMÉLIORATION : Retourner un message d'erreur si tous les emails ont échoué
+    if (sentCount === 0 && failedCount > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Aucun email n\'a pu être envoyé',
+        details: failedEmails.length > 0 ? failedEmails[0].error : 'Erreur inconnue',
+        sentCount: 0,
+        failedCount,
+        totalRecipients: subscribers.length,
+        failedEmails: failedEmails.map(f => f.email),
+      }, { status: 500 });
+    }
 
     return NextResponse.json({
-      success: true,
+      success: sentCount > 0,
       sentCount,
       failedCount,
       totalRecipients: subscribers.length,
-      message: `Email envoyé à ${sentCount} destinataire(s)${failedCount > 0 ? ` (${failedCount} échec(s))` : ''}`,
+      message: sentCount > 0 
+        ? `Email envoyé à ${sentCount} destinataire(s)${failedCount > 0 ? ` (${failedCount} échec(s))` : ''}`
+        : `Aucun email n'a pu être envoyé`,
+      failedEmails: failedCount > 0 ? failedEmails : undefined,
     });
 
   } catch (error) {

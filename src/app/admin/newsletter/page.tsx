@@ -153,13 +153,41 @@ export default function NewsletterPage() {
 
       const data = await response.json();
 
-      if (data.success) {
-        alert(`Email envoyé à ${data.sentCount} destinataire(s)`);
-        setShowEmailModal(false);
-        setEmailData({ subject: '', message: '', recipients: 'selected' });
-        setSelectedSubscribers(new Set());
+      if (!response.ok || !data.success) {
+        // ✅ AMÉLIORATION : Afficher un message d'erreur détaillé
+        let errorMessage = data.error || 'Erreur lors de l\'envoi';
+        if (data.details) {
+          errorMessage += `\n\nDétails: ${data.details}`;
+        }
+        if (data.failedEmails && data.failedEmails.length > 0) {
+          errorMessage += `\n\nEmails en échec: ${data.failedEmails.slice(0, 5).join(', ')}${data.failedEmails.length > 5 ? '...' : ''}`;
+        }
+        alert(errorMessage);
+        return;
+      }
+
+      // ✅ AMÉLIORATION : Afficher un message détaillé avec les succès et échecs
+      if (data.sentCount > 0) {
+        let message = `✅ Email envoyé à ${data.sentCount} destinataire(s)`;
+        if (data.failedCount > 0) {
+          message += `\n\n⚠️ ${data.failedCount} email(s) n'ont pas pu être envoyés`;
+          if (data.failedEmails && data.failedEmails.length > 0) {
+            message += `\n\nEmails en échec:\n${data.failedEmails.slice(0, 10).map((f: any) => `- ${f.email}: ${f.error || 'Erreur inconnue'}`).join('\n')}`;
+            if (data.failedEmails.length > 10) {
+              message += `\n... et ${data.failedEmails.length - 10} autres`;
+            }
+          }
+        }
+        alert(message);
+        
+        // Ne fermer le modal que si tous les emails ont été envoyés avec succès
+        if (data.failedCount === 0) {
+          setShowEmailModal(false);
+          setEmailData({ subject: '', message: '', recipients: 'selected' });
+          setSelectedSubscribers(new Set());
+        }
       } else {
-        alert(data.error || 'Erreur lors de l\'envoi');
+        alert(`❌ Aucun email n'a pu être envoyé. Veuillez vérifier la configuration email (RESEND_API_KEY ou SENDGRID_API_KEY).`);
       }
     } catch (err) {
       console.error('Error sending email:', err);
