@@ -180,6 +180,39 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // Récupérer l'inventaire pour ce produit pour construire colorSizeStocks
+    const { data: inventoryData, error: inventoryError } = await supabaseAdmin
+      .from('inventory')
+      .select('color, size, stock_quantity, reserved_quantity, sku')
+      .eq('product_id', id);
+
+    // Construire colorSizeStocks depuis l'inventaire
+    let colorSizeStocks: any[] = [];
+    if (!inventoryError && inventoryData && inventoryData.length > 0) {
+      // Grouper par couleur et taille
+      const stockMap = new Map<string, any>();
+      
+      inventoryData.forEach((item: any) => {
+        const key = `${item.color || 'default'}-${item.size}`;
+        const availableStock = (item.stock_quantity || 0) - (item.reserved_quantity || 0);
+        
+        stockMap.set(key, {
+          color: item.color || 'default',
+          size: item.size,
+          stock: Math.max(0, availableStock),
+          sku: item.sku || `${product.sku || id}-${item.color || 'default'}-${item.size}`.toUpperCase()
+        });
+      });
+
+      colorSizeStocks = Array.from(stockMap.values());
+    } else if (Array.isArray(product.color_size_stocks) && product.color_size_stocks.length > 0) {
+      // Fallback: utiliser color_size_stocks de la table products si l'inventaire est vide
+      colorSizeStocks = product.color_size_stocks;
+    }
+
+    // Extraire les couleurs uniques depuis colorSizeStocks
+    const uniqueColors = Array.from(new Set(colorSizeStocks.map(item => item.color).filter(Boolean)));
     
     return NextResponse.json({
       success: true,
@@ -196,9 +229,9 @@ export async function GET(
         model: product.model || '',
         images: Array.isArray(product.images) ? product.images : [],
         variants: Array.isArray(product.variants) ? product.variants : [],
-        colorSizeStocks: Array.isArray(product.color_size_stocks) ? product.color_size_stocks : [],
+        colorSizeStocks: colorSizeStocks,
         features: Array.isArray(product.features) ? product.features : [],
-        colors: Array.isArray(product.colors) ? product.colors : [],
+        colors: uniqueColors.length > 0 ? uniqueColors : (Array.isArray(product.colors) ? product.colors : []),
         isNew: product.is_new || false,
         isFeatured: product.is_featured || false,
         isActive: product.is_active !== false,

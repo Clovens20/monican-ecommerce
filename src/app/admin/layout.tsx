@@ -192,6 +192,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Link>
 
             <Link 
+              href="/admin/inventory" 
+              className={`${styles.navItem} ${isActive('/admin/inventory') ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>📦</span>
+              <span>Inventaire</span>
+            </Link>
+
+            <Link 
               href="/admin/returns" 
               className={`${styles.navItem} ${isActive('/admin/returns') ? styles.active : ''}`}
             >

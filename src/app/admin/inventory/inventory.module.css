@@ -1,0 +1,288 @@
+.container {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem 0;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.headerActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.refreshButton {
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: var(--secondary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lastUpdated {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.loading {
+  text-align: center;
+  padding: 4rem 2rem;
+  font-size: 1.25rem;
+  color: #6b7280;
+}
+
+.error {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #ef4444;
+}
+
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.retryButton {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.retryButton:hover {
+  background: var(--secondary);
+}
+
+/* Summary Cards */
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summaryCard {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.summaryCard:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.summaryCardIcon {
+  font-size: 2.5rem;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.summaryCardContent {
+  flex: 1;
+}
+
+.summaryCardLabel {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.summaryCardValue {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #111827;
+}
+
+/* Products Section */
+.productsSection {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  color: #111827;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
+}
+
+.tableContainer {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table thead {
+  background: #f9fafb;
+}
+
+.table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #111827;
+}
+
+.table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.productName {
+  font-weight: 600;
+  color: #111827;
+}
+
+.category {
+  text-transform: capitalize;
+  color: #6b7280;
+}
+
+.price {
+  font-weight: 600;
+  color: #059669;
+}
+
+.stock,
+.reserved,
+.available {
+  text-align: center;
+  font-weight: 600;
+}
+
+.availableBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.outOfStockBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.value {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1.125rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .headerActions {
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .summaryCards {
+    grid-template-columns: 1fr;
+  }
+
+  .table {
+    font-size: 0.875rem;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.75rem 0.5rem;
+  }
+}
+

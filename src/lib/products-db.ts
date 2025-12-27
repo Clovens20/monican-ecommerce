@@ -30,6 +30,83 @@ interface SupabaseProduct {
     updated_at: string;
 }
 
+/**
+ * Synchronise les variants d'un produit avec le stock réel de l'inventaire
+ */
+async function syncVariantsWithInventory(productId: string, variants: any[]): Promise<any[]> {
+    try {
+        // Récupérer le stock réel depuis l'inventaire
+        const { data: inventoryData, error } = await supabaseAdmin
+            .from('inventory')
+            .select('size, stock_quantity, reserved_quantity, sku')
+            .eq('product_id', productId);
+
+        if (error || !inventoryData || inventoryData.length === 0) {
+            // Si pas d'inventaire, retourner les variants tels quels
+            return variants;
+        }
+
+        // Créer un map pour accéder rapidement au stock par taille
+        // Agréger le stock de toutes les couleurs pour une même taille
+        const stockMap = new Map<string, { stock: number; reserved: number; sku: string }>();
+        inventoryData.forEach(item => {
+            const availableStock = (item.stock_quantity || 0) - (item.reserved_quantity || 0);
+            const existing = stockMap.get(item.size);
+            if (existing) {
+                // Si la taille existe déjà, additionner le stock
+                stockMap.set(item.size, {
+                    stock: existing.stock + Math.max(0, availableStock),
+                    reserved: existing.reserved + (item.reserved_quantity || 0),
+                    sku: existing.sku || item.sku || ''
+                });
+            } else {
+                // Première occurrence de cette taille
+                stockMap.set(item.size, {
+                    stock: Math.max(0, availableStock),
+                    reserved: item.reserved_quantity || 0,
+                    sku: item.sku || ''
+                });
+            }
+        });
+
+        // Synchroniser les variants avec le stock réel
+        const syncedVariants = variants.map(variant => {
+            const inventoryStock = stockMap.get(variant.size);
+            if (inventoryStock) {
+                return {
+                    ...variant,
+                    stock: inventoryStock.stock,
+                    sku: inventoryStock.sku || variant.sku
+                };
+            }
+            // Si la taille n'existe pas dans l'inventaire, mettre le stock à 0
+            return {
+                ...variant,
+                stock: 0
+            };
+        });
+
+        // Ajouter les tailles qui existent dans l'inventaire mais pas dans les variants
+        inventoryData.forEach(item => {
+            const existsInVariants = variants.some(v => v.size === item.size);
+            if (!existsInVariants) {
+                const availableStock = (item.stock_quantity || 0) - (item.reserved_quantity || 0);
+                syncedVariants.push({
+                    size: item.size,
+                    stock: Math.max(0, availableStock),
+                    sku: item.sku || ''
+                });
+            }
+        });
+
+        return syncedVariants;
+    } catch (error) {
+        console.error('Error syncing variants with inventory:', error);
+        // En cas d'erreur, retourner les variants originaux
+        return variants;
+    }
+}
+
 function convertSupabaseToProduct(supabaseProduct: SupabaseProduct): Product {
     return {
         id: supabaseProduct.id,
@@ -46,6 +123,16 @@ function convertSupabaseToProduct(supabaseProduct: SupabaseProduct): Product {
         createdAt: supabaseProduct.created_at,
         updatedAt: supabaseProduct.updated_at,
     };
+}
+
+/**
+ * Convertit un produit Supabase en Product et synchronise avec l'inventaire
+ */
+async function convertSupabaseToProductWithInventory(supabaseProduct: SupabaseProduct): Promise<Product> {
+    const product = convertSupabaseToProduct(supabaseProduct);
+    // Synchroniser les variants avec le stock réel
+    product.variants = await syncVariantsWithInventory(product.id, product.variants);
+    return product;
 }
 
 // ============================================================================
@@ -84,7 +171,11 @@ export async function getAllProducts(): Promise<Product[]> {
                 break;
             }
 
-            allProducts = allProducts.concat(data.map((product: any) => convertSupabaseToProduct(product)));
+            // Convertir et synchroniser avec l'inventaire
+            const products = await Promise.all(
+                data.map((product: any) => convertSupabaseToProductWithInventory(product))
+            );
+            allProducts = allProducts.concat(products);
             
             // Si on a récupéré moins que pageSize, on a atteint la fin
             if (data.length < pageSize) {
@@ -151,7 +242,10 @@ export async function getAllProductsPaginated(
             return { products: [], totalCount: 0, hasMore: false };
         }
 
-        const products = (data || []).map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire
+        const products = await Promise.all(
+            (data || []).map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
         const hasMore = offset + products.length < totalCount;
 
         return {
@@ -187,7 +281,7 @@ export async function getProductById(id: string): Promise<Product | null> {
             return null;
         }
 
-        return convertSupabaseToProduct(data);
+        return await convertSupabaseToProductWithInventory(data);
     } catch (error) {
         console.error('Error in getProductById:', error);
         return null;
@@ -217,7 +311,10 @@ export async function getProductsByCategory(category: string): Promise<Product[]
             return [];
         }
 
-        return data.map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire
+        return await Promise.all(
+            data.map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
     } catch (error) {
         console.error('Error in getProductsByCategory:', error);
         return [];
@@ -266,7 +363,10 @@ export async function getFeaturedProducts(): Promise<Product[]> {
             return await getFallbackProducts(10);
         }
 
-        return data.map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire
+        return await Promise.all(
+            data.map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
     } catch (error) {
         console.error('Error in getFeaturedProducts:', error);
         // Fallback final
@@ -291,7 +391,10 @@ async function getFallbackProducts(limit: number): Promise<Product[]> {
             return [];
         }
 
-        return data.map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire
+        return await Promise.all(
+            data.map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
     } catch (error) {
         console.error('Error in getFallbackProducts:', error);
         return [];
@@ -322,7 +425,10 @@ export async function getNewProducts(): Promise<Product[]> {
             return [];
         }
 
-        return data.map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire
+        return await Promise.all(
+            data.map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
     } catch (error) {
         console.error('Error in getNewProducts:', error);
         return [];
@@ -406,8 +512,10 @@ export async function getBestSellingProducts(limit: number = 4): Promise<Product
             return featured.slice(0, limit);
         }
 
-        // Convertir et trier selon l'ordre des ventes
-        const products = productsData.map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire, puis trier selon l'ordre des ventes
+        const products = await Promise.all(
+            productsData.map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
         
         // Maintenir l'ordre basé sur les ventes
         const sortedProducts = sortedProductIds
@@ -490,8 +598,10 @@ export async function getFeaturedProductsWithSales(limit: number = 5): Promise<A
             return featured.slice(0, limit).map(p => ({ ...p, salesCount: 0 }));
         }
 
-        // Convertir et ajouter les quantités vendues
-        const products = productsData.map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire, puis ajouter les quantités vendues
+        const products = await Promise.all(
+            productsData.map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
         
         // Créer un map pour les quantités vendues
         const salesMap = new Map(sortedProductIds.map(item => [item.productId, item.salesCount]));
@@ -545,7 +655,10 @@ export async function searchProducts(query: string): Promise<Product[]> {
             return [];
         }
 
-        return data.map(convertSupabaseToProduct);
+        // Convertir et synchroniser avec l'inventaire
+        return await Promise.all(
+            data.map((product: any) => convertSupabaseToProductWithInventory(product))
+        );
     } catch (error) {
         console.error('Error in searchProducts:', error);
         return [];
@@ -626,7 +739,7 @@ export async function createProduct(productData: {
             return null;
         }
 
-        return convertSupabaseToProduct(data);
+        return await convertSupabaseToProductWithInventory(data);
     } catch (error) {
         console.error('Error in createProduct:', error);
         return null;
@@ -683,7 +796,7 @@ export async function updateProduct(
             return null;
         }
 
-        return convertSupabaseToProduct(data);
+        return await convertSupabaseToProductWithInventory(data);
     } catch (error) {
         console.error('Error in updateProduct:', error);
         return null;

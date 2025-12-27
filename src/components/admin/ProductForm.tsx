@@ -98,6 +98,23 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     });
                 });
             }
+
+            // Extraire les couleurs depuis colorSizeStocks si elles ne sont pas déjà dans colors
+            let colors = initialData.colors || [];
+            if (colorSizeStocks.length > 0 && colors.length === 0) {
+                // Extraire les couleurs uniques depuis colorSizeStocks
+                const uniqueColors = Array.from(new Set(
+                    colorSizeStocks.map(entry => entry.color).filter(Boolean)
+                ));
+                colors = uniqueColors;
+            } else if (colorSizeStocks.length > 0) {
+                // S'assurer que toutes les couleurs de colorSizeStocks sont dans colors
+                const colorsFromStocks = Array.from(new Set(
+                    colorSizeStocks.map(entry => entry.color).filter(Boolean)
+                ));
+                const allColors = Array.from(new Set([...colors, ...colorsFromStocks]));
+                colors = allColors;
+            }
             
             return {
                 name: initialData.name || '',
@@ -113,7 +130,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 variants: initialData.variants || [],
                 colorSizeStocks: colorSizeStocks,
                 features: initialData.features || [],
-                colors: initialData.colors || [],
+                colors: colors,
                 isNew: initialData.isNew || false,
                 isFeatured: initialData.isFeatured || false,
             };
