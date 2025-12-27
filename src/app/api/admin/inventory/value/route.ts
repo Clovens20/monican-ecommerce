@@ -13,10 +13,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
     }
 
-    // Récupérer tous les produits actifs
+    // Récupérer tous les produits actifs avec le prix d'achat
     const { data: productsData, error: productsError } = await supabaseAdmin
       .from('products')
-      .select('id, name, price, category')
+      .select('id, name, price, purchase_price, category')
       .eq('is_active', true);
 
     if (productsError) {
@@ -56,16 +56,22 @@ export async function GET(request: NextRequest) {
 
     // Calculer la valeur totale
     let totalValue = 0;
+    let totalCost = 0;
+    let totalProfit = 0;
     let totalItems = 0;
     const productsValue: Array<{
       productId: string;
       productName: string;
       category: string;
       price: number;
+      purchasePrice: number | null;
       stock: number;
       reserved: number;
       available: number;
       value: number;
+      cost: number;
+      profit: number;
+      profitMargin: number | null;
     }> = [];
 
     // Créer un map des produits pour accès rapide
@@ -77,6 +83,7 @@ export async function GET(request: NextRequest) {
       productName: string;
       category: string;
       price: number;
+      purchasePrice: number | null;
       totalStock: number;
       totalReserved: number;
     }>();
@@ -88,6 +95,7 @@ export async function GET(request: NextRequest) {
         productName: product.name,
         category: product.category,
         price: parseFloat(product.price.toString()),
+        purchasePrice: product.purchase_price ? parseFloat(product.purchase_price.toString()) : null,
         totalStock: 0,
         totalReserved: 0,
       });
@@ -112,8 +120,15 @@ export async function GET(request: NextRequest) {
     productMap.forEach((product) => {
       const availableStock = product.totalStock - product.totalReserved;
       const productValue = product.price * availableStock;
+      const productCost = product.purchasePrice ? product.purchasePrice * availableStock : 0;
+      const productProfit = productValue - productCost;
+      const profitMargin = product.purchasePrice && product.purchasePrice > 0 
+        ? ((product.price - product.purchasePrice) / product.purchasePrice) * 100 
+        : null;
       
       totalValue += productValue;
+      totalCost += productCost;
+      totalProfit += productProfit;
       totalItems += availableStock;
 
       productsValue.push({
@@ -121,10 +136,14 @@ export async function GET(request: NextRequest) {
         productName: product.productName,
         category: product.category,
         price: product.price,
+        purchasePrice: product.purchasePrice,
         stock: product.totalStock,
         reserved: product.totalReserved,
         available: availableStock,
         value: productValue,
+        cost: productCost,
+        profit: productProfit,
+        profitMargin: profitMargin,
       });
     });
 
@@ -135,6 +154,9 @@ export async function GET(request: NextRequest) {
       success: true,
       summary: {
         totalValue: totalValue,
+        totalCost: totalCost,
+        totalProfit: totalProfit,
+        totalProfitMargin: totalCost > 0 ? (totalProfit / totalCost) * 100 : null,
         totalItems: totalItems,
         totalProducts: productMap.size,
       },

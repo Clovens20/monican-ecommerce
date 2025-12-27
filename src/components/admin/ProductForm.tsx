@@ -44,6 +44,7 @@ interface ProductFormData {
     category: string;
     price: number;
     comparePrice: number | null;
+    purchasePrice: number | null;
     sku: string;
     description: string;
     detailedDescription: string;
@@ -121,6 +122,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 category: initialData.category || 'tennis',
                 price: initialData.price || 0,
                 comparePrice: initialData.comparePrice || null,
+                purchasePrice: initialData.purchasePrice || null,
                 sku: initialData.sku || '',
                 description: initialData.description || '',
                 detailedDescription: initialData.detailedDescription || '',
@@ -140,6 +142,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
             category: 'tennis',
             price: 0,
             comparePrice: null,
+            purchasePrice: null,
             sku: '',
             description: '',
             detailedDescription: '',
@@ -640,6 +643,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 detailedDescription: formData.detailedDescription,
                 price: formData.price,
                 comparePrice: formData.comparePrice,
+                purchasePrice: formData.purchasePrice,
                 sku: formData.sku,
                 category: formData.category,
                 brand: formData.brand || null,
@@ -859,6 +863,30 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                             {formData.comparePrice && formData.comparePrice > formData.price && (
                                 <span className={styles.hint}>
                                     Réduction de {Math.round(((formData.comparePrice - formData.price) / formData.comparePrice) * 100)}%
+                                </span>
+                            )}
+                        </div>
+
+                        <div className={styles.formGroup}>
+                            <label className={styles.label}>
+                                Prix d'achat ($) <span className={styles.hintLabel}>(coût + dépenses)</span>
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                className={styles.input}
+                                value={formData.purchasePrice || ''}
+                                onChange={(e) => {
+                                    const purchasePrice = e.target.value ? parseFloat(e.target.value) : null;
+                                    setFormData({ ...formData, purchasePrice });
+                                }}
+                                placeholder="Prix d'achat (pour calculer le bénéfice)"
+                            />
+                            {formData.purchasePrice && formData.price > 0 && (
+                                <span className={styles.hint}>
+                                    Bénéfice unitaire: ${(formData.price - formData.purchasePrice).toFixed(2)} 
+                                    ({((formData.price - formData.purchasePrice) / formData.purchasePrice * 100).toFixed(1)}%)
                                 </span>
                             )}
                         </div>

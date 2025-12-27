@@ -52,6 +52,7 @@ export async function PUT(
     if (body.detailedDescription !== undefined) updateData.detailed_description = body.detailedDescription;
     if (body.price !== undefined) updateData.price = body.price;
     if (body.comparePrice !== undefined) updateData.compare_price = body.comparePrice;
+    if (body.purchasePrice !== undefined) updateData.purchase_price = body.purchasePrice;
     if (body.sku !== undefined) updateData.sku = body.sku;
     if (body.category !== undefined) updateData.category = body.category;
     if (body.brand !== undefined) updateData.brand = body.brand;
@@ -223,6 +224,7 @@ export async function GET(
         detailedDescription: product.detailed_description || '',
         price: parseFloat(product.price.toString()),
         comparePrice: product.compare_price ? parseFloat(product.compare_price.toString()) : null,
+        purchasePrice: product.purchase_price ? parseFloat(product.purchase_price.toString()) : null,
         sku: product.sku || '',
         category: product.category,
         brand: product.brand || '',

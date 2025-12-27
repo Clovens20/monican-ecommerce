@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
         detailed_description: body.detailedDescription || '',
         price: body.price,
         compare_price: body.comparePrice || null,
+        purchase_price: body.purchasePrice || null,
         sku: body.sku || null,
         category: body.category,
         brand: body.brand || null,

@@ -257,6 +257,48 @@
   font-size: 1.125rem;
 }
 
+.purchasePrice {
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.cost {
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.profit {
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.profitPositive {
+  color: #059669;
+}
+
+.profitNegative {
+  color: #dc2626;
+}
+
+.profitMargin {
+  text-align: center;
+  font-weight: 600;
+}
+
+.marginPositive {
+  color: #059669;
+}
+
+.marginNegative {
+  color: #dc2626;
+}
+
+.summaryCardSubtext {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {

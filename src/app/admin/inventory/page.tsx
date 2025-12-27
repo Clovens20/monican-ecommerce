@@ -5,6 +5,9 @@ import styles from './inventory.module.css';
 
 interface InventorySummary {
   totalValue: number;
+  totalCost: number;
+  totalProfit: number;
+  totalProfitMargin: number | null;
   totalItems: number;
   totalProducts: number;
 }
@@ -14,10 +17,14 @@ interface ProductInventory {
   productName: string;
   category: string;
   price: number;
+  purchasePrice: number | null;
   stock: number;
   reserved: number;
   available: number;
   value: number;
+  cost: number;
+  profit: number;
+  profitMargin: number | null;
 }
 
 interface InventoryData {
@@ -138,10 +145,35 @@ export default function InventoryPage() {
             <div className={styles.summaryCard}>
               <div className={styles.summaryCardIcon}>💰</div>
               <div className={styles.summaryCardContent}>
-                <div className={styles.summaryCardLabel}>Valeur Totale</div>
+                <div className={styles.summaryCardLabel}>Valeur de Vente Totale</div>
                 <div className={styles.summaryCardValue}>
                   {formatCurrency(data.summary.totalValue)}
                 </div>
+              </div>
+            </div>
+
+            <div className={styles.summaryCard}>
+              <div className={styles.summaryCardIcon}>💵</div>
+              <div className={styles.summaryCardContent}>
+                <div className={styles.summaryCardLabel}>Coût Total</div>
+                <div className={styles.summaryCardValue}>
+                  {formatCurrency(data.summary.totalCost)}
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.summaryCard}>
+              <div className={styles.summaryCardIcon}>📈</div>
+              <div className={styles.summaryCardContent}>
+                <div className={styles.summaryCardLabel}>Bénéfice Total</div>
+                <div className={`${styles.summaryCardValue} ${data.summary.totalProfit >= 0 ? styles.profitPositive : styles.profitNegative}`}>
+                  {formatCurrency(data.summary.totalProfit)}
+                </div>
+                {data.summary.totalProfitMargin !== null && (
+                  <div className={styles.summaryCardSubtext}>
+                    Marge: {data.summary.totalProfitMargin.toFixed(1)}%
+                  </div>
+                )}
               </div>
             </div>
 
@@ -151,16 +183,6 @@ export default function InventoryPage() {
                 <div className={styles.summaryCardLabel}>Unités en Stock</div>
                 <div className={styles.summaryCardValue}>
                   {data.summary.totalItems.toLocaleString('fr-FR')}
-                </div>
-              </div>
-            </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardIcon}>🏷️</div>
-              <div className={styles.summaryCardContent}>
-                <div className={styles.summaryCardLabel}>Produits</div>
-                <div className={styles.summaryCardValue}>
-                  {data.summary.totalProducts}
                 </div>
               </div>
             </div>
@@ -181,11 +203,13 @@ export default function InventoryPage() {
                     <tr>
                       <th>Produit</th>
                       <th>Catégorie</th>
-                      <th>Prix unitaire</th>
-                      <th>Stock total</th>
-                      <th>Réservé</th>
+                      <th>Prix vente</th>
+                      <th>Prix achat</th>
                       <th>Disponible</th>
-                      <th>Valeur</th>
+                      <th>Valeur vente</th>
+                      <th>Coût total</th>
+                      <th>Bénéfice</th>
+                      <th>Marge</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -194,14 +218,28 @@ export default function InventoryPage() {
                         <td className={styles.productName}>{product.productName}</td>
                         <td className={styles.category}>{product.category}</td>
                         <td className={styles.price}>{formatCurrency(product.price)}</td>
-                        <td className={styles.stock}>{product.stock}</td>
-                        <td className={styles.reserved}>{product.reserved}</td>
+                        <td className={styles.purchasePrice}>
+                          {product.purchasePrice ? formatCurrency(product.purchasePrice) : '-'}
+                        </td>
                         <td className={styles.available}>
                           <span className={product.available > 0 ? styles.availableBadge : styles.outOfStockBadge}>
                             {product.available}
                           </span>
                         </td>
                         <td className={styles.value}>{formatCurrency(product.value)}</td>
+                        <td className={styles.cost}>
+                          {product.cost > 0 ? formatCurrency(product.cost) : '-'}
+                        </td>
+                        <td className={`${styles.profit} ${product.profit >= 0 ? styles.profitPositive : styles.profitNegative}`}>
+                          {product.purchasePrice ? formatCurrency(product.profit) : '-'}
+                        </td>
+                        <td className={styles.profitMargin}>
+                          {product.profitMargin !== null ? (
+                            <span className={product.profitMargin >= 0 ? styles.marginPositive : styles.marginNegative}>
+                              {product.profitMargin.toFixed(1)}%
+                            </span>
+                          ) : '-'}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -29,6 +29,7 @@ function EditProductContent({ params }: { params: Promise<{ id: string }> }) {
                         category: data.product.category,
                         price: data.product.price,
                         comparePrice: data.product.comparePrice || null,
+                        purchasePrice: data.product.purchasePrice || null,
                         sku: data.product.sku || '',
                         description: data.product.description || '',
                         detailedDescription: data.product.detailedDescription || '',
