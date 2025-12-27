@@ -4,16 +4,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   
-  // ✅ Ignorer les erreurs ESLint pendant le build (temporaire)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
-  // ✅ Ignorer les erreurs TypeScript pendant le build (temporaire)
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  
   // Configuration des images optimisées
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -133,7 +123,7 @@ const nextConfig: NextConfig = {
     ];
   },
   
-  // Configuration Turbopack (optionnel)
+  // Configuration Turbopack
   turbopack: {
     root: process.cwd(),
   },
@@ -142,7 +132,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   generateEtags: true,
   
-  // Configuration expérimentale (optionnel)
+  // Configuration expérimentale
   experimental: {
     optimizePackageImports: ['lucide-react', 'date-fns'],
   },

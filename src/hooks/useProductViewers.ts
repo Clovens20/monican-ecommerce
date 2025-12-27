@@ -13,19 +13,21 @@ export function useProductViewers({ productId, interval = 10000 }: UseProductVie
     const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
     const cleanupRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Generate a unique session ID for this viewer
-    const sessionIdRef = useRef<string>(
-        typeof window !== 'undefined' 
-            ? localStorage.getItem(`viewer_session_${productId}`) || 
-              `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`
-            : ''
-    );
+    // ✅ CORRECTION: Générer sessionId de manière pure avec useState lazy initialization
+    const [sessionId] = useState<string>(() => {
+        if (typeof window === 'undefined') return '';
+        
+        const existing = localStorage.getItem(`viewer_session_${productId}`);
+        if (existing) return existing;
+        
+        return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    });
 
     useEffect(() => {
         if (typeof window === 'undefined' || !productId) return;
 
         // Save session ID to localStorage
-        localStorage.setItem(`viewer_session_${productId}`, sessionIdRef.current);
+        localStorage.setItem(`viewer_session_${productId}`, sessionId);
 
         // Function to send heartbeat
         const sendHeartbeat = async () => {
@@ -37,7 +39,7 @@ export function useProductViewers({ productId, interval = 10000 }: UseProductVie
                     },
                     body: JSON.stringify({
                         productId,
-                        sessionId: sessionIdRef.current,
+                        sessionId: sessionId,
                         action: 'heartbeat',
                     }),
                 });
@@ -61,7 +63,7 @@ export function useProductViewers({ productId, interval = 10000 }: UseProductVie
                     },
                     body: JSON.stringify({
                         productId,
-                        sessionId: sessionIdRef.current,
+                        sessionId: sessionId,
                         action: 'register',
                     }),
                 });
@@ -85,7 +87,7 @@ export function useProductViewers({ productId, interval = 10000 }: UseProductVie
                     },
                     body: JSON.stringify({
                         productId,
-                        sessionId: sessionIdRef.current,
+                        sessionId: sessionId,
                         action: 'unregister',
                     }),
                 });
@@ -125,18 +127,20 @@ export function useProductViewers({ productId, interval = 10000 }: UseProductVie
 
         // Cleanup function
         return () => {
-            if (heartbeatRef.current) {
-                clearInterval(heartbeatRef.current);
+            const currentHeartbeat = heartbeatRef.current;
+            const currentCleanup = cleanupRef.current;
+            
+            if (currentHeartbeat) {
+                clearInterval(currentHeartbeat);
             }
-            if (cleanupRef.current) {
-                clearTimeout(cleanupRef.current);
+            if (currentCleanup) {
+                clearTimeout(currentCleanup);
             }
             unregisterViewer();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [productId, interval, isActive]);
+    }, [productId, interval, isActive, sessionId]);
 
     return viewerCount;
 }
-

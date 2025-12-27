@@ -24,16 +24,21 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export function CartProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([]);
 
-    // Load from local storage on mount
+    // ✅ CORRECTION: Charger depuis localStorage de manière asynchrone
     useEffect(() => {
-        const saved = localStorage.getItem('monican_cart');
-        if (saved) {
-            try {
-                setItems(JSON.parse(saved));
-            } catch (e) {
-                console.error('Failed to parse cart', e);
+        const loadCart = () => {
+            const saved = localStorage.getItem('monican_cart');
+            if (saved) {
+                try {
+                    setItems(JSON.parse(saved));
+                } catch (e) {
+                    console.error('Failed to parse cart', e);
+                }
             }
-        }
+        };
+        
+        // Utiliser queueMicrotask pour éviter l'appel synchrone
+        queueMicrotask(loadCart);
     }, []);
 
     // Save to local storage on change

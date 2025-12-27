@@ -6,41 +6,69 @@ import Link from 'next/link';
 import { getContactInfo } from '@/lib/contact-info';
 import styles from './page.module.css';
 
+interface ContactInfo {
+    email: string;
+    phone: string;
+}
+
 function PaymentFailedContent() {
     const searchParams = useSearchParams();
     const errorType = searchParams.get('error');
-    const paymentIntentId = searchParams.get('payment_intent');
 
-    const [errorMessage, setErrorMessage] = useState('Le paiement n\'a pas pu être finalisé');
-    const [contactInfo, setContactInfo] = useState({ email: 'support@monican.shop', phone: '717-880-1479' });
+    const [errorMessage, setErrorMessage] = useState("Le paiement n'a pas pu être finalisé");
+    const [contactInfo, setContactInfo] = useState<ContactInfo>({ 
+        email: 'support@monican.shop', 
+        phone: '717-880-1479' 
+    });
 
+    // ✅ CORRECTION: Gérer le chargement de manière asynchrone
     useEffect(() => {
-        // Messages d'erreur personnalisés
-        const errorMessages: Record<string, string> = {
-            'card_declined': 'Carte refusée par votre banque',
-            'insufficient_funds': 'Fonds insuffisants',
-            'expired_card': 'Carte expirée',
-            'incorrect_cvc': 'Code de sécurité incorrect',
-            'processing_error': 'Erreur de traitement',
-            'cancelled': 'Paiement annulé',
-            'REQUIRES_ACTION': 'Paiement nécessite une authentification supplémentaire',
+        let mounted = true;
+
+        const loadErrorAndContact = async () => {
+            // Messages d'erreur personnalisés
+            const errorMessages: Record<string, string> = {
+                'card_declined': 'Carte refusée par votre banque',
+                'insufficient_funds': 'Fonds insuffisants',
+                'expired_card': 'Carte expirée',
+                'incorrect_cvc': 'Code de sécurité incorrect',
+                'processing_error': 'Erreur de traitement',
+                'cancelled': 'Paiement annulé',
+                'REQUIRES_ACTION': 'Paiement nécessite une authentification supplémentaire',
+            };
+
+            if (errorType && errorMessages[errorType] && mounted) {
+                setErrorMessage(errorMessages[errorType]);
+            }
+
+            // Logger l'échec pour analytics (si disponible)
+            if (typeof window !== 'undefined') {
+                const win = window as unknown as Record<string, unknown>;
+                if (win.gtag) {
+                    const gtag = win.gtag as (...args: unknown[]) => void;
+                    gtag('event', 'payment_failed', {
+                        'error_type': errorType || 'unknown',
+                    });
+                }
+            }
+
+            // Charger les informations de contact
+            try {
+                const info = await getContactInfo('fr');
+                if (mounted) {
+                    setContactInfo({ email: info.email, phone: info.phone });
+                }
+            } catch (err) {
+                console.error('Failed to load contact info:', err);
+            }
         };
 
-        if (errorType && errorMessages[errorType]) {
-            setErrorMessage(errorMessages[errorType]);
-        }
+        const timeoutId = setTimeout(loadErrorAndContact, 0);
 
-        // Logger l'échec pour analytics (si disponible)
-        if (typeof window !== 'undefined' && (window as any).gtag) {
-            (window as any).gtag('event', 'payment_failed', {
-                'error_type': errorType || 'unknown',
-            });
-        }
-
-        // Charger les informations de contact
-        getContactInfo('fr').then(info => {
-            setContactInfo({ email: info.email, phone: info.phone });
-        });
+        return () => {
+            mounted = false;
+            clearTimeout(timeoutId);
+        };
     }, [errorType]);
 
     return (
@@ -57,7 +85,7 @@ function PaymentFailedContent() {
                 <p className={styles.errorCode}>{errorMessage}</p>
 
                 <p className={styles.message}>
-                    Votre transaction n'a pas abouti. Votre carte n'a pas été débitée et votre panier est toujours disponible.
+                    {"Votre transaction n'a pas abouti. Votre carte n'a pas été débitée et votre panier est toujours disponible."}
                 </p>
 
                 <div className={styles.reasonsBox}>
@@ -93,7 +121,7 @@ function PaymentFailedContent() {
                 </div>
 
                 <div className={styles.contactInfo}>
-                    <p><strong>Besoin d'aide ?</strong></p>
+                    <p><strong>{"Besoin d'aide ?"}</strong></p>
                     <div className={styles.contactLinks}>
                         <a href={`mailto:${contactInfo.email}`}>📧 {contactInfo.email}</a>
                         <a href={`tel:${contactInfo.phone.replace(/\D/g, '')}`}>📞 {contactInfo.phone}</a>
@@ -119,4 +147,3 @@ export default function PaymentFailedPage() {
         </Suspense>
     );
 }
-

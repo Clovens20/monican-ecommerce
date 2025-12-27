@@ -10,11 +10,18 @@ export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState('en');
   const [mounted, setMounted] = useState(false);
 
+  // ✅ CORRECTION: Charger la langue de manière asynchrone
   useEffect(() => {
-    // Charger la langue depuis localStorage uniquement côté client
-    const storedLanguage = localStorage.getItem('language') || 'en';
-    setLanguage(storedLanguage);
-    setMounted(true);
+    const loadLanguage = () => {
+      const storedLanguage = localStorage.getItem('language') || 'en';
+      setLanguage(storedLanguage);
+      setMounted(true);
+    };
+    
+    // Utiliser setTimeout pour éviter l'appel synchrone
+    const timeoutId = setTimeout(loadLanguage, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {

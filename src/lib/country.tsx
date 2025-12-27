@@ -59,7 +59,7 @@ interface CountryContextType {
     settings: CountrySettings;
     formatPrice: (priceInUSD: number) => string;
     convertPrice: (priceInUSD: number) => number;
-    shippingCost: (subtotalInUSD: number) => number; // Returns cost in local currency
+    shippingCost: (subtotalInUSD?: number) => number; // Returns cost in local currency
 }
 
 const CountryContext = createContext<CountryContextType | undefined>(undefined);
@@ -67,12 +67,19 @@ const CountryContext = createContext<CountryContextType | undefined>(undefined);
 export function CountryProvider({ children }: { children: React.ReactNode }) {
     const [country, setCountry] = useState<CountryCode>('US');
 
-    // Persist selection
+    // ✅ CORRECTION: Charger le pays de manière asynchrone
     useEffect(() => {
-        const saved = localStorage.getItem('monican_country') as CountryCode;
-        if (saved && countrySettings[saved]) {
-            setCountry(saved);
-        }
+        const loadCountry = () => {
+            const saved = localStorage.getItem('monican_country') as CountryCode;
+            if (saved && countrySettings[saved]) {
+                setCountry(saved);
+            }
+        };
+        
+        // Utiliser setTimeout pour éviter l'appel synchrone
+        const timeoutId = setTimeout(loadCountry, 0);
+        
+        return () => clearTimeout(timeoutId);
     }, []);
 
     const handleSetCountry = (code: CountryCode) => {
@@ -94,8 +101,9 @@ export function CountryProvider({ children }: { children: React.ReactNode }) {
         }).format(localPrice);
     };
 
-    const shippingCost = (subtotalInUSD: number) => {
+    const shippingCost = (subtotalInUSD?: number) => {
         // Retourne toujours le tarif fixe, sans seuil de livraison gratuite
+        // Le paramètre subtotalInUSD est gardé pour la compatibilité mais n'est pas utilisé
         return settings.shippingRule.flatRate;
     };
 

@@ -16,15 +16,21 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 export function WishlistProvider({ children }: { children: ReactNode }) {
     const [items, setItems] = useState<Product[]>([]);
 
+    // ✅ CORRECTION: Charger la wishlist de manière asynchrone
     useEffect(() => {
-        const saved = localStorage.getItem('monican_wishlist');
-        if (saved) {
-            try {
-                setItems(JSON.parse(saved));
-            } catch (e) {
-                console.error('Failed to parse wishlist', e);
+        const loadWishlist = () => {
+            const saved = localStorage.getItem('monican_wishlist');
+            if (saved) {
+                try {
+                    setItems(JSON.parse(saved));
+                } catch (e) {
+                    console.error('Failed to parse wishlist', e);
+                }
             }
-        }
+        };
+        
+        // Utiliser queueMicrotask pour éviter l'appel synchrone
+        queueMicrotask(loadWishlist);
     }, []);
 
     useEffect(() => {
@@ -68,4 +74,3 @@ export function useWishlist() {
     }
     return context;
 }
-

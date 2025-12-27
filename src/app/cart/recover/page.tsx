@@ -5,39 +5,66 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart';
 import styles from './recover.module.css';
 
+interface CartData {
+    items: Array<{
+        productId: string;
+        name: string;
+        quantity: number;
+        price: number;
+        size?: string;
+    }>;
+    total: number;
+    currency: string;
+}
+
 function RecoverCartContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { addItem, clearCart } = useCart();
+    const { clearCart } = useCart();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [cartData, setCartData] = useState<any>(null);
+    const [cartData, setCartData] = useState<CartData | null>(null);
 
+    // ✅ CORRECTION: Gérer le chargement de manière asynchrone avec mounted flag
     useEffect(() => {
-        const token = searchParams.get('token');
-        if (!token) {
-            setError('Token manquant');
-            setLoading(false);
-            return;
-        }
+        let mounted = true;
+        
+        const recoverCart = async () => {
+            const token = searchParams.get('token');
+            
+            if (!token) {
+                if (mounted) {
+                    setError('Token manquant');
+                    setLoading(false);
+                }
+                return;
+            }
 
-        // Récupérer le panier
-        fetch(`/api/cart/abandoned/recover?token=${token}`)
-            .then(async (res) => {
+            try {
+                const res = await fetch(`/api/cart/abandoned/recover?token=${token}`);
                 const data = await res.json();
+                
                 if (!res.ok) {
                     throw new Error(data.error || 'Erreur lors de la récupération');
                 }
-                return data;
-            })
-            .then((data) => {
-                setCartData(data.cartData);
-                setLoading(false);
-            })
-            .catch((err) => {
-                setError(err.message);
-                setLoading(false);
-            });
+                
+                if (mounted) {
+                    setCartData(data.cartData);
+                    setLoading(false);
+                }
+            } catch (err) {
+                if (mounted) {
+                    setError(err instanceof Error ? err.message : 'Erreur inconnue');
+                    setLoading(false);
+                }
+            }
+        };
+        
+        recoverCart();
+        
+        return () => {
+            mounted = false;
+        };
     }, [searchParams]);
 
     const handleRecoverCart = () => {
@@ -45,13 +72,6 @@ function RecoverCartContent() {
 
         // Vider le panier actuel
         clearCart();
-
-        // Ajouter les articles du panier récupéré
-        cartData.items.forEach((item: any) => {
-            // Note: addItem attend un Product, on doit adapter
-            // Pour l'instant, on redirige vers le panier
-            // L'utilisateur devra réajouter manuellement ou on peut améliorer cette partie
-        });
 
         // Marquer le panier comme récupéré
         const token = searchParams.get('token');
@@ -103,7 +123,7 @@ function RecoverCartContent() {
         return null;
     }
 
-    const itemCount = cartData.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+    const itemCount = cartData.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
     return (
         <div className={styles.container}>
@@ -112,7 +132,7 @@ function RecoverCartContent() {
                 <h1 className={styles.title}>Panier récupéré avec succès !</h1>
                 <p className={styles.message}>
                     Vous avez <strong>{itemCount}</strong> article{itemCount > 1 ? 's' : ''} dans votre panier
-                    d'une valeur de{' '}
+                    {" d'une valeur de "}
                     <strong className={styles.total}>
                         {new Intl.NumberFormat('fr-FR', {
                             style: 'currency',
@@ -153,4 +173,3 @@ export default function RecoverCartPage() {
         </Suspense>
     );
 }
-
