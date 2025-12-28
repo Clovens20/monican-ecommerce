@@ -39,10 +39,10 @@ export default function ProductsPage() {
     product: null,
     inventory: null,
   });
+  const [selectedProductForSale, setSelectedProductForSale] = useState<Product | null>(null);
   const [physicalSaleData, setPhysicalSaleData] = useState({
-    quantity: 1,
-    size: '',
     color: '',
+    items: Array<{ size: string; quantity: number }>(),
   });
   const [recordingSale, setRecordingSale] = useState(false);
 
@@ -151,9 +151,8 @@ export default function ProductsPage() {
           inventory: inventoryEntries.length > 0 ? inventoryEntries : null,
         });
         setPhysicalSaleData({
-          quantity: 1,
-          size: inventoryEntries.length > 0 ? inventoryEntries[0].size : '',
           color: inventoryEntries.length > 0 && inventoryEntries[0].color ? inventoryEntries[0].color : '',
+          items: [],
         });
       } else {
         alert('Erreur lors du chargement des informations du produit');
@@ -166,28 +165,62 @@ export default function ProductsPage() {
 
   const handleClosePhysicalSaleModal = () => {
     setPhysicalSaleModal({ open: false, product: null, inventory: null });
-    setPhysicalSaleData({ quantity: 1, size: '', color: '' });
+    setPhysicalSaleData({ color: '', items: [] });
+    setSelectedProductForSale(null);
+  };
+
+  const addSizeItem = () => {
+    const availableSizes = physicalSaleModal.inventory 
+      ? Array.from(new Set(physicalSaleModal.inventory.map(i => i.size)))
+      : [];
+    
+    if (availableSizes.length > 0) {
+      setPhysicalSaleData({
+        ...physicalSaleData,
+        items: [...physicalSaleData.items, { size: availableSizes[0], quantity: 1 }],
+      });
+    }
+  };
+
+  const removeSizeItem = (index: number) => {
+    setPhysicalSaleData({
+      ...physicalSaleData,
+      items: physicalSaleData.items.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateSizeItem = (index: number, field: 'size' | 'quantity', value: string | number) => {
+    const newItems = [...physicalSaleData.items];
+    newItems[index] = { ...newItems[index], [field]: value };
+    setPhysicalSaleData({ ...physicalSaleData, items: newItems });
   };
 
   const handleRecordPhysicalSale = async () => {
-    if (!physicalSaleModal.product) return;
+    if (!selectedProductForSale) return;
 
-    if (physicalSaleData.quantity <= 0) {
-      alert('La quantité doit être supérieure à 0');
+    if (physicalSaleData.items.length === 0) {
+      alert('Veuillez ajouter au moins une taille avec une quantité');
+      return;
+    }
+
+    // Vérifier que toutes les quantités sont valides
+    const invalidItems = physicalSaleData.items.filter(item => item.quantity <= 0 || !item.size);
+    if (invalidItems.length > 0) {
+      alert('Veuillez remplir correctement toutes les tailles et quantités');
       return;
     }
 
     try {
       setRecordingSale(true);
 
-      const response = await fetch(`/api/admin/products/${physicalSaleModal.product.id}/physical-sale`, {
+      // Envoyer toutes les tailles en une seule requête
+      const response = await fetch(`/api/admin/products/${selectedProductForSale.id}/physical-sale`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          quantity: physicalSaleData.quantity,
-          size: physicalSaleData.size || undefined,
+          items: physicalSaleData.items,
           color: physicalSaleData.color || undefined,
         }),
       });
@@ -195,14 +228,29 @@ export default function ProductsPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        alert(`✅ ${data.message}\nStock restant: ${data.remainingStock || 'Voir détails'}`);
-        handleClosePhysicalSaleModal();
+        // Construire un message détaillé avec toutes les tailles
+        let successMessage = `✅ ${data.message}\n\n`;
+        if (data.items && data.items.length > 0) {
+          successMessage += 'Détails:\n';
+          data.items.forEach((item: any) => {
+            successMessage += `• Taille ${item.size}: ${item.quantity} unité(s) - Stock restant: ${item.remainingStock}\n`;
+          });
+        }
+        if (data.totalAmount) {
+          successMessage += `\nMontant total: ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(data.totalAmount)}`;
+        }
+        
+        alert(successMessage);
+        
         // Rafraîchir la liste des produits
         const refreshResponse = await fetch('/api/admin/products');
         const refreshData = await refreshResponse.json();
         if (refreshData.success) {
           setProducts(refreshData.products);
         }
+        // Retourner à la liste des produits pour continuer les ventes
+        setSelectedProductForSale(null);
+        setPhysicalSaleData({ color: '', items: [] });
       } else {
         alert(data.error || 'Erreur lors de l\'enregistrement de la vente');
       }
@@ -294,6 +342,13 @@ export default function ProductsPage() {
           <p className={styles.pageSubtitle}>Gérez votre catalogue de produits</p>
         </div>
         <div className={styles.headerActions}>
+          <button
+            onClick={() => setPhysicalSaleModal({ open: true, product: null, inventory: null })}
+            className={styles.btnPhysicalSale}
+            title="Enregistrer des ventes physiques rapidement"
+          >
+            🏪 Vente physique
+          </button>
           <Link href="/admin/products/import" className={styles.btnSecondary}>
             📥 Importer CSV
           </Link>
@@ -442,13 +497,6 @@ export default function ProductsPage() {
                   ✏️ Modifier
                 </Link>
                 <button 
-                  className={`${styles.actionBtn} ${styles.physicalSale}`}
-                  onClick={() => handleOpenPhysicalSaleModal(product)}
-                  title="Enregistrer une vente en magasin physique"
-                >
-                  🏪 Vente physique
-                </button>
-                <button 
                   className={`${styles.actionBtn} ${styles.danger}`}
                   onClick={() => handleDelete(product.id, product.name)}
                   disabled={deletingProducts.has(product.id)}
@@ -476,8 +524,92 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Modal pour enregistrer une vente physique */}
-      {physicalSaleModal.open && physicalSaleModal.product && (
+      {/* Modal global pour les ventes physiques - Liste de tous les produits */}
+      {physicalSaleModal.open && !selectedProductForSale && (
+        <div className={styles.modalOverlay} onClick={() => setPhysicalSaleModal({ open: false, product: null, inventory: null })}>
+          <div className={styles.modalContent} style={{ maxWidth: '900px' }} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>🏪 Enregistrer une vente physique</h2>
+              <button 
+                className={styles.modalClose}
+                onClick={() => setPhysicalSaleModal({ open: false, product: null, inventory: null })}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.modalInfo}>
+                <p>💡 Cliquez sur un produit pour enregistrer une vente</p>
+              </div>
+
+              <div className={styles.productsListForSale}>
+                {filteredProducts
+                  .filter(p => p.isActive !== false)
+                  .map(product => {
+                    const totalStock = product.variants && Array.isArray(product.variants)
+                      ? product.variants.reduce((sum, v) => sum + (v.stock || 0), 0)
+                      : 0;
+                    
+                    return (
+                      <div
+                        key={product.id}
+                        className={`${styles.productItemForSale} ${totalStock === 0 ? styles.outOfStock : ''}`}
+                        onClick={() => {
+                          if (totalStock > 0) {
+                            handleOpenPhysicalSaleModal(product);
+                            setSelectedProductForSale(product);
+                          }
+                        }}
+                      >
+                        <div className={styles.productItemImage}>
+                          {product.images && product.images.length > 0 ? (
+                            <img src={product.images[0].url} alt={product.name} />
+                          ) : (
+                            <span className={styles.noImage}>📷</span>
+                          )}
+                        </div>
+                        <div className={styles.productItemInfo}>
+                          <h3 className={styles.productItemName}>{product.name}</h3>
+                          <p className={styles.productItemDescription}>{product.description}</p>
+                          <div className={styles.productItemMeta}>
+                            <span className={styles.productItemPrice}>
+                              {new Intl.NumberFormat('fr-FR', {
+                                style: 'currency',
+                                currency: 'USD'
+                              }).format(product.price)}
+                            </span>
+                            <span className={`${styles.productItemStock} ${totalStock === 0 ? styles.stockZero : ''}`}>
+                              {totalStock > 0 ? `${totalStock} en stock` : 'Rupture de stock'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={styles.productItemAction}>
+                          {totalStock > 0 ? (
+                            <button className={styles.selectProductBtn}>
+                              ➕ Vendre
+                            </button>
+                          ) : (
+                            <span className={styles.outOfStockBadge}>Épuisé</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+
+              {filteredProducts.filter(p => p.isActive !== false).length === 0 && (
+                <div className={styles.emptyState}>
+                  <p>Aucun produit actif disponible</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pour enregistrer une vente physique sur un produit spécifique */}
+      {physicalSaleModal.open && selectedProductForSale && (
         <div className={styles.modalOverlay} onClick={handleClosePhysicalSaleModal}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -492,75 +624,133 @@ export default function ProductsPage() {
 
             <div className={styles.modalBody}>
               <div className={styles.modalProductInfo}>
-                <h3>{physicalSaleModal.product.name}</h3>
-                <p className={styles.modalProductCategory}>{physicalSaleModal.product.category}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                  <button
+                    onClick={() => setSelectedProductForSale(null)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '20px',
+                      cursor: 'pointer',
+                      padding: '4px',
+                      color: '#6b7280'
+                    }}
+                    title="Retour à la liste"
+                  >
+                    ←
+                  </button>
+                  <h3 style={{ margin: 0 }}>{selectedProductForSale.name}</h3>
+                </div>
+                <p className={styles.modalProductCategory}>{selectedProductForSale.category}</p>
               </div>
 
               <div className={styles.modalForm}>
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>
-                    Quantité vendue <span className={styles.required}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    className={styles.formInput}
-                    value={physicalSaleData.quantity}
-                    onChange={(e) => setPhysicalSaleData({
-                      ...physicalSaleData,
-                      quantity: parseInt(e.target.value) || 1
-                    })}
-                    required
-                  />
-                </div>
-
-                {physicalSaleModal.inventory && physicalSaleModal.inventory.length > 0 && (
-                  <>
-                    {/* Si plusieurs tailles disponibles */}
-                    {new Set(physicalSaleModal.inventory.map(i => i.size)).size > 1 && (
-                      <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Taille (optionnel)</label>
-                        <select
-                          className={styles.formInput}
-                          value={physicalSaleData.size}
-                          onChange={(e) => setPhysicalSaleData({
-                            ...physicalSaleData,
-                            size: e.target.value
-                          })}
-                        >
-                          <option value="">Toutes les tailles</option>
-                          {Array.from(new Set(physicalSaleModal.inventory.map(i => i.size))).map(size => (
-                            <option key={size} value={size}>
-                              {size} ({physicalSaleModal.inventory!.filter(i => i.size === size).reduce((sum, i) => sum + i.stock, 0)} en stock)
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Si plusieurs couleurs disponibles */}
-                    {new Set(physicalSaleModal.inventory.map(i => i.color).filter(Boolean)).size > 1 && (
-                      <div className={styles.formGroup}>
-                        <label className={styles.formLabel}>Couleur (optionnel)</label>
-                        <select
-                          className={styles.formInput}
-                          value={physicalSaleData.color}
-                          onChange={(e) => setPhysicalSaleData({
-                            ...physicalSaleData,
-                            color: e.target.value
-                          })}
-                        >
-                          <option value="">Toutes les couleurs</option>
-                          {Array.from(new Set(physicalSaleModal.inventory.map(i => i.color).filter(Boolean))).map(color => (
-                            <option key={color} value={color || ''}>
-                              {color} ({physicalSaleModal.inventory!.filter(i => i.color === color).reduce((sum, i) => sum + i.stock, 0)} en stock)
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </>
+                {/* Sélection de couleur si plusieurs couleurs disponibles */}
+                {physicalSaleModal.inventory && new Set(physicalSaleModal.inventory.map(i => i.color).filter(Boolean)).size > 1 && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>Couleur (optionnel)</label>
+                    <select
+                      className={styles.formInput}
+                      value={physicalSaleData.color}
+                      onChange={(e) => setPhysicalSaleData({
+                        ...physicalSaleData,
+                        color: e.target.value
+                      })}
+                    >
+                      <option value="">Toutes les couleurs</option>
+                      {Array.from(new Set(physicalSaleModal.inventory.map(i => i.color).filter(Boolean))).map(color => (
+                        <option key={color} value={color || ''}>
+                          {color} ({physicalSaleModal.inventory!.filter(i => i.color === color).reduce((sum, i) => sum + i.stock, 0)} en stock)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 )}
+
+                {/* Liste des tailles avec quantités */}
+                <div className={styles.formGroup}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label className={styles.formLabel}>
+                      Tailles et quantités <span className={styles.required}>*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={addSizeItem}
+                      className={styles.addSizeBtn}
+                      disabled={!physicalSaleModal.inventory || physicalSaleModal.inventory.length === 0}
+                    >
+                      ➕ Ajouter une taille
+                    </button>
+                  </div>
+
+                  {physicalSaleData.items.length === 0 ? (
+                    <div className={styles.emptySizeList}>
+                      <p>Aucune taille ajoutée. Cliquez sur "Ajouter une taille" pour commencer.</p>
+                    </div>
+                  ) : (
+                    <div className={styles.sizeItemsList}>
+                      {physicalSaleData.items.map((item, index) => {
+                        const availableSizes = physicalSaleModal.inventory 
+                          ? Array.from(new Set(physicalSaleModal.inventory.map(i => i.size)))
+                          : [];
+                        const selectedSizeStock = physicalSaleModal.inventory
+                          ? physicalSaleModal.inventory
+                              .filter(i => i.size === item.size && (!physicalSaleData.color || i.color === physicalSaleData.color))
+                              .reduce((sum, i) => sum + i.stock, 0)
+                          : 0;
+
+                        return (
+                          <div key={index} className={styles.sizeItemRow}>
+                            <select
+                              className={styles.formInput}
+                              value={item.size}
+                              onChange={(e) => updateSizeItem(index, 'size', e.target.value)}
+                              style={{ flex: 1 }}
+                            >
+                              <option value="">Sélectionner une taille</option>
+                              {availableSizes.map(size => {
+                                const stock = physicalSaleModal.inventory
+                                  ? physicalSaleModal.inventory
+                                      .filter(i => i.size === size && (!physicalSaleData.color || i.color === physicalSaleData.color))
+                                      .reduce((sum, i) => sum + i.stock, 0)
+                                  : 0;
+                                return (
+                                  <option key={size} value={size}>
+                                    {size} ({stock} en stock)
+                                  </option>
+                                );
+                              })}
+                            </select>
+                            <input
+                              type="number"
+                              min="1"
+                              max={selectedSizeStock}
+                              className={styles.formInput}
+                              value={item.quantity}
+                              onChange={(e) => updateSizeItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                              placeholder="Qté"
+                              style={{ width: '100px', marginLeft: '8px' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeSizeItem(index)}
+                              className={styles.removeSizeBtn}
+                              title="Supprimer cette taille"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {physicalSaleData.items.length > 0 && (
+                    <div className={styles.totalQuantity}>
+                      <strong>Total: {physicalSaleData.items.reduce((sum, item) => sum + item.quantity, 0)} unité(s)</strong>
+                    </div>
+                  )}
+                </div>
 
                 <div className={styles.modalInfo}>
                   <p>💡 Le stock en ligne sera automatiquement déduit après l'enregistrement.</p>
@@ -579,7 +769,7 @@ export default function ProductsPage() {
               <button
                 className={styles.modalBtnPrimary}
                 onClick={handleRecordPhysicalSale}
-                disabled={recordingSale || physicalSaleData.quantity <= 0}
+                disabled={recordingSale || physicalSaleData.items.length === 0}
               >
                 {recordingSale ? '⏳ Enregistrement...' : '✅ Enregistrer la vente'}
               </button>

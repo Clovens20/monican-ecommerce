@@ -3,11 +3,19 @@ import { supabaseAdmin } from '@/lib/supabase';
 import { verifyAuth } from '@/lib/auth';
 import { z } from 'zod';
 
+const PhysicalSaleItemSchema = z.object({
+  size: z.string().min(1, 'La taille est requise'),
+  quantity: z.number().int().min(1, 'La quantité doit être au moins 1'),
+});
+
 const PhysicalSaleSchema = z.object({
+  items: z.array(PhysicalSaleItemSchema).min(1, 'Au moins un item est requis'),
+  color: z.string().optional(),
+}).or(z.object({
   quantity: z.number().int().min(1, 'La quantité doit être au moins 1'),
   size: z.string().optional(),
   color: z.string().optional(),
-});
+}));
 
 /**
  * Route pour enregistrer une vente physique et déduire le stock
@@ -35,8 +43,6 @@ export async function POST(
       );
     }
 
-    const { quantity, size, color } = validationResult.data;
-
     // Récupérer le produit pour vérifier qu'il existe et obtenir le prix
     const { data: product, error: productError } = await supabaseAdmin
       .from('products')
@@ -52,19 +58,47 @@ export async function POST(
     }
 
     const unitPrice = parseFloat(product.price?.toString() || '0');
-    const totalAmount = unitPrice * quantity;
 
-    // Si une taille et/ou couleur sont spécifiées, déduire du stock spécifique
-    if (size || color) {
-      // Construire la requête pour trouver l'entrée d'inventaire
+    // Gérer le nouveau format avec items ou l'ancien format pour rétrocompatibilité
+    let items: Array<{ size: string; quantity: number }> = [];
+    let color: string | undefined = undefined;
+
+    if ('items' in validationResult.data) {
+      items = validationResult.data.items;
+      color = validationResult.data.color;
+    } else {
+      // Ancien format pour rétrocompatibilité
+      const { quantity, size, color: oldColor } = validationResult.data;
+      if (size) {
+        items = [{ size, quantity }];
+      } else {
+        // Si pas de taille spécifiée, on traitera cela plus tard
+        items = [{ size: '', quantity }];
+      }
+      color = oldColor;
+    }
+
+    // Traiter chaque item (taille + quantité)
+    const processedItems: Array<{ size: string; quantity: number; remainingStock: number }> = [];
+    const salesRecords: Array<any> = [];
+    let totalQuantity = 0;
+    let totalAmount = 0;
+
+    for (const item of items) {
+      if (!item.size) {
+        return NextResponse.json(
+          { error: 'Toutes les tailles doivent être spécifiées' },
+          { status: 400 }
+        );
+      }
+
+      // Récupérer l'inventaire pour cette taille et couleur
       let inventoryQuery = supabaseAdmin
         .from('inventory')
         .select('id, stock_quantity, reserved_quantity, size, color')
-        .eq('product_id', id);
+        .eq('product_id', id)
+        .eq('size', item.size);
 
-      if (size) {
-        inventoryQuery = inventoryQuery.eq('size', size);
-      }
       if (color) {
         inventoryQuery = inventoryQuery.eq('color', color);
       }
@@ -74,191 +108,104 @@ export async function POST(
       if (inventoryError) {
         console.error('Error fetching inventory:', inventoryError);
         return NextResponse.json(
-          { error: 'Erreur lors de la récupération de l\'inventaire' },
+          { error: `Erreur lors de la récupération de l'inventaire pour la taille ${item.size}` },
           { status: 500 }
         );
       }
 
       if (!inventoryEntries || inventoryEntries.length === 0) {
         return NextResponse.json(
-          { error: 'Aucune entrée d\'inventaire trouvée pour cette taille/couleur' },
+          { error: `Aucune entrée d'inventaire trouvée pour la taille ${item.size}${color ? ` et la couleur ${color}` : ''}` },
           { status: 400 }
         );
       }
 
-      // Si plusieurs entrées (différentes couleurs pour la même taille), prendre la première disponible
-      const inventoryEntry = inventoryEntries[0];
-      const availableStock = inventoryEntry.stock_quantity - (inventoryEntry.reserved_quantity || 0);
+      // Calculer le stock disponible pour cette taille
+      const availableStock = inventoryEntries.reduce((sum, entry) => {
+        return sum + (entry.stock_quantity - (entry.reserved_quantity || 0));
+      }, 0);
 
-      if (availableStock < quantity) {
+      if (availableStock < item.quantity) {
         return NextResponse.json(
           { 
-            error: `Stock insuffisant. Stock disponible: ${availableStock}, Quantité demandée: ${quantity}`,
+            error: `Stock insuffisant pour la taille ${item.size}. Stock disponible: ${availableStock}, Quantité demandée: ${item.quantity}`,
+            size: item.size,
             availableStock 
           },
           { status: 400 }
         );
       }
 
-      // Déduire le stock
-      const newStock = inventoryEntry.stock_quantity - quantity;
-      const { error: updateError } = await supabaseAdmin
-        .from('inventory')
-        .update({ 
-          stock_quantity: Math.max(0, newStock),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', inventoryEntry.id);
-
-      if (updateError) {
-        console.error('Error updating inventory:', updateError);
-        return NextResponse.json(
-          { error: 'Erreur lors de la mise à jour du stock' },
-          { status: 500 }
-        );
-      }
-
-      // Enregistrer la vente physique dans la table
-      const { error: saleError } = await supabaseAdmin
-        .from('physical_sales')
-        .insert({
-          product_id: id,
-          product_name: product.name,
-          quantity: quantity,
-          size: size || inventoryEntry.size || null,
-          color: color || inventoryEntry.color || null,
-          unit_price: unitPrice,
-          total_amount: totalAmount,
-          sold_by: authResult.user?.id || null,
-        });
-
-      if (saleError) {
-        console.error('Error recording physical sale:', saleError);
-        // Ne pas faire échouer la vente si l'enregistrement échoue, mais logger l'erreur
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: `Vente physique enregistrée: ${quantity} unité(s) vendue(s)`,
-        productName: product.name,
-        size: size || inventoryEntry.size,
-        color: color || inventoryEntry.color,
-        quantitySold: quantity,
-        remainingStock: Math.max(0, newStock),
-        totalAmount: totalAmount,
-      });
-    } else {
-      // Si pas de taille/couleur spécifiée, déduire du stock total (répartir sur toutes les entrées)
-      const { data: allInventoryEntries, error: allInventoryError } = await supabaseAdmin
-        .from('inventory')
-        .select('id, stock_quantity, reserved_quantity, size, color')
-        .eq('product_id', id)
-        .order('stock_quantity', { ascending: false });
-
-      if (allInventoryError) {
-        console.error('Error fetching inventory:', allInventoryError);
-        return NextResponse.json(
-          { error: 'Erreur lors de la récupération de l\'inventaire' },
-          { status: 500 }
-        );
-      }
-
-      if (!allInventoryEntries || allInventoryEntries.length === 0) {
-        return NextResponse.json(
-          { error: 'Aucune entrée d\'inventaire trouvée pour ce produit' },
-          { status: 400 }
-        );
-      }
-
-      // Calculer le stock total disponible
-      const totalAvailableStock = allInventoryEntries.reduce((sum, entry) => {
-        return sum + (entry.stock_quantity - (entry.reserved_quantity || 0));
-      }, 0);
-
-      if (totalAvailableStock < quantity) {
-        return NextResponse.json(
-          { 
-            error: `Stock insuffisant. Stock total disponible: ${totalAvailableStock}, Quantité demandée: ${quantity}`,
-            availableStock: totalAvailableStock 
-          },
-          { status: 400 }
-        );
-      }
-
-      // Déduire proportionnellement ou depuis les entrées avec le plus de stock
-      let remainingQuantity = quantity;
-      const updates: Array<{ id: string; newStock: number; size: string; color: string | null }> = [];
-
-      for (const entry of allInventoryEntries) {
+      // Déduire le stock de chaque entrée d'inventaire pour cette taille
+      let remainingQuantity = item.quantity;
+      for (const entry of inventoryEntries) {
         if (remainingQuantity <= 0) break;
 
-        const availableStock = entry.stock_quantity - (entry.reserved_quantity || 0);
-        if (availableStock <= 0) continue;
+        const entryAvailableStock = entry.stock_quantity - (entry.reserved_quantity || 0);
+        if (entryAvailableStock <= 0) continue;
 
-        const toDeduct = Math.min(remainingQuantity, availableStock);
+        const toDeduct = Math.min(remainingQuantity, entryAvailableStock);
         const newStock = entry.stock_quantity - toDeduct;
-        
-        updates.push({
-          id: entry.id,
-          newStock: Math.max(0, newStock),
-          size: entry.size,
-          color: entry.color,
-        });
+
+        const { error: updateError } = await supabaseAdmin
+          .from('inventory')
+          .update({ 
+            stock_quantity: Math.max(0, newStock),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', entry.id);
+
+        if (updateError) {
+          console.error('Error updating inventory:', updateError);
+          return NextResponse.json(
+            { error: `Erreur lors de la mise à jour du stock pour la taille ${item.size}` },
+            { status: 500 }
+          );
+        }
 
         remainingQuantity -= toDeduct;
       }
 
-      // Appliquer toutes les mises à jour
-      for (const update of updates) {
-        const { error: updateError } = await supabaseAdmin
-          .from('inventory')
-          .update({ 
-            stock_quantity: update.newStock,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', update.id);
+      const finalStock = availableStock - item.quantity;
+      processedItems.push({
+        size: item.size,
+        quantity: item.quantity,
+        remainingStock: Math.max(0, finalStock),
+      });
 
-        if (updateError) {
-          console.error('Error updating inventory entry:', updateError);
-        }
-      }
+      totalQuantity += item.quantity;
+      totalAmount += unitPrice * item.quantity;
 
-      // Enregistrer la vente physique dans la table
-      // Si plusieurs tailles/couleurs, on enregistre une seule vente avec les détails
+      // Enregistrer chaque vente dans physical_sales
       const { error: saleError } = await supabaseAdmin
         .from('physical_sales')
         .insert({
           product_id: id,
           product_name: product.name,
-          quantity: quantity,
-          size: updates.length === 1 ? updates[0].size : null, // Si une seule taille, l'enregistrer
-          color: updates.length === 1 && updates[0].color ? updates[0].color : null, // Si une seule couleur, l'enregistrer
+          quantity: item.quantity,
+          size: item.size,
+          color: color || inventoryEntries[0].color || null,
           unit_price: unitPrice,
-          total_amount: totalAmount,
+          total_amount: unitPrice * item.quantity,
           sold_by: authResult.user?.id || null,
-          notes: updates.length > 1 
-            ? `Vente répartie sur ${updates.length} variante(s): ${updates.map(u => `${u.size}${u.color ? ` (${u.color})` : ''}`).join(', ')}`
-            : null,
         });
 
       if (saleError) {
         console.error('Error recording physical sale:', saleError);
-        // Ne pas faire échouer la vente si l'enregistrement échoue, mais logger l'erreur
+      } else {
+        salesRecords.push({ size: item.size, quantity: item.quantity });
       }
-
-      return NextResponse.json({
-        success: true,
-        message: `Vente physique enregistrée: ${quantity} unité(s) vendue(s)`,
-        productName: product.name,
-        quantitySold: quantity,
-        totalAmount: totalAmount,
-        updates: updates.map(u => ({
-          size: u.size,
-          color: u.color,
-          remainingStock: u.newStock,
-        })),
-      });
     }
+
+    return NextResponse.json({
+      success: true,
+      message: `Vente physique enregistrée: ${totalQuantity} unité(s) vendue(s)`,
+      productName: product.name,
+      items: processedItems,
+      totalQuantity,
+      totalAmount,
+      salesRecords,
+    });
 
   } catch (error: any) {
     console.error('Error recording physical sale:', error);
