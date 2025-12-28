@@ -31,9 +31,10 @@ export default function FinancesPage() {
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Calculer le panier moyen
-                    const averageOrderValue = data.stats.totalOrders > 0 
-                        ? data.stats.totalRevenue / data.stats.totalOrders 
+                    // Calculer le panier moyen (seulement pour les commandes non annulées/non remboursées)
+                    const validOrdersCount = data.stats.validOrdersCount || 0;
+                    const averageOrderValue = validOrdersCount > 0 
+                        ? data.stats.totalRevenue / validOrdersCount 
                         : 0;
                     
                     // Générer les données mensuelles (pour l'instant, on utilise les données disponibles)
@@ -72,6 +73,14 @@ export default function FinancesPage() {
         }
         
         fetchFinancialStats();
+        
+        // Rafraîchir automatiquement toutes les 30 secondes pour mettre à jour le revenu total
+        // après les annulations/remboursements
+        const interval = setInterval(() => {
+            fetchFinancialStats();
+        }, 30000); // 30 secondes
+        
+        return () => clearInterval(interval);
     }, []);
 
     if (loading) {

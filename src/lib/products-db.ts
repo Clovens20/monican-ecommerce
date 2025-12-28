@@ -17,6 +17,7 @@ interface SupabaseProduct {
     description: string | null;
     detailed_description: string | null;
     price: number;
+    compare_price: number | null;
     category: string;
     brand: string | null;
     images: any; // JSONB
@@ -114,6 +115,7 @@ function convertSupabaseToProduct(supabaseProduct: SupabaseProduct): Product {
         description: supabaseProduct.description || '',
         detailedDescription: supabaseProduct.detailed_description || '',
         price: parseFloat(supabaseProduct.price.toString()),
+        comparePrice: supabaseProduct.compare_price ? parseFloat(supabaseProduct.compare_price.toString()) : null,
         category: supabaseProduct.category as ProductCategory,
         images: Array.isArray(supabaseProduct.images) ? supabaseProduct.images : [],
         variants: Array.isArray(supabaseProduct.variants) ? supabaseProduct.variants : [],
@@ -156,7 +158,7 @@ export async function getAllProducts(): Promise<Product[]> {
         while (hasMore) {
             const { data, error } = await supabase
                 .from('products')
-                .select('id, name, description, detailed_description, price, category, brand, images, variants, features, colors, is_new, is_featured, is_active, created_at, updated_at')
+                .select('id, name, description, detailed_description, price, compare_price, category, brand, images, variants, features, colors, is_new, is_featured, is_active, created_at, updated_at')
                 .eq('is_active', true)
                 .order('created_at', { ascending: false })
                 .range(page * pageSize, (page + 1) * pageSize - 1);
@@ -227,7 +229,7 @@ export async function getAllProductsPaginated(
         // Récupérer les produits paginés (colonnes spécifiques pour optimiser)
         let query = supabase
             .from('products')
-            .select('id, name, description, detailed_description, price, category, brand, images, variants, features, colors, is_new, is_featured, is_active, created_at, updated_at')
+            .select('id, name, description, detailed_description, price, compare_price, category, brand, images, variants, features, colors, is_new, is_featured, is_active, created_at, updated_at')
             .order('created_at', { ascending: false })
             .range(offset, offset + pageSize - 1);
         

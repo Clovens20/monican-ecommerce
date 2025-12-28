@@ -402,7 +402,19 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                                 </>
                             );
                         })() : (
-                            <div className={styles.price}>{formatPrice(product.price)}</div>
+                            <>
+                                {product.comparePrice && product.comparePrice > product.price ? (
+                                    <div className={styles.priceWithCompare}>
+                                        <span className={styles.comparePrice}>{formatPrice(product.comparePrice)}</span>
+                                        <span className={styles.price}>{formatPrice(product.price)}</span>
+                                        <span className={styles.discountPercent}>
+                                            -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
+                                        </span>
+                                    </div>
+                                ) : (
+                                    <div className={styles.price}>{formatPrice(product.price)}</div>
+                                )}
+                            </>
                         )}
                     </div>
 

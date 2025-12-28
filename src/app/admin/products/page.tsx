@@ -30,6 +30,21 @@ export default function ProductsPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [updatingProducts, setUpdatingProducts] = useState<Set<string>>(new Set());
   const [deletingProducts, setDeletingProducts] = useState<Set<string>>(new Set());
+  const [physicalSaleModal, setPhysicalSaleModal] = useState<{
+    open: boolean;
+    product: Product | null;
+    inventory: Array<{ size: string; color: string | null; stock: number }> | null;
+  }>({
+    open: false,
+    product: null,
+    inventory: null,
+  });
+  const [physicalSaleData, setPhysicalSaleData] = useState({
+    quantity: 1,
+    size: '',
+    color: '',
+  });
+  const [recordingSale, setRecordingSale] = useState(false);
 
   useEffect(() => {
     async function fetchProducts() {
@@ -95,6 +110,107 @@ export default function ProductsPage() {
         newSet.delete(productId);
         return newSet;
       });
+    }
+  };
+
+  const handleOpenPhysicalSaleModal = async (product: Product) => {
+    try {
+      // Récupérer l'inventaire du produit pour afficher les tailles/couleurs disponibles
+      const response = await fetch(`/api/admin/products/${product.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.product) {
+        // Construire la liste des entrées d'inventaire disponibles
+        const inventoryEntries: Array<{ size: string; color: string | null; stock: number }> = [];
+        
+        if (data.product.colorSizeStocks && data.product.colorSizeStocks.length > 0) {
+          data.product.colorSizeStocks.forEach((entry: any) => {
+            if (entry.stock > 0) {
+              inventoryEntries.push({
+                size: entry.size,
+                color: entry.color || null,
+                stock: entry.stock,
+              });
+            }
+          });
+        } else if (data.product.variants && data.product.variants.length > 0) {
+          data.product.variants.forEach((variant: any) => {
+            if (variant.stock > 0) {
+              inventoryEntries.push({
+                size: variant.size,
+                color: null,
+                stock: variant.stock,
+              });
+            }
+          });
+        }
+
+        setPhysicalSaleModal({
+          open: true,
+          product,
+          inventory: inventoryEntries.length > 0 ? inventoryEntries : null,
+        });
+        setPhysicalSaleData({
+          quantity: 1,
+          size: inventoryEntries.length > 0 ? inventoryEntries[0].size : '',
+          color: inventoryEntries.length > 0 && inventoryEntries[0].color ? inventoryEntries[0].color : '',
+        });
+      } else {
+        alert('Erreur lors du chargement des informations du produit');
+      }
+    } catch (err) {
+      console.error('Error opening physical sale modal:', err);
+      alert('Erreur lors du chargement des informations du produit');
+    }
+  };
+
+  const handleClosePhysicalSaleModal = () => {
+    setPhysicalSaleModal({ open: false, product: null, inventory: null });
+    setPhysicalSaleData({ quantity: 1, size: '', color: '' });
+  };
+
+  const handleRecordPhysicalSale = async () => {
+    if (!physicalSaleModal.product) return;
+
+    if (physicalSaleData.quantity <= 0) {
+      alert('La quantité doit être supérieure à 0');
+      return;
+    }
+
+    try {
+      setRecordingSale(true);
+
+      const response = await fetch(`/api/admin/products/${physicalSaleModal.product.id}/physical-sale`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          quantity: physicalSaleData.quantity,
+          size: physicalSaleData.size || undefined,
+          color: physicalSaleData.color || undefined,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert(`✅ ${data.message}\nStock restant: ${data.remainingStock || 'Voir détails'}`);
+        handleClosePhysicalSaleModal();
+        // Rafraîchir la liste des produits
+        const refreshResponse = await fetch('/api/admin/products');
+        const refreshData = await refreshResponse.json();
+        if (refreshData.success) {
+          setProducts(refreshData.products);
+        }
+      } else {
+        alert(data.error || 'Erreur lors de l\'enregistrement de la vente');
+      }
+    } catch (err) {
+      console.error('Error recording physical sale:', err);
+      alert('Erreur de connexion au serveur');
+    } finally {
+      setRecordingSale(false);
     }
   };
 
@@ -326,6 +442,13 @@ export default function ProductsPage() {
                   ✏️ Modifier
                 </Link>
                 <button 
+                  className={`${styles.actionBtn} ${styles.physicalSale}`}
+                  onClick={() => handleOpenPhysicalSaleModal(product)}
+                  title="Enregistrer une vente en magasin physique"
+                >
+                  🏪 Vente physique
+                </button>
+                <button 
                   className={`${styles.actionBtn} ${styles.danger}`}
                   onClick={() => handleDelete(product.id, product.name)}
                   disabled={deletingProducts.has(product.id)}
@@ -350,6 +473,118 @@ export default function ProductsPage() {
           <Link href="/admin/products/new" className={styles.btnPrimary}>
             ➕ Ajouter un produit
           </Link>
+        </div>
+      )}
+
+      {/* Modal pour enregistrer une vente physique */}
+      {physicalSaleModal.open && physicalSaleModal.product && (
+        <div className={styles.modalOverlay} onClick={handleClosePhysicalSaleModal}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>Enregistrer une vente physique</h2>
+              <button 
+                className={styles.modalClose}
+                onClick={handleClosePhysicalSaleModal}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.modalProductInfo}>
+                <h3>{physicalSaleModal.product.name}</h3>
+                <p className={styles.modalProductCategory}>{physicalSaleModal.product.category}</p>
+              </div>
+
+              <div className={styles.modalForm}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>
+                    Quantité vendue <span className={styles.required}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    className={styles.formInput}
+                    value={physicalSaleData.quantity}
+                    onChange={(e) => setPhysicalSaleData({
+                      ...physicalSaleData,
+                      quantity: parseInt(e.target.value) || 1
+                    })}
+                    required
+                  />
+                </div>
+
+                {physicalSaleModal.inventory && physicalSaleModal.inventory.length > 0 && (
+                  <>
+                    {/* Si plusieurs tailles disponibles */}
+                    {new Set(physicalSaleModal.inventory.map(i => i.size)).size > 1 && (
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Taille (optionnel)</label>
+                        <select
+                          className={styles.formInput}
+                          value={physicalSaleData.size}
+                          onChange={(e) => setPhysicalSaleData({
+                            ...physicalSaleData,
+                            size: e.target.value
+                          })}
+                        >
+                          <option value="">Toutes les tailles</option>
+                          {Array.from(new Set(physicalSaleModal.inventory.map(i => i.size))).map(size => (
+                            <option key={size} value={size}>
+                              {size} ({physicalSaleModal.inventory!.filter(i => i.size === size).reduce((sum, i) => sum + i.stock, 0)} en stock)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Si plusieurs couleurs disponibles */}
+                    {new Set(physicalSaleModal.inventory.map(i => i.color).filter(Boolean)).size > 1 && (
+                      <div className={styles.formGroup}>
+                        <label className={styles.formLabel}>Couleur (optionnel)</label>
+                        <select
+                          className={styles.formInput}
+                          value={physicalSaleData.color}
+                          onChange={(e) => setPhysicalSaleData({
+                            ...physicalSaleData,
+                            color: e.target.value
+                          })}
+                        >
+                          <option value="">Toutes les couleurs</option>
+                          {Array.from(new Set(physicalSaleModal.inventory.map(i => i.color).filter(Boolean))).map(color => (
+                            <option key={color} value={color || ''}>
+                              {color} ({physicalSaleModal.inventory!.filter(i => i.color === color).reduce((sum, i) => sum + i.stock, 0)} en stock)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div className={styles.modalInfo}>
+                  <p>💡 Le stock en ligne sera automatiquement déduit après l'enregistrement.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                className={styles.modalBtnSecondary}
+                onClick={handleClosePhysicalSaleModal}
+                disabled={recordingSale}
+              >
+                Annuler
+              </button>
+              <button
+                className={styles.modalBtnPrimary}
+                onClick={handleRecordPhysicalSale}
+                disabled={recordingSale || physicalSaleData.quantity <= 0}
+              >
+                {recordingSale ? '⏳ Enregistrement...' : '✅ Enregistrer la vente'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

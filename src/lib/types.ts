@@ -36,6 +36,7 @@ export interface Product {
     id: string;
     name: string;
     price: number;
+    comparePrice?: number | null;
     category: ProductCategory;
     images: ProductImage[];
     variants: ProductVariant[];

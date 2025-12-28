@@ -29,6 +29,7 @@ export async function GET(
         description: product.description,
         detailedDescription: product.detailedDescription,
         price: product.price,
+        comparePrice: product.comparePrice || null,
         category: product.category,
         images: product.images,
         variants: product.variants,

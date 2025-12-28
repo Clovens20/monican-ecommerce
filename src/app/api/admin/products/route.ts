@@ -34,22 +34,92 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    return NextResponse.json({
-      success: true,
-      products: (data || []).map(product => ({
+    // Récupérer le stock réel depuis l'inventaire pour tous les produits
+    const products = data || [];
+    const productIds = products.map(p => p.id);
+    
+    // Récupérer tout l'inventaire pour ces produits
+    const { data: inventoryData, error: inventoryError } = await supabaseAdmin
+      .from('inventory')
+      .select('product_id, size, stock_quantity, reserved_quantity, sku, color')
+      .in('product_id', productIds);
+    
+    // Créer un map pour accéder rapidement au stock par produit
+    const inventoryMap = new Map<string, Array<{ size: string; stock: number; reserved: number; sku: string; color: string | null }>>();
+    
+    if (!inventoryError && inventoryData) {
+      inventoryData.forEach(item => {
+        const availableStock = (item.stock_quantity || 0) - (item.reserved_quantity || 0);
+        if (!inventoryMap.has(item.product_id)) {
+          inventoryMap.set(item.product_id, []);
+        }
+        const productInventory = inventoryMap.get(item.product_id)!;
+        
+        // Vérifier si cette taille existe déjà (agréger par taille)
+        const existingSize = productInventory.find(inv => inv.size === item.size);
+        if (existingSize) {
+          existingSize.stock += Math.max(0, availableStock);
+          existingSize.reserved += (item.reserved_quantity || 0);
+        } else {
+          productInventory.push({
+            size: item.size,
+            stock: Math.max(0, availableStock),
+            reserved: item.reserved_quantity || 0,
+            sku: item.sku || '',
+            color: item.color || null,
+          });
+        }
+      });
+    }
+    
+    // Mapper les produits avec le stock réel
+    const productsWithStock = products.map(product => {
+      const productInventory = inventoryMap.get(product.id) || [];
+      const variants = Array.isArray(product.variants) ? product.variants : [];
+      
+      // Synchroniser les variants avec le stock réel
+      const syncedVariants = variants.map((variant: any) => {
+        const inventoryEntry = productInventory.find(inv => inv.size === variant.size);
+        if (inventoryEntry) {
+          return {
+            ...variant,
+            stock: inventoryEntry.stock,
+            sku: inventoryEntry.sku || variant.sku,
+          };
+        }
+        return { ...variant, stock: 0 };
+      });
+      
+      // Ajouter les tailles qui existent dans l'inventaire mais pas dans les variants
+      productInventory.forEach(inv => {
+        if (!syncedVariants.some((v: any) => v.size === inv.size)) {
+          syncedVariants.push({
+            size: inv.size,
+            stock: inv.stock,
+            sku: inv.sku,
+          });
+        }
+      });
+      
+      return {
         id: product.id,
         name: product.name,
         description: product.description || '',
         price: parseFloat(product.price.toString()),
         category: product.category,
         images: Array.isArray(product.images) ? product.images : [],
-        variants: Array.isArray(product.variants) ? product.variants : [],
+        variants: syncedVariants.length > 0 ? syncedVariants : variants, // Utiliser les variants synchronisés
         isNew: product.is_new || false,
         isFeatured: product.is_featured || false,
         isActive: product.is_active !== false,
         createdAt: product.created_at,
         updatedAt: product.updated_at
-      }))
+      };
+    });
+    
+    return NextResponse.json({
+      success: true,
+      products: productsWithStock
     });
     
   } catch (error) {

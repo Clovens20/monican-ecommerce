@@ -8,6 +8,7 @@ import styles from './page.module.css';
 interface DashboardStats {
     totalRevenue: number;
     totalOrders: number;
+    validOrdersCount?: number; // Nombre de commandes valides (non annulées/non remboursées)
     totalProducts: number;
     totalCustomers: number;
     pendingOrders: number;
@@ -55,6 +56,14 @@ export default function AdminDashboard() {
         }
         
         fetchStats();
+        
+        // Rafraîchir automatiquement toutes les 30 secondes pour mettre à jour le revenu total
+        // après les annulations/remboursements
+        const interval = setInterval(() => {
+            fetchStats();
+        }, 30000); // 30 secondes
+        
+        return () => clearInterval(interval);
     }, []);
 
     const getStatusBadge = (status: string) => {

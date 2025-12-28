@@ -15,9 +15,10 @@ export async function GET(request: NextRequest) {
     const totalProducts = totalProductsCount || 0;
 
     // 2. Récupérer les commandes avec colonnes spécifiques (optimisé)
+    // Exclure les commandes annulées ou remboursées du calcul du revenu
     const { data: ordersData, error: ordersError } = await supabaseAdmin
       .from('orders')
-      .select('status, total, currency, customer_email, shipping_address, created_at, id, customer_name');
+      .select('status, total, currency, customer_email, shipping_address, created_at, id, customer_name, payment_status');
 
     if (ordersError) {
       console.error('Error fetching orders:', ordersError);
@@ -32,9 +33,20 @@ export async function GET(request: NextRequest) {
     const processingOrders = orders.filter(o => o.status === 'processing').length;
     const shippedOrders = orders.filter(o => o.status === 'shipped').length;
     const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
+    
+    // Compter les commandes valides (non annulées et non remboursées) pour le calcul du panier moyen
+    const validOrdersCount = orders.filter(o => 
+      o.status !== 'cancelled' && o.payment_status !== 'refunded'
+    ).length;
 
     // 4. Calculer le revenu total avec conversion de devise
+    // Exclure les commandes annulées ou remboursées
     const totalRevenue = orders.reduce((sum, order) => {
+      // Exclure les commandes annulées ou remboursées du revenu total
+      if (order.status === 'cancelled' || order.payment_status === 'refunded') {
+        return sum;
+      }
+      
       let amount = parseFloat(order.total?.toString() || '0');
       const currency = order.currency || 'USD';
       
@@ -51,8 +63,14 @@ export async function GET(request: NextRequest) {
     const uniqueCustomers = uniqueEmails.size;
 
     // 6. Revenus par pays (calculé depuis les données)
+    // Exclure les commandes annulées ou remboursées
     const revenueByCountry: { [key: string]: { revenue: number; currency: string; orderCount: number } } = {};
     orders.forEach(order => {
+      // Exclure les commandes annulées ou remboursées du calcul des revenus par pays
+      if (order.status === 'cancelled' || order.payment_status === 'refunded') {
+        return;
+      }
+      
       const shippingAddress = typeof order.shipping_address === 'string' 
         ? JSON.parse(order.shipping_address) 
         : order.shipping_address;
@@ -95,6 +113,7 @@ export async function GET(request: NextRequest) {
       stats: {
         totalRevenue,
         totalOrders,
+        validOrdersCount, // Nombre de commandes valides (non annulées/non remboursées)
         totalProducts,
         totalCustomers: uniqueCustomers,
         pendingOrders,
@@ -115,6 +134,7 @@ export async function GET(request: NextRequest) {
         stats: {
           totalRevenue: 0,
           totalOrders: 0,
+          validOrdersCount: 0,
           totalProducts: 0,
           totalCustomers: 0,
           pendingOrders: 0,

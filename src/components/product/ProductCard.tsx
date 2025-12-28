@@ -138,7 +138,19 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
                   </span>
                 </div>
               ) : (
-                <span className={styles.price}>{formatPrice(product.price)}</span>
+                <>
+                  {product.comparePrice && product.comparePrice > product.price ? (
+                    <div className={styles.priceWithCompare}>
+                      <span className={styles.comparePrice}>{formatPrice(product.comparePrice)}</span>
+                      <span className={styles.price}>{formatPrice(product.price)}</span>
+                      <span className={styles.discountPercent}>
+                        -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
+                      </span>
+                    </div>
+                  ) : (
+                    <span className={styles.price}>{formatPrice(product.price)}</span>
+                  )}
+                </>
               )}
               <span className={`${styles.stockBadge} ${styles[stockStatus.class]}`}>
                 <span className={styles.stockDot} style={{ background: stockStatus.color }}></span>
@@ -276,8 +288,20 @@ export default function ProductCard({ product, viewMode = 'grid', salesCount }: 
               </div>
             ) : (
               <>
-                <span className={styles.price}>{formatPrice(product.price)}</span>
-                <span className={styles.priceLabel}>{t('taxIncluded')}</span>
+                {product.comparePrice && product.comparePrice > product.price ? (
+                  <div className={styles.priceWithCompare}>
+                    <span className={styles.comparePrice}>{formatPrice(product.comparePrice)}</span>
+                    <span className={styles.price}>{formatPrice(product.price)}</span>
+                    <span className={styles.discountPercent}>
+                      -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <span className={styles.price}>{formatPrice(product.price)}</span>
+                    <span className={styles.priceLabel}>{t('taxIncluded')}</span>
+                  </>
+                )}
               </>
             )}
           </div>
