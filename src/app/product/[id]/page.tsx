@@ -195,13 +195,15 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             return;
         }
 
-        // Add to cart with the selected quantity
+        // Ajouter au panier - le useEffect dans CartProvider sauvegarde automatiquement dans localStorage
         for (let i = 0; i < quantity; i++) {
             addItem(product, selectedSize);
         }
 
-        // Rediriger vers le panier
-        router.push('/cart');
+        // Rediriger vers le panier après un court délai pour laisser le useEffect sauvegarder dans localStorage
+        setTimeout(() => {
+            router.push('/cart');
+        }, 100);
     };
 
     // MAINTENANT les returns conditionnels peuvent être utilisés
