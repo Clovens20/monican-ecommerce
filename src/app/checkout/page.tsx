@@ -43,6 +43,14 @@ export default function CheckoutPage() {
         phone: '',
     });
     
+    // Charger l'email depuis localStorage si disponible
+    useEffect(() => {
+        const savedEmail = localStorage.getItem('customer_email');
+        if (savedEmail) {
+            setCustomerInfo(prev => ({ ...prev, email: savedEmail }));
+        }
+    }, []);
+    
     // Shipping address form
     const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
         street: '',

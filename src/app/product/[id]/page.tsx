@@ -665,7 +665,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             />
             <SizeGuideModal 
                 isOpen={sizeGuideModalOpen} 
-                onClose={() => setSizeGuideModalOpen(false)} 
+                onClose={() => setSizeGuideModalOpen(false)}
+                productCategory={product?.category}
             />
 
             {/* Lightbox Modal */}

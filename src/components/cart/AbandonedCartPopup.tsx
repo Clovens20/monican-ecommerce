@@ -31,8 +31,15 @@ export default function AbandonedCartPopup({ onEmailCaptured }: AbandonedCartPop
     }, []);
 
     // Afficher le popup après 2 minutes si le panier n'est pas vide
+    // Ne pas afficher si l'email a déjà été capturé
     useEffect(() => {
         if (dismissed || items.length === 0) return;
+        
+        // Vérifier si l'email a déjà été capturé
+        const savedEmail = localStorage.getItem('customer_email');
+        if (savedEmail && savedEmail.includes('@')) {
+            return; // Ne pas afficher le popup si l'email est déjà capturé
+        }
 
         const timer = setTimeout(() => {
             setShow(true);
@@ -83,6 +90,9 @@ export default function AbandonedCartPopup({ onEmailCaptured }: AbandonedCartPop
 
             setSuccess(true);
             onEmailCaptured?.(email);
+            
+            // Sauvegarder l'email dans localStorage
+            localStorage.setItem('customer_email', email);
             
             // Fermer le popup après 2 secondes
             setTimeout(() => {

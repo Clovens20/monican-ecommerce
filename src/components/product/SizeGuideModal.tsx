@@ -1,19 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ProductCategory } from '@/lib/types';
 
 interface SizeGuideModalProps {
     isOpen: boolean;
     onClose: () => void;
+    productCategory?: ProductCategory;
 }
 
 type SizeCategory = 'clothing' | 'shoes' | 'accessories';
 
-export default function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps) {
+/**
+ * Convertit la catégorie du produit en catégorie du guide de tailles
+ */
+function mapProductCategoryToSizeCategory(productCategory?: ProductCategory): SizeCategory {
+    if (!productCategory) return 'clothing';
+    
+    switch (productCategory) {
+        case 'tennis':
+        case 'chaussures':
+            return 'shoes';
+        case 'accessoires':
+            return 'accessories';
+        case 'chemises':
+        case 'jeans':
+        case 'maillots':
+        default:
+            return 'clothing';
+    }
+}
+
+export default function SizeGuideModal({ isOpen, onClose, productCategory }: SizeGuideModalProps) {
     const { t } = useLanguage();
-    const [selectedCategory, setSelectedCategory] = useState<SizeCategory>('clothing');
+    const mappedCategory = mapProductCategoryToSizeCategory(productCategory);
+    const [selectedCategory, setSelectedCategory] = useState<SizeCategory>(mappedCategory);
+
+    // Mettre à jour la catégorie sélectionnée quand la catégorie du produit change
+    useEffect(() => {
+        const newCategory = mapProductCategoryToSizeCategory(productCategory);
+        setSelectedCategory(newCategory);
+    }, [productCategory]);
 
     const sizeGuides = {
         clothing: {
@@ -28,8 +57,11 @@ export default function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps)
             ]
         },
         shoes: {
-            title: 'Guide des Tailles - Chaussures',
+            title: 'Guide des Tailles - Chaussures & Tennis',
             sizes: [
+                { size: '35', us: '4', uk: '2', cm: '22.0 cm' },
+                { size: '36', us: '5', uk: '3', cm: '22.5 cm' },
+                { size: '37', us: '6', uk: '4', cm: '23.0 cm' },
                 { size: '38', us: '7', uk: '5', cm: '24.0 cm' },
                 { size: '39', us: '8', uk: '6', cm: '24.5 cm' },
                 { size: '40', us: '8.5', uk: '6.5', cm: '25.0 cm' },
@@ -184,17 +216,43 @@ export default function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps)
                     )}
                 </div>
 
-                {/* Measurement Tips */}
+                {/* Measurement Tips - Adaptés à la catégorie */}
                 <div style={{ padding: '1rem', background: '#f0fdf4', borderRadius: '0.5rem', border: '1px solid #86efac' }}>
                     <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#065f46' }}>
                         💡 Conseils de Mesure
                     </div>
                     <ul style={{ fontSize: '0.9rem', color: '#047857', marginLeft: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <li>Mesurez-vous le matin pour des résultats plus précis</li>
-                        <li>Portez des vêtements légers lors de la mesure</li>
-                        <li>Utilisez un mètre ruban souple</li>
-                        <li>Pour les chaussures, mesurez vos pieds en fin de journée</li>
-                        <li>En cas de doute, choisissez la taille supérieure</li>
+                        {selectedCategory === 'clothing' && (
+                            <>
+                                <li>Mesurez-vous le matin pour des résultats plus précis</li>
+                                <li>Portez des vêtements légers lors de la mesure</li>
+                                <li>Utilisez un mètre ruban souple et placez-le à plat sur votre peau</li>
+                                <li>Pour la poitrine : mesurez autour de la partie la plus large</li>
+                                <li>Pour la taille : mesurez autour de la partie la plus étroite</li>
+                                <li>Pour les hanches : mesurez autour de la partie la plus large</li>
+                                <li>En cas de doute, choisissez la taille supérieure</li>
+                            </>
+                        )}
+                        {selectedCategory === 'shoes' && (
+                            <>
+                                <li>Mesurez vos pieds en fin de journée (ils sont plus volumineux)</li>
+                                <li>Placez votre pied sur une feuille de papier et tracez le contour</li>
+                                <li>Mesurez la longueur du talon à l'orteil le plus long</li>
+                                <li>Mesurez également la largeur au niveau des orteils</li>
+                                <li>Si vos deux pieds ont des tailles différentes, choisissez la plus grande</li>
+                                <li>Laissez un espace d'environ 1 cm entre votre orteil le plus long et le bout de la chaussure</li>
+                                <li>En cas de doute, choisissez la demi-taille supérieure</li>
+                            </>
+                        )}
+                        {selectedCategory === 'accessories' && (
+                            <>
+                                <li>Pour les ceintures : mesurez votre tour de taille et ajoutez 10-15 cm</li>
+                                <li>Pour les casquettes : mesurez le tour de votre tête au niveau du front</li>
+                                <li>Pour les montres : mesurez le tour de votre poignet avec un mètre ruban</li>
+                                <li>Pour les sacs : vérifiez les dimensions indiquées selon votre utilisation</li>
+                                <li>En cas de doute, optez pour une taille ajustable</li>
+                            </>
+                        )}
                     </ul>
                 </div>
 
