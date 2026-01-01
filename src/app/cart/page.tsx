@@ -174,6 +174,9 @@ export default function CartPage() {
                     <Link href="/checkout" className={styles.checkoutBtn}>
                         {t('proceedToCheckout')}
                     </Link>
+                    <Link href="/catalog" className={styles.continueShoppingBtn}>
+                        ← {t('continueShopping')}
+                    </Link>
                 </div>
             </div>
         </div>

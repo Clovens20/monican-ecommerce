@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, use, useEffect, useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/lib/types';
@@ -26,6 +27,7 @@ type TabType = 'description' | 'features' | 'shipping';
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = use(params);
+    const router = useRouter();
     const [product, setProduct] = useState<Product | null>(null);
     const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
@@ -198,7 +200,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             addItem(product, selectedSize);
         }
 
-        alert(`${quantity} ${t('addedToCart')}`);
+        // Rediriger vers le panier
+        router.push('/cart');
     };
 
     // MAINTENANT les returns conditionnels peuvent être utilisés
