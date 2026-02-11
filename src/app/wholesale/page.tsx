@@ -39,6 +39,7 @@ export default function WholesalePage() {
     const [selectedProduct, setSelectedProduct] = useState('');
     const [selectedSize, setSelectedSize] = useState('');
     const [quantity, setQuantity] = useState(1);
+    const [submitting, setSubmitting] = useState(false);
 
     // Charger les produits depuis l'API
     useEffect(() => {
@@ -72,17 +73,67 @@ export default function WholesalePage() {
     const discountAmount = (subtotal * discount) / 100;
     const total = subtotal - discountAmount;
 
+    // Stock déjà réservé dans le panier pour un produit+taille
+    const getReservedQuantity = (productId: string, size: string) =>
+        items
+            .filter((i) => i.productId === productId && i.size === size)
+            .reduce((sum, i) => sum + i.quantity, 0);
+
+    const selectedProductData = products.find((p) => p.id === selectedProduct);
+
+    // Produits avec au moins une variante en stock
+    const productsWithStock = products.filter((product) => {
+        const variants = filterVariantsByCategory(product.variants || [], product.category);
+        return variants.some((v) => v.stock > 0);
+    });
+
+    // Variantes en stock pour le produit sélectionné
+    const availableVariants = selectedProductData
+        ? filterVariantsByCategory(
+              selectedProductData.variants || [],
+              selectedProductData.category
+          ).filter((v) => v.stock > 0)
+        : [];
+
+    // Stock disponible pour la sélection actuelle
+    const availableStock = selectedProductData && selectedSize
+        ? (() => {
+              const variant = filterVariantsByCategory(
+                  selectedProductData.variants || [],
+                  selectedProductData.category
+              ).find((v) => v.size === selectedSize);
+              if (!variant || variant.stock <= 0) return 0;
+              const reserved = getReservedQuantity(selectedProduct, selectedSize);
+              return Math.max(0, variant.stock - reserved);
+          })()
+        : 0;
+
     const handleAddItem = () => {
         if (!selectedProduct || !selectedSize || quantity < 1) {
             alert(t('pleaseSelectProduct'));
             return;
         }
 
-        const product = products.find(p => p.id === selectedProduct);
+        const product = products.find((p) => p.id === selectedProduct);
         if (!product) return;
 
-        const variant = product.variants.find(v => v.size === selectedSize);
-        if (!variant) return;
+        const variant = filterVariantsByCategory(product.variants || [], product.category).find(
+            (v) => v.size === selectedSize
+        );
+        if (!variant || variant.stock <= 0) {
+            alert(t('outOfStock') || 'Ce produit n\'est plus disponible.');
+            return;
+        }
+
+        const reserved = getReservedQuantity(selectedProduct, selectedSize);
+        const maxQty = Math.max(0, variant.stock - reserved);
+        if (quantity > maxQty) {
+            alert(
+                `Stock disponible : ${maxQty} unité(s). Vous ne pouvez pas commander plus.` +
+                    (maxQty === 0 ? '\nCe produit/taille est déjà en quantité maximale dans votre demande.' : '')
+            );
+            return;
+        }
 
         const unitPrice = product.price;
         const totalPrice = unitPrice * quantity;
@@ -106,7 +157,7 @@ export default function WholesalePage() {
         setItems(items.filter((_, i) => i !== index));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if (items.length === 0) {
@@ -119,7 +170,8 @@ export default function WholesalePage() {
             return;
         }
 
-        // Ici, vous pouvez envoyer les données à votre API
+        setSubmitting(true);
+
         const orderData = {
             ...formData,
             items,
@@ -128,30 +180,44 @@ export default function WholesalePage() {
             discount,
             discountAmount,
             total,
-            date: new Date().toISOString(),
         };
 
-        console.log('Commande en gros:', orderData);
-        alert(`${t('wholesaleSubmitted')}\n\n${t('total')}: ${formatPrice(total)}\n${t('items')}: ${totalQuantity}\n${t('discountLabel')}: ${discount}%`);
-        
-        // Réinitialiser le formulaire
-        setFormData({
-            companyName: '',
-            contactName: '',
-            email: '',
-            phone: '',
-            address: '',
-            city: '',
-            state: '',
-            zip: '',
-            country: 'US',
-            taxId: '',
-            notes: '',
-        });
-        setItems([]);
-    };
+        try {
+            const response = await fetch('/api/wholesale', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData),
+            });
 
-    const selectedProductData = products.find(p => p.id === selectedProduct);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Erreur lors de l\'envoi de la demande');
+            }
+
+            alert(`${t('wholesaleSubmitted')}\n\n${t('total')}: ${formatPrice(total)}\n${t('items')}: ${totalQuantity}\n${t('discountLabel')}: ${discount}%`);
+            
+            setFormData({
+                companyName: '',
+                contactName: '',
+                email: '',
+                phone: '',
+                address: '',
+                city: '',
+                state: '',
+                zip: '',
+                country: 'US',
+                taxId: '',
+                notes: '',
+            });
+            setItems([]);
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Erreur lors de l\'envoi. Veuillez réessayer.';
+            alert(`❌ ${message}`);
+        } finally {
+            setSubmitting(false);
+        }
+    };
 
     return (
         <div className={styles.container}>
@@ -314,39 +380,62 @@ export default function WholesalePage() {
                                 <select
                                     className={styles.select}
                                     value={selectedProduct}
-                                    onChange={(e) => setSelectedProduct(e.target.value)}
+                                    onChange={(e) => {
+                                        setSelectedProduct(e.target.value);
+                                        setSelectedSize('');
+                                        setQuantity(1);
+                                    }}
                                     disabled={loading}
                                 >
                                     <option value="">{loading ? 'Chargement...' : (t('selectProduct') || 'Sélectionner un produit')}</option>
-                                    {products.map(product => (
+                                    {productsWithStock.map((product) => (
                                         <option key={product.id} value={product.id}>
                                             {product.name} - {formatPrice(product.price)}
                                         </option>
                                     ))}
+                                    {productsWithStock.length === 0 && !loading && (
+                                        <option value="" disabled>Aucun produit disponible en stock</option>
+                                    )}
                                 </select>
 
                                 {selectedProductData && (
                                     <select
                                         className={styles.select}
                                         value={selectedSize}
-                                        onChange={(e) => setSelectedSize(e.target.value)}
+                                        onChange={(e) => {
+                                            setSelectedSize(e.target.value);
+                                            setQuantity(1);
+                                        }}
                                     >
                                         <option value="">{t('selectSize')}</option>
-                                        {filterVariantsByCategory(selectedProductData.variants, selectedProductData.category).map(variant => (
-                                            <option key={variant.size} value={variant.size}>
-                                                {variant.size} (Stock: {variant.stock})
-                                            </option>
-                                        ))}
+                                        {availableVariants.map((variant) => {
+                                            const reserved = getReservedQuantity(selectedProduct, variant.size);
+                                            const disp = Math.max(0, variant.stock - reserved);
+                                            return (
+                                                <option
+                                                    key={variant.size}
+                                                    value={variant.size}
+                                                    disabled={disp <= 0}
+                                                >
+                                                    {variant.size} ({disp} disponible{disp !== 1 ? 's' : ''})
+                                                </option>
+                                            );
+                                        })}
                                     </select>
                                 )}
 
                                 <input
                                     type="number"
                                     className={styles.select}
-                                    min="1"
-                                    value={quantity}
-                                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                                    min={1}
+                                    max={availableStock}
+                                    value={Math.min(quantity, Math.max(1, availableStock))}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10) || 0;
+                                        setQuantity(Math.min(Math.max(1, val), availableStock));
+                                    }}
                                     placeholder={t('quantity')}
+                                    disabled={availableStock <= 0}
                                 />
 
                                 <button
@@ -424,11 +513,13 @@ export default function WholesalePage() {
                         <button
                             type="submit"
                             className={styles.submitButton}
-                            disabled={items.length === 0 || totalQuantity < 12}
+                            disabled={items.length === 0 || totalQuantity < 12 || submitting}
                         >
-                            {totalQuantity < 12 
-                                ? `Ajoutez ${12 - totalQuantity} article(s) de plus (minimum 12)` 
-                                : t('submitRequest')}
+                            {submitting 
+                                ? 'Envoi en cours...' 
+                                : totalQuantity < 12 
+                                    ? `Ajoutez ${12 - totalQuantity} article(s) de plus (minimum 12)` 
+                                    : t('submitRequest')}
                         </button>
                     </form>
                 </div>

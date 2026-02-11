@@ -12,6 +12,7 @@ import PaymentSecurityModal from '@/components/product/PaymentSecurityModal';
 import FreeShippingModal from '@/components/product/FreeShippingModal';
 import FreeReturnsModal from '@/components/product/FreeReturnsModal';
 import SizeGuideModal from '@/components/product/SizeGuideModal';
+import ProductVariantSelector from '@/components/ProductVariantSelector'; // Version mise à jour
 import { useProductViewers } from '@/hooks/useProductViewers';
 import styles from './page.module.css';
 import { notFound } from 'next/navigation';
@@ -37,7 +38,14 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     const { formatPrice } = useCountry();
     const { isInWishlist, toggleItem } = useWishlist();
     const { t } = useLanguage();
-    const [selectedSize, setSelectedSize] = useState<string | null>(null);
+    
+    const [selectedVariant, setSelectedVariant] = useState<{
+        color: string;
+        size: string;
+        sku: string;
+        stock: number;
+    } | null>(null);
+    
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState<TabType>('description');
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -60,7 +68,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
     // Real-time viewer count
     const viewerCount = useProductViewers({ productId: product?.id || '' });
 
-    // Filtrer les variants selon la catégorie (DOIT être avant les returns conditionnels)
+    // Filtrer les variants selon la catégorie
     const filteredVariants = useMemo(() => {
         if (!product) return [];
         return filterVariantsByCategory(product.variants, product.category);
@@ -86,7 +94,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                 const data = await response.json();
                 setProduct(data.product);
                 
-                // Charger les produits similaires de la même catégorie
+                // Charger les produits similaires
                 if (data.product?.category) {
                     const similarResponse = await fetch(`/api/products?category=${data.product.category}`);
                     if (similarResponse.ok) {
@@ -110,7 +118,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         }
     }, [id]);
 
-    // Charger les promotions pour ce produit
+    // Charger les promotions
     useEffect(() => {
         async function fetchPromotion() {
             if (!product) return;
@@ -129,6 +137,12 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             fetchPromotion();
         }
     }, [product]);
+
+    // ✅ NOUVEAU : Gérer le changement d'image quand une couleur est sélectionnée
+    const handleColorChange = (color: string, imageIndex: number) => {
+        console.log(`Couleur sélectionnée: ${color}, Image index: ${imageIndex}`);
+        setSelectedImageIndex(imageIndex);
+    };
 
     // Fonction pour gérer le zoom au survol
     const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -174,9 +188,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         setLastTouchDistance(0);
     };
 
-    // Calculs qui dépendent de product (après les hooks mais avant les returns)
+    // Calculs qui dépendent de product
     const isWishlisted = product ? isInWishlist(product.id) : false;
-    const selectedVariant = product ? product.variants.find(v => v.size === selectedSize) : null;
     const totalStock = product ? product.variants.reduce((sum, v) => sum + v.stock, 0) : 0;
     const maxQuantity = selectedVariant ? selectedVariant.stock : 1;
 
@@ -190,23 +203,22 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
     const handleAddToCart = () => {
         if (!product) return;
-        if (!selectedSize) {
-            alert(t('pleaseSelectSize'));
+        if (!selectedVariant) {
+            alert('Veuillez sélectionner une couleur et une taille');
             return;
         }
 
-        // Ajouter au panier - le useEffect dans CartProvider sauvegarde automatiquement dans localStorage
+        // Ajouter au panier
         for (let i = 0; i < quantity; i++) {
-            addItem(product, selectedSize);
+            addItem(product, selectedVariant.size);
         }
 
-        // Rediriger vers le panier après un court délai pour laisser le useEffect sauvegarder dans localStorage
+        // Rediriger vers le panier
         setTimeout(() => {
             router.push('/cart');
         }, 100);
     };
 
-    // MAINTENANT les returns conditionnels peuvent être utilisés
     if (loading) {
         return (
             <div className={styles.container}>
@@ -349,7 +361,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                             <div className={styles.thumbnails}>
                                 {product.images.map((img, index) => (
                                     <div
-                                        key={img.id}
+                                        key={img.id || index}
                                         className={`${styles.thumbnail} ${selectedImageIndex === index ? styles.active : ''}`}
                                         onClick={() => setSelectedImageIndex(index)}
                                     >
@@ -385,261 +397,235 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
                     {/* Info */}
                     <div className={styles.info}>
-                    <span className={styles.category}>{product.category}</span>
-                    <h1 className={styles.title}>{product.name}</h1>
-                    <div className={styles.priceSection}>
-                        {promotion ? (() => {
-                            const { discountedPrice, discountAmount } = calculateDiscountedPrice(product.price, promotion);
-                            return (
-                                <>
-                                    <div className={styles.priceWithDiscount}>
-                                        <span className={styles.originalPrice}>{formatPrice(product.price)}</span>
-                                        <span className={styles.discountedPrice}>{formatPrice(discountedPrice)}</span>
-                                        <span className={styles.discountBadge}>
-                                            -{promotion.discount_type === 'percentage' ? `${promotion.discount_value}%` : formatPrice(discountAmount)}
-                                        </span>
-                                    </div>
-                                    {promotion.name && (
-                                        <div className={styles.promotionLabel}>
-                                            🎁 {promotion.name}
+                        <span className={styles.category}>{product.category}</span>
+                        <h1 className={styles.title}>{product.name}</h1>
+                        <div className={styles.priceSection}>
+                            {promotion ? (() => {
+                                const { discountedPrice, discountAmount } = calculateDiscountedPrice(product.price, promotion);
+                                return (
+                                    <>
+                                        <div className={styles.priceWithDiscount}>
+                                            <span className={styles.originalPrice}>{formatPrice(product.price)}</span>
+                                            <span className={styles.discountedPrice}>{formatPrice(discountedPrice)}</span>
+                                            <span className={styles.discountBadge}>
+                                                -{promotion.discount_type === 'percentage' ? `${promotion.discount_value}%` : formatPrice(discountAmount)}
+                                            </span>
                                         </div>
+                                        {promotion.name && (
+                                            <div className={styles.promotionLabel}>
+                                                🎁 {promotion.name}
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })() : (
+                                <>
+                                    {product.comparePrice && product.comparePrice > product.price ? (
+                                        <div className={styles.priceWithCompare}>
+                                            <span className={styles.comparePrice}>{formatPrice(product.comparePrice)}</span>
+                                            <span className={styles.price}>{formatPrice(product.price)}</span>
+                                            <span className={styles.discountPercent}>
+                                                -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className={styles.price}>{formatPrice(product.price)}</div>
                                     )}
                                 </>
-                            );
-                        })() : (
-                            <>
-                                {product.comparePrice && product.comparePrice > product.price ? (
-                                    <div className={styles.priceWithCompare}>
-                                        <span className={styles.comparePrice}>{formatPrice(product.comparePrice)}</span>
-                                        <span className={styles.price}>{formatPrice(product.price)}</span>
-                                        <span className={styles.discountPercent}>
-                                            -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
-                                        </span>
-                                    </div>
-                                ) : (
-                                    <div className={styles.price}>{formatPrice(product.price)}</div>
-                                )}
-                            </>
-                        )}
-                    </div>
+                            )}
+                        </div>
 
-                    {/* Stock Status */}
-                    <div className={`${styles.stockInfo} ${styles[stockStatus.class]}`}>
-                        <span className={styles.stockDot}></span>
-                        {stockStatus.text}
-                    </div>
+                        {/* Stock Status */}
+                        <div className={`${styles.stockInfo} ${styles[stockStatus.class]}`}>
+                            <span className={styles.stockDot}></span>
+                            {stockStatus.text}
+                        </div>
 
-                    {/* Size Selection */}
-                    <div className={styles.section}>
-                        <span className={styles.sectionTitle}>Taille</span>
-                        {product.category === 'jeans' && (
-                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
-                                Tailles avec équivalences (EU / US)
-                            </p>
+                        {/* ✅ MODIFIÉ : Sélecteur avec changement d'image */}
+                        {product.colorSizeStocks && product.colorSizeStocks.length > 0 && (
+                            <ProductVariantSelector
+                                colorSizeStocks={product.colorSizeStocks}
+                                colors={product.colors || []}
+                                images={product.images || []} // ✅ Passer les images
+                                onSelectionChange={setSelectedVariant}
+                                onColorChange={handleColorChange} // ✅ Gérer le changement d'image
+                            />
                         )}
-                        <div className={styles.sizeGrid}>
-                            {filteredVariants.map((variant) => {
-                                const sizeEquivalent = product.category === 'jeans' 
-                                    ? getJeansSizeEquivalent(variant.size) 
-                                    : null;
-                                
-                                return (
+
+                        {/* Fallback: ancien sélecteur */}
+                        {(!product.colorSizeStocks || product.colorSizeStocks.length === 0) && (
+                            <div className={styles.section}>
+                                <span className={styles.sectionTitle}>Taille</span>
+                                <div className={styles.sizeGrid}>
+                                    {filteredVariants.map((variant) => (
+                                        <button
+                                            key={variant.size}
+                                            className={`${styles.sizeBtn} ${selectedVariant?.size === variant.size ? styles.selected : ''}`}
+                                            onClick={() => setSelectedVariant({
+                                                color: '',
+                                                size: variant.size,
+                                                sku: variant.sku,
+                                                stock: variant.stock
+                                            })}
+                                            disabled={variant.stock === 0}
+                                        >
+                                            {variant.size}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Quantity Selector */}
+                        {selectedVariant && (
+                            <div className={styles.section}>
+                                <span className={styles.sectionTitle}>Quantité</span>
+                                <div className={styles.quantitySelector}>
                                     <button
-                                        key={variant.size}
-                                        className={`${styles.sizeBtn} ${selectedSize === variant.size ? styles.selected : ''}`}
-                                        onClick={() => setSelectedSize(variant.size)}
-                                        disabled={variant.stock === 0}
-                                        title={sizeEquivalent 
-                                            ? `EU: ${sizeEquivalent.eu} | US: ${sizeEquivalent.us} | UK: ${sizeEquivalent.uk} | Waist: ${sizeEquivalent.waist}`
-                                            : variant.size
-                                        }
+                                        className={styles.quantityBtn}
+                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                        disabled={quantity <= 1}
                                     >
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                            <span style={{ fontWeight: 'bold', fontSize: '1rem' }}>{variant.size}</span>
-                                            {sizeEquivalent && (
-                                                <span style={{ fontSize: '0.75rem', opacity: 0.8, marginTop: '0.25rem' }}>
-                                                    EU: {sizeEquivalent.eu} | US: {sizeEquivalent.us}
-                                                </span>
-                                            )}
-                                        </div>
+                                        −
                                     </button>
-                                );
-                            })}
-                        </div>
-                        {product.category === 'jeans' && selectedSize && (
-                            <div style={{ 
-                                marginTop: '1rem', 
-                                padding: '0.75rem', 
-                                background: '#f3f4f6', 
-                                borderRadius: '0.5rem',
-                                fontSize: '0.875rem'
-                            }}>
-                                <strong>Taille sélectionnée: {selectedSize}</strong>
-                                {(() => {
-                                    const equivalent = getJeansSizeEquivalent(selectedSize);
-                                    return equivalent ? (
-                                        <div style={{ marginTop: '0.5rem', color: '#4b5563' }}>
-                                            <div>🇪🇺 Europe: {equivalent.eu}</div>
-                                            <div>🇺🇸 USA: {equivalent.us}</div>
-                                            <div>🇬🇧 UK: {equivalent.uk}</div>
-                                            <div>📏 Tour de taille: {equivalent.waist}</div>
-                                        </div>
-                                    ) : null;
-                                })()}
+                                    <span className={styles.quantityValue}>{quantity}</span>
+                                    <button
+                                        className={styles.quantityBtn}
+                                        onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
+                                        disabled={quantity >= maxQuantity}
+                                    >
+                                        +
+                                    </button>
+                                </div>
                             </div>
                         )}
-                    </div>
 
-                    {/* Quantity Selector */}
-                    {selectedSize && (
+                        {/* Tabs */}
                         <div className={styles.section}>
-                            <span className={styles.sectionTitle}>Quantité</span>
-                            <div className={styles.quantitySelector}>
+                            <div className={styles.tabs}>
                                 <button
-                                    className={styles.quantityBtn}
-                                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                    disabled={quantity <= 1}
+                                    className={`${styles.tab} ${activeTab === 'description' ? styles.active : ''}`}
+                                    onClick={() => setActiveTab('description')}
                                 >
-                                    −
+                                    Description
                                 </button>
-                                <span className={styles.quantityValue}>{quantity}</span>
                                 <button
-                                    className={styles.quantityBtn}
-                                    onClick={() => setQuantity(Math.min(maxQuantity, quantity + 1))}
-                                    disabled={quantity >= maxQuantity}
+                                    className={`${styles.tab} ${activeTab === 'features' ? styles.active : ''}`}
+                                    onClick={() => setActiveTab('features')}
                                 >
-                                    +
+                                    Caractéristiques
+                                </button>
+                                <button
+                                    className={`${styles.tab} ${activeTab === 'shipping' ? styles.active : ''}`}
+                                    onClick={() => setActiveTab('shipping')}
+                                >
+                                    Livraison
                                 </button>
                             </div>
-                        </div>
-                    )}
 
-                    {/* Tabs for Description, Features, Shipping */}
-                    <div className={styles.section}>
-                        <div className={styles.tabs}>
+                            <div className={styles.tabContent}>
+                                {activeTab === 'description' && (
+                                    <p className={styles.description}>{product.detailedDescription || product.description}</p>
+                                )}
+                                {activeTab === 'features' && (
+                                    <div className={styles.features}>
+                                        {product.features && product.features.length > 0 ? (
+                                            product.features.map((feature, index) => (
+                                                <div key={`feature-${index}-${feature.name}`} className={styles.feature}>
+                                                    <span className={styles.featureName}>{feature.name}</span>
+                                                    <span className={styles.featureValue}>{feature.value}</span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className={styles.noFeatures}>Aucune caractéristique disponible.</p>
+                                        )}
+                                    </div>
+                                )}
+                                {activeTab === 'shipping' && (
+                                    <div className={styles.description}>
+                                        <p><strong>Livraison Rapide</strong></p>
+                                        <p>Nous livrons dans toute l'Amérique du Nord :</p>
+                                        <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
+                                            <li>🇺🇸 États-Unis : 3-7 jours ouvrables</li>
+                                            <li>🇨🇦 Canada : 4-10 jours ouvrables</li>
+                                            <li>🇲🇽 Mexique : 5-14 jours ouvrables</li>
+                                        </ul>
+                                        <p style={{ marginTop: '1rem' }}>
+                                            <strong>Retours gratuits</strong> sous 30 jours
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className={styles.actionButtons}>
                             <button
-                                className={`${styles.tab} ${activeTab === 'description' ? styles.active : ''}`}
-                                onClick={() => setActiveTab('description')}
+                                className={styles.addToCartBtn}
+                                onClick={handleAddToCart}
+                                disabled={totalStock === 0 || !selectedVariant}
                             >
-                                Description
+                                {totalStock === 0 ? 'Rupture de stock' : !selectedVariant ? 'Sélectionnez une option' : 'Ajouter au Panier'}
                             </button>
                             <button
-                                className={`${styles.tab} ${activeTab === 'features' ? styles.active : ''}`}
-                                onClick={() => setActiveTab('features')}
+                                className={styles.wishlistBtn}
+                                onClick={() => toggleItem(product)}
+                                aria-label={t('addToWishlist')}
                             >
-                                Caractéristiques
+                                <svg 
+                                    width="24" 
+                                    height="24" 
+                                    viewBox="0 0 24 24" 
+                                    fill={isWishlisted ? "currentColor" : "none"} 
+                                    stroke="currentColor" 
+                                    strokeWidth="2"
+                                >
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                </svg>
                             </button>
-                            <button
-                                className={`${styles.tab} ${activeTab === 'shipping' ? styles.active : ''}`}
-                                onClick={() => setActiveTab('shipping')}
+                        </div>
+
+                        {viewerCount !== null && viewerCount > 0 && (
+                            <div className={styles.engagementInfo}>
+                                <span className={styles.engagementText}>
+                                    {viewerCount} {viewerCount === 1 ? 'personne regarde' : 'personnes regardent'} ce produit
+                                </span>
+                            </div>
+                        )}
+
+                        <div className={styles.serviceIcons}>
+                            <button 
+                                onClick={() => setPaymentModalOpen(true)}
+                                className={styles.serviceIcon}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
                             >
-                                Livraison
+                                <span className={styles.icon}>🔒</span>
+                                <span>Paiement Sécurisé</span>
+                            </button>
+                            <button 
+                                onClick={() => setShippingModalOpen(true)}
+                                className={styles.serviceIcon}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
+                            >
+                                <span className={styles.icon}>🚚</span>
+                                <span>Options de Livraison</span>
+                            </button>
+                            <button 
+                                onClick={() => setReturnsModalOpen(true)}
+                                className={styles.serviceIcon}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
+                            >
+                                <span className={styles.icon}>↩️</span>
+                                <span>Retours Gratuits</span>
+                            </button>
+                            <button 
+                                onClick={() => setSizeGuideModalOpen(true)}
+                                className={styles.serviceIcon}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
+                            >
+                                <span className={styles.icon}>📏</span>
+                                <span>Taille & Ajustement</span>
                             </button>
                         </div>
-
-                        <div className={styles.tabContent}>
-                            {activeTab === 'description' && (
-                                <p className={styles.description}>{product.detailedDescription || product.description}</p>
-                            )}
-                            {activeTab === 'features' && (
-                                <div className={styles.features}>
-                                    {product.features && product.features.length > 0 ? (
-                                        product.features.map((feature, index) => (
-                                            <div key={`feature-${index}-${feature.name}`} className={styles.feature}>
-                                                <span className={styles.featureName}>{feature.name}</span>
-                                                <span className={styles.featureValue}>{feature.value}</span>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className={styles.noFeatures}>Aucune caractéristique disponible.</p>
-                                    )}
-                                </div>
-                            )}
-                            {activeTab === 'shipping' && (
-                                <div className={styles.description}>
-                                    <p><strong>Livraison Rapide</strong></p>
-                                    <p>Nous livrons dans toute l'Amérique du Nord :</p>
-                                    <ul style={{ marginLeft: '1.5rem', marginTop: '0.5rem' }}>
-                                        <li>🇺🇸 États-Unis : 3-7 jours ouvrables</li>
-                                        <li>🇨🇦 Canada : 4-10 jours ouvrables</li>
-                                        <li>🇲🇽 Mexique : 5-14 jours ouvrables</li>
-                                    </ul>
-                                    <p style={{ marginTop: '1rem' }}>
-                                        <strong>Retours gratuits</strong> sous 30 jours
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className={styles.actionButtons}>
-                        <button
-                            className={styles.addToCartBtn}
-                            onClick={handleAddToCart}
-                            disabled={totalStock === 0}
-                        >
-                            {totalStock === 0 ? 'Rupture de stock' : 'Ajouter au Panier'}
-                        </button>
-                        <button
-                            className={styles.wishlistBtn}
-                            onClick={() => toggleItem(product)}
-                            aria-label={t('addToWishlist')}
-                        >
-                            <svg 
-                                width="24" 
-                                height="24" 
-                                viewBox="0 0 24 24" 
-                                fill={isWishlisted ? "currentColor" : "none"} 
-                                stroke="currentColor" 
-                                strokeWidth="2"
-                            >
-                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                            </svg>
-                        </button>
-                    </div>
-
-                    {viewerCount !== null && viewerCount > 0 && (
-                        <div className={styles.engagementInfo}>
-                            <span className={styles.engagementText}>
-                                {viewerCount} {viewerCount === 1 ? 'personne regarde' : 'personnes regardent'} ce produit
-                            </span>
-                        </div>
-                    )}
-
-                    <div className={styles.serviceIcons}>
-                        <button 
-                            onClick={() => setPaymentModalOpen(true)}
-                            className={styles.serviceIcon}
-                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
-                        >
-                            <span className={styles.icon}>🔒</span>
-                            <span>Paiement Sécurisé</span>
-                        </button>
-                        <button 
-                            onClick={() => setShippingModalOpen(true)}
-                            className={styles.serviceIcon}
-                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
-                        >
-                            <span className={styles.icon}>🚚</span>
-                            <span>Options de Livraison</span>
-                        </button>
-                        <button 
-                            onClick={() => setReturnsModalOpen(true)}
-                            className={styles.serviceIcon}
-                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
-                        >
-                            <span className={styles.icon}>↩️</span>
-                            <span>Retours Gratuits</span>
-                        </button>
-                        <button 
-                            onClick={() => setSizeGuideModalOpen(true)}
-                            className={styles.serviceIcon}
-                            style={{ border: 'none', background: 'none', cursor: 'pointer', width: '100%' }}
-                        >
-                            <span className={styles.icon}>📏</span>
-                            <span>Taille & Ajustement</span>
-                        </button>
-                    </div>
                     </div>
                 </div>
             </div>

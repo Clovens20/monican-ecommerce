@@ -78,6 +78,16 @@
     color: #991b1b;
 }
 
+.status-contacted {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.status-completed {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
 .actionBtn {
     padding: 0.25rem 0.75rem;
     border: 1px solid var(--color-gray-200);

@@ -10,6 +10,7 @@ interface ProductImage {
     alt: string;
     isPrimary: boolean;
     type?: 'image' | 'video'; // Nouveau: type de média
+    color?: string; // Couleur du produit pour afficher l'image correspondante
 }
 
 interface ProductVariant {
@@ -128,7 +129,10 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                 detailedDescription: initialData.detailedDescription || '',
                 brand: initialData.brand || '',
                 model: initialData.model || '',
-                images: initialData.images || [],
+                images: (initialData.images || []).map((img: any, i: number) => ({
+                    ...img,
+                    id: img.id || `img-${i}`,
+                })),
                 variants: initialData.variants || [],
                 colorSizeStocks: colorSizeStocks,
                 features: initialData.features || [],
@@ -317,6 +321,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
 
             if (data.success && data.urls) {
                 const newImages: ProductImage[] = data.urls.map((url: string, index: number) => ({
+                    id: `img-${Date.now()}-${index}`,
                     url,
                     alt: formData.name || `Image ${index + 1}`,
                     isPrimary: formData.images.length === 0 && index === 0,
@@ -392,6 +397,13 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
             ...img,
             isPrimary: i === index,
         }));
+        setFormData({ ...formData, images: newImages });
+    };
+
+    const updateImageColor = (index: number, color: string) => {
+        const newImages = formData.images.map((img, i) =>
+            i === index ? { ...img, color: color || undefined } : img
+        );
         setFormData({ ...formData, images: newImages });
     };
 
@@ -652,6 +664,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                     url: img.url,
                     alt: img.alt,
                     isPrimary: img.isPrimary,
+                    color: img.color || undefined,
                 })),
                 variants: formData.variants, // Garder pour rétrocompatibilité
                 colorSizeStocks: formData.colorSizeStocks, // Nouvelle structure
@@ -995,6 +1008,7 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                         <p className={styles.uploadHint}>
                             Formats acceptés: JPG, PNG, WEBP. Taille max: 5MB par image. 
                             Vous pouvez glisser-déposer plusieurs images à la fois.
+                            Associez chaque image à une couleur pour que le client voie la bonne image quand il sélectionne une couleur.
                         </p>
                     </div>
 
@@ -1012,6 +1026,21 @@ export default function ProductForm({ initialData }: { initialData?: any }) {
                                     <div className={styles.imageOrder}>{index + 1}</div>
                                     <img src={image.url} alt={image.alt} className={styles.imagePreview} />
                                     <div className={styles.imageActions}>
+                                        {formData.colors.length > 0 && (
+                                            <div className={styles.imageColorSelect}>
+                                                <label>Couleur :</label>
+                                                <select
+                                                    value={image.color || ''}
+                                                    onChange={(e) => updateImageColor(index, e.target.value)}
+                                                    className={styles.colorSelect}
+                                                >
+                                                    <option value="">— Non définie —</option>
+                                                    {formData.colors.map((c) => (
+                                                        <option key={c} value={c}>{c}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
                                         {image.isPrimary && (
                                             <span className={styles.primaryBadge}>⭐ Principale</span>
                                         )}

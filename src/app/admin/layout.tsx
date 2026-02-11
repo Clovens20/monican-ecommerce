@@ -208,6 +208,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Link>
 
             <Link 
+              href="/admin/wholesale" 
+              className={`${styles.navItem} ${isActive('/admin/wholesale') ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>🛒</span>
+              <span>Vente en gros</span>
+            </Link>
+
+            <Link 
               href="/admin/users" 
               className={`${styles.navItem} ${isActive('/admin/users') ? styles.active : ''}`}
             >

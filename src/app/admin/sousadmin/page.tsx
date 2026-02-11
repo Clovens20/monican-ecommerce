@@ -61,6 +61,9 @@ export default function SubAdminPage() {
     const [error, setError] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'processing'>('all');
+    const [activeTab, setActiveTab] = useState<'orders' | 'wholesale'>('orders');
+    const [wholesaleOrders, setWholesaleOrders] = useState<any[]>([]);
+    const [wholesaleLoading, setWholesaleLoading] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -123,11 +126,32 @@ export default function SubAdminPage() {
         }
     };
 
+    const fetchWholesale = async () => {
+        setWholesaleLoading(true);
+        try {
+            const response = await fetch('/api/admin/subadmin/wholesale');
+            const data = await response.json();
+            if (data.success) {
+                setWholesaleOrders(data.orders);
+            }
+        } catch (err) {
+            console.error('Error fetching wholesale:', err);
+        } finally {
+            setWholesaleLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (isLoggedIn) {
             fetchOrders();
         }
     }, [filterStatus, isLoggedIn]);
+
+    useEffect(() => {
+        if (isLoggedIn && activeTab === 'wholesale') {
+            fetchWholesale();
+        }
+    }, [isLoggedIn, activeTab]);
 
     if (!isLoggedIn) {
         return (
@@ -212,7 +236,40 @@ export default function SubAdminPage() {
                 </div>
             </header>
 
-            {/* Stats Cards */}
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                <button
+                    onClick={() => setActiveTab('orders')}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '0.5rem',
+                        background: activeTab === 'orders' ? '#1f2937' : 'white',
+                        color: activeTab === 'orders' ? 'white' : '#374151',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                    }}
+                >
+                    📦 Commandes
+                </button>
+                <button
+                    onClick={() => setActiveTab('wholesale')}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '0.5rem',
+                        background: activeTab === 'wholesale' ? '#1f2937' : 'white',
+                        color: activeTab === 'wholesale' ? 'white' : '#374151',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                    }}
+                >
+                    🛒 Vente en gros
+                </button>
+            </div>
+
+            {/* Stats Cards - only for orders tab */}
+            {activeTab === 'orders' && (
             <div className={styles.statsGrid}>
                 <div className={styles.statCard}>
                     <div className={styles.statLabel}>En Attente</div>
@@ -233,11 +290,15 @@ export default function SubAdminPage() {
                     </div>
                 </div>
             </div>
+            )}
 
             <main className={styles.content}>
                 {/* Filters and Title */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: 0 }}>Commandes à Traiter</h1>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: 0 }}>
+                        {activeTab === 'orders' ? 'Commandes à Traiter' : 'Demandes Vente en Gros'}
+                    </h1>
+                    {activeTab === 'orders' && (
                     <div className={styles.filters}>
                         <button
                             onClick={() => setFilterStatus('all')}
@@ -258,9 +319,63 @@ export default function SubAdminPage() {
                             En Traitement
                         </button>
                     </div>
+                    )}
                 </div>
 
+                {/* Wholesale Table */}
+                {activeTab === 'wholesale' && (
+                    <div className={styles.ordersTable}>
+                        <table className={styles.table}>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Société</th>
+                                    <th>Contact</th>
+                                    <th>Articles</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {wholesaleLoading ? (
+                                    <tr>
+                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>⏳ Chargement...</td>
+                                    </tr>
+                                ) : wholesaleOrders.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                                            Aucune demande vente en gros.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    wholesaleOrders.map((order: any) => (
+                                        <tr key={order.id}>
+                                            <td>{new Date(order.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
+                                            <td style={{ fontWeight: 500 }}>{order.company_name}</td>
+                                            <td>
+                                                <div>{order.contact_name}</div>
+                                                <a href={`mailto:${order.email}`} style={{ fontSize: '0.85rem', color: '#3b82f6' }}>{order.email}</a>
+                                            </td>
+                                            <td>{order.total_quantity} art.</td>
+                                            <td style={{ fontWeight: 600 }}>{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(order.total)}</td>
+                                            <td>
+                                                <a
+                                                    href={`mailto:${order.email}?subject=Réponse à votre demande wholesale - ${order.company_name}`}
+                                                    style={{ padding: '0.25rem 0.75rem', background: '#10b981', color: 'white', borderRadius: '0.375rem', textDecoration: 'none', fontSize: '0.85rem' }}
+                                                >
+                                                    ✉️ Répondre
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
                 {/* Orders Table */}
+                {activeTab === 'orders' && (
                 <div className={styles.ordersTable}>
                     <table className={styles.table}>
                         <thead>
@@ -413,6 +528,7 @@ export default function SubAdminPage() {
                         </tbody>
                     </table>
                 </div>
+                )}
             </main>
 
             {/* Order Details Modal */}

@@ -1878,3 +1878,97 @@ export async function sendNewProductNotification(productData: {
     messageId: `sent-to-${successCount}-subscribers`,
   };
 }
+
+/**
+ * Envoie une notification de demande wholesale à l'admin
+ */
+export async function sendWholesaleNotificationToAdmin(data: {
+    orderId: string;
+    companyName: string;
+    contactName: string;
+    email: string;
+    phone: string;
+    address: string;
+    items: Array<{ productName: string; size: string; quantity: number; unitPrice: number; totalPrice: number }>;
+    totalQuantity: number;
+    subtotal: number;
+    discount: number;
+    discountAmount: number;
+    total: number;
+}): Promise<EmailResult> {
+    const adminEmail = process.env.EMAIL_SUPPORT
+        || (await getContactInfoServer('fr')).email
+        || 'support@monican.shop';
+
+    const formatPrice = (amount: number) =>
+        new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
+
+    const itemsHtml = data.items
+        .map(
+            (item) =>
+                `<tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.productName}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${item.size}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: center;">${item.quantity}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatPrice(item.unitPrice)}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; text-align: right;">${formatPrice(item.totalPrice)}</td>
+                </tr>`
+        )
+        .join('');
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouvelle demande wholesale - Monican</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #1f2937 0%, #374151 100%); padding: 24px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 22px;">🛒 Nouvelle demande vente en gros</h1>
+    </div>
+    
+    <div style="background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+        <h2 style="color: #1f2937; margin-top: 0;">Informations société</h2>
+        <p><strong>Société :</strong> ${data.companyName}</p>
+        <p><strong>Contact :</strong> ${data.contactName}</p>
+        <p><strong>Email :</strong> <a href="mailto:${data.email}">${data.email}</a></p>
+        <p><strong>Téléphone :</strong> <a href="tel:${data.phone}">${data.phone}</a></p>
+        <p><strong>Adresse :</strong> ${data.address}</p>
+
+        <h2 style="color: #1f2937; margin-top: 24px;">Articles commandés</h2>
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+            <thead>
+                <tr style="background: #f3f4f6;">
+                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Produit</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e5e7eb;">Taille</th>
+                    <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e5e7eb;">Qté</th>
+                    <th style="padding: 10px; text-align: right; border-bottom: 2px solid #e5e7eb;">Prix unit.</th>
+                    <th style="padding: 10px; text-align: right; border-bottom: 2px solid #e5e7eb;">Total</th>
+                </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+        </table>
+
+        <div style="margin-top: 20px; padding: 16px; background: #dbeafe; border-radius: 8px; border-left: 4px solid #3b82f6;">
+            <p style="margin: 4px 0;"><strong>Sous-total :</strong> ${formatPrice(data.subtotal)}</p>
+            <p style="margin: 4px 0;"><strong>Réduction (${data.discount}%) :</strong> -${formatPrice(data.discountAmount)}</p>
+            <p style="margin: 4px 0; font-size: 18px;"><strong>Total :</strong> ${formatPrice(data.total)}</p>
+        </div>
+
+        <p style="margin-top: 20px; font-size: 12px; color: #6b7280;">
+            ID commande : ${data.orderId}<br>
+            Consultez l'admin pour traiter cette demande.
+        </p>
+    </div>
+</body>
+</html>
+    `.trim();
+
+    return sendEmail({
+        to: adminEmail,
+        subject: `🛒 Nouvelle demande wholesale - ${data.companyName}`,
+        html,
+    });
+}

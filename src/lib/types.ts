@@ -8,6 +8,7 @@ export interface ProductImage {
     alt: string;
     isPrimary: boolean;
     type?: 'image' | 'video'; // Nouveau: type de média
+    color?: string; // Couleur du produit pour afficher l'image correspondante
 }
 
 export interface ProductVariant {
@@ -40,6 +41,8 @@ export interface Product {
     category: ProductCategory;
     images: ProductImage[];
     variants: ProductVariant[];
+    colorSizeStocks?: ColorSizeStock[];
+    colors?: string[];
     description: string;
     detailedDescription: string;
     features: ProductFeature[];

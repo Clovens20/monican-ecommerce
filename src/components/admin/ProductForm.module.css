@@ -185,6 +185,28 @@
   background: #f3f4f6;
 }
 
+.imageColorSelect {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.imageColorSelect label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.imageColorSelect .colorSelect {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+}
+
 .dangerBtn {
   color: #dc2626;
   border-color: #fca5a5;
