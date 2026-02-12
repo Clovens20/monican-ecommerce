@@ -97,7 +97,21 @@ export default function CartPage() {
                     {items.map((item) => (
                         <div key={item.cartId} className={styles.item}>
                             <div className={styles.itemImage}>
-                                {/* Placeholder image */}
+                                {item.images && item.images.length > 0 ? (
+                                    <Image
+                                        src={
+                                            typeof item.images[0] === 'string'
+                                                ? item.images[0]
+                                                : (item.images[0] as { url?: string }).url || '/logo.png'
+                                        }
+                                        alt={item.name}
+                                        width={100}
+                                        height={100}
+                                        className={styles.itemImageImg}
+                                    />
+                                ) : (
+                                    <div className={styles.itemImagePlaceholder}>📦</div>
+                                )}
                             </div>
                             <div className={styles.itemInfo}>
                                 <h3 className={styles.itemName}>{item.name}</h3>
