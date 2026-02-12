@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import OrderDetails from '@/components/subadmin/OrderDetails';
+import WholesaleProcessModal from '@/components/admin/WholesaleProcessModal';
+import WholesaleReplyModal from '@/components/admin/WholesaleReplyModal';
 import { Order, ShippingAddress, OrderItem } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -64,6 +66,19 @@ export default function SubAdminPage() {
     const [activeTab, setActiveTab] = useState<'orders' | 'wholesale'>('orders');
     const [wholesaleOrders, setWholesaleOrders] = useState<any[]>([]);
     const [wholesaleLoading, setWholesaleLoading] = useState(false);
+    const [wholesaleProcessModalOrderId, setWholesaleProcessModalOrderId] = useState<string | null>(null);
+    const [wholesaleReplyModalOrder, setWholesaleReplyModalOrder] = useState<any | null>(null);
+
+    const getWholesaleStatusText = (status: string) => {
+        const map: Record<string, string> = {
+            pending: 'En attente',
+            contacted: 'Contacté',
+            processing: 'En cours',
+            completed: 'Traité',
+            cancelled: 'Annulé',
+        };
+        return map[status] || status;
+    };
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -333,17 +348,18 @@ export default function SubAdminPage() {
                                     <th>Contact</th>
                                     <th>Articles</th>
                                     <th>Total</th>
+                                    <th>Statut</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {wholesaleLoading ? (
                                     <tr>
-                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem' }}>⏳ Chargement...</td>
+                                        <td colSpan={7} style={{ textAlign: 'center', padding: '2rem' }}>⏳ Chargement...</td>
                                     </tr>
                                 ) : wholesaleOrders.length === 0 ? (
                                     <tr>
-                                        <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                                        <td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
                                             Aucune demande vente en gros.
                                         </td>
                                     </tr>
@@ -359,12 +375,47 @@ export default function SubAdminPage() {
                                             <td>{order.total_quantity} art.</td>
                                             <td style={{ fontWeight: 600 }}>{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(order.total)}</td>
                                             <td>
-                                                <a
-                                                    href={`mailto:${order.email}?subject=Réponse à votre demande wholesale - ${order.company_name}`}
-                                                    style={{ padding: '0.25rem 0.75rem', background: '#10b981', color: 'white', borderRadius: '0.375rem', textDecoration: 'none', fontSize: '0.85rem' }}
+                                                <span
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        padding: '0.25rem 0.5rem',
+                                                        borderRadius: '9999px',
+                                                        fontSize: '0.8rem',
+                                                        fontWeight: 500,
+                                                        background: order.status === 'completed' ? '#d1fae5' : order.status === 'processing' ? '#dbeafe' : order.status === 'contacted' ? '#e0e7ff' : '#fef3c7',
+                                                        color: order.status === 'completed' ? '#065f46' : order.status === 'processing' ? '#1e40af' : order.status === 'contacted' ? '#3730a3' : '#92400e',
+                                                    }}
                                                 >
-                                                    ✉️ Répondre
-                                                </a>
+                                                    {getWholesaleStatusText(order.status)}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setWholesaleReplyModalOrder(order)}
+                                                        style={{ padding: '0.25rem 0.75rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '0.375rem', fontSize: '0.85rem', cursor: 'pointer' }}
+                                                    >
+                                                        ✉️ Répondre
+                                                    </button>
+                                                    {order.status !== 'completed' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setWholesaleProcessModalOrderId(order.id)}
+                                                            style={{
+                                                                padding: '0.25rem 0.75rem',
+                                                                background: '#059669',
+                                                                color: 'white',
+                                                                border: 'none',
+                                                                borderRadius: '0.375rem',
+                                                                fontSize: '0.85rem',
+                                                                cursor: 'pointer',
+                                                            }}
+                                                        >
+                                                            ✓ Traiter
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -611,6 +662,35 @@ export default function SubAdminPage() {
                             alert('Erreur lors de la mise à jour du statut. Veuillez réessayer.');
                         }
                     }}
+                />
+            )}
+
+            <WholesaleProcessModal
+                isOpen={!!wholesaleProcessModalOrderId}
+                onClose={() => setWholesaleProcessModalOrderId(null)}
+                orderId={wholesaleProcessModalOrderId || ''}
+                apiBase="/api/admin/subadmin/wholesale"
+                onSuccess={() => {
+                    if (wholesaleProcessModalOrderId) {
+                        setWholesaleOrders((prev: any[]) =>
+                            prev.map((o: any) =>
+                                o.id === wholesaleProcessModalOrderId ? { ...o, status: 'completed' } : o
+                            )
+                        );
+                        setWholesaleProcessModalOrderId(null);
+                    }
+                }}
+            />
+
+            {wholesaleReplyModalOrder && (
+                <WholesaleReplyModal
+                    isOpen={!!wholesaleReplyModalOrder}
+                    onClose={() => setWholesaleReplyModalOrder(null)}
+                    orderId={wholesaleReplyModalOrder.id}
+                    recipientEmail={wholesaleReplyModalOrder.email}
+                    contactName={wholesaleReplyModalOrder.contact_name}
+                    companyName={wholesaleReplyModalOrder.company_name}
+                    apiBase="/api/admin/subadmin/wholesale"
                 />
             )}
         </div>

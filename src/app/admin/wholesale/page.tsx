@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import styles from '../orders/page.module.css';
+import WholesaleProcessModal from '@/components/admin/WholesaleProcessModal';
+import WholesaleReplyModal from '@/components/admin/WholesaleReplyModal';
 
 interface WholesaleItem {
     productName: string;
@@ -38,26 +40,28 @@ export default function WholesaleAdminPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [processModalOrderId, setProcessModalOrderId] = useState<string | null>(null);
+    const [replyModalOrder, setReplyModalOrder] = useState<WholesaleOrder | null>(null);
+
+    const fetchOrders = async () => {
+        try {
+            const response = await fetch('/api/admin/wholesale');
+            const data = await response.json();
+
+            if (data.success) {
+                setOrders(data.orders);
+            } else {
+                setError(data.error || 'Erreur lors du chargement');
+            }
+        } catch (err) {
+            console.error('Error fetching wholesale orders:', err);
+            setError('Erreur de connexion au serveur');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        async function fetchOrders() {
-            try {
-                const response = await fetch('/api/admin/wholesale');
-                const data = await response.json();
-
-                if (data.success) {
-                    setOrders(data.orders);
-                } else {
-                    setError(data.error || 'Erreur lors du chargement');
-                }
-            } catch (err) {
-                console.error('Error fetching wholesale orders:', err);
-                setError('Erreur de connexion au serveur');
-            } finally {
-                setLoading(false);
-            }
-        }
-
         fetchOrders();
     }, []);
 
@@ -180,21 +184,40 @@ export default function WholesaleAdminPage() {
                                             </span>
                                         </td>
                                         <td className={styles.td}>
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setExpandedId(expandedId === order.id ? null : order.id)
-                                                }
-                                                style={{
-                                                    background: 'none',
-                                                    border: 'none',
-                                                    color: '#3b82f6',
-                                                    cursor: 'pointer',
-                                                    fontSize: '0.9rem',
-                                                }}
-                                            >
-                                                {expandedId === order.id ? 'Masquer' : 'Détails'}
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setExpandedId(expandedId === order.id ? null : order.id)
+                                                    }
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: '#3b82f6',
+                                                        cursor: 'pointer',
+                                                        fontSize: '0.9rem',
+                                                    }}
+                                                >
+                                                    {expandedId === order.id ? 'Masquer' : 'Détails'}
+                                                </button>
+                                                {order.status !== 'completed' && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setProcessModalOrderId(order.id)}
+                                                        style={{
+                                                            padding: '0.25rem 0.5rem',
+                                                            background: '#059669',
+                                                            color: 'white',
+                                                            border: 'none',
+                                                            borderRadius: '4px',
+                                                            fontSize: '0.8rem',
+                                                            cursor: 'pointer',
+                                                        }}
+                                                    >
+                                                        ✓ Traiter
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                     {expandedId === order.id && (
@@ -302,21 +325,40 @@ export default function WholesaleAdminPage() {
                                                             Total : {formatPrice(order.total)}
                                                         </span>
                                                     </div>
-                                                    <div style={{ marginTop: '1rem' }}>
-                                                        <a
-                                                            href={`mailto:${order.email}?subject=Réponse à votre demande wholesale - ${order.company_name}`}
+                                                    <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setReplyModalOrder(order)}
                                                             style={{
                                                                 display: 'inline-block',
                                                                 padding: '0.5rem 1rem',
                                                                 background: '#10b981',
                                                                 color: 'white',
+                                                                border: 'none',
                                                                 borderRadius: '6px',
-                                                                textDecoration: 'none',
                                                                 fontSize: '0.9rem',
+                                                                cursor: 'pointer',
                                                             }}
                                                         >
                                                             ✉️ Répondre par email
-                                                        </a>
+                                                        </button>
+                                                        {order.status !== 'completed' && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setProcessModalOrderId(order.id)}
+                                                                style={{
+                                                                    padding: '0.5rem 1rem',
+                                                                    background: '#059669',
+                                                                    color: 'white',
+                                                                    border: 'none',
+                                                                    borderRadius: '6px',
+                                                                    fontSize: '0.9rem',
+                                                                    cursor: 'pointer',
+                                                                }}
+                                                            >
+                                                                ✓ Traiter la commande
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
@@ -327,6 +369,31 @@ export default function WholesaleAdminPage() {
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            <WholesaleProcessModal
+                isOpen={!!processModalOrderId}
+                onClose={() => setProcessModalOrderId(null)}
+                orderId={processModalOrderId || ''}
+                apiBase="/api/admin/wholesale"
+                onSuccess={() => {
+                    if (processModalOrderId) {
+                        setOrders(prev => prev.map(o => o.id === processModalOrderId ? { ...o, status: 'completed' } : o));
+                        setProcessModalOrderId(null);
+                    }
+                }}
+            />
+
+            {replyModalOrder && (
+                <WholesaleReplyModal
+                    isOpen={!!replyModalOrder}
+                    onClose={() => setReplyModalOrder(null)}
+                    orderId={replyModalOrder.id}
+                    recipientEmail={replyModalOrder.email}
+                    contactName={replyModalOrder.contact_name}
+                    companyName={replyModalOrder.company_name}
+                    apiBase="/api/admin/wholesale"
+                />
             )}
         </div>
     );

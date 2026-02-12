@@ -15,6 +15,8 @@ export interface EmailOptions {
     data?: Record<string, any>;
     html?: string;
     text?: string;
+    /** Pour les emails transactionnels (réponse client, confirmation) - améliore la délivrabilité */
+    transactional?: boolean;
 }
 
 export interface EmailResult {
@@ -1288,6 +1290,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
                 html: html || '',
                 text: text || '',
                 from: `${emailFromName} <${emailFrom}>`,
+                transactional: options.transactional,
             });
         } else if (emailService === 'sendgrid') {
             return await sendEmailSendGrid({
@@ -1317,7 +1320,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 /**
  * Envoie un email via Resend
  */
-async function sendEmailResend(options: EmailOptions & { html: string; text: string; from: string }): Promise<EmailResult> {
+async function sendEmailResend(options: EmailOptions & { html: string; text: string; from: string; transactional?: boolean }): Promise<EmailResult> {
     try {
         console.log('📧 [sendEmailResend] Tentative d\'envoi à:', options.to);
         const resendApiKey = process.env.RESEND_API_KEY;
@@ -1351,15 +1354,16 @@ async function sendEmailResend(options: EmailOptions & { html: string; text: str
             console.warn('⚠️ Impossible de récupérer l\'email de contact pour Reply-To, utilisation de la valeur par défaut');
         }
         
+        const isTransactional = options.transactional === true;
         const payload: any = {
             from: options.from,
             to: options.to,
             subject: options.subject,
             html: options.html,
             reply_to: replyTo, // ✅ Ajouter Reply-To pour améliorer la délivrabilité
-            // ✅ AMÉLIORATION : Tags pour améliorer la délivrabilité et le tracking
+            // ✅ Tags adaptés : transactionnel vs newsletter pour meilleure délivrabilité
             tags: [
-                { name: 'category', value: 'newsletter' },
+                { name: 'category', value: isTransactional ? 'transactional' : 'newsletter' },
                 { name: 'source', value: 'monican-ecommerce' },
             ],
         };
@@ -1369,12 +1373,14 @@ async function sendEmailResend(options: EmailOptions & { html: string; text: str
             payload.text = options.text;
         }
         
-        // ✅ AMÉLIORATION : Headers personnalisés pour éviter le spam
+        // ✅ Headers : pas de List-Unsubscribe pour les emails transactionnels (réponse 1:1)
         payload.headers = {
-            'X-Entity-Ref-ID': `newsletter-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            'List-Unsubscribe': `<${process.env.NEXT_PUBLIC_SITE_URL || 'https://monican.shop'}/unsubscribe>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            'X-Entity-Ref-ID': `${isTransactional ? 'transactional' : 'newsletter'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         };
+        if (!isTransactional) {
+            payload.headers['List-Unsubscribe'] = `<${process.env.NEXT_PUBLIC_SITE_URL || 'https://monican.shop'}/unsubscribe>`;
+            payload.headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
+        }
         
         console.log('📧 [sendEmailResend] Payload final:', {
             from: payload.from,
@@ -1970,5 +1976,66 @@ export async function sendWholesaleNotificationToAdmin(data: {
         to: adminEmail,
         subject: `🛒 Nouvelle demande wholesale - ${data.companyName}`,
         html,
+    });
+}
+
+/**
+ * Envoie la réponse de l'admin au demandant (vente en gros)
+ * Le message de l'admin arrive dans la boîte mail du demandant
+ */
+export async function sendWholesaleReplyToRequester(data: {
+    toEmail: string;
+    contactName: string;
+    companyName: string;
+    subject?: string;
+    message: string;
+}): Promise<EmailResult> {
+    const subject = data.subject || `Réponse à votre demande vente en gros - ${data.companyName}`;
+    const escapedMessage = data.message
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    const messageHtml = escapedMessage.replace(/\n/g, '<br>');
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${subject}</title>
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 24px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 20px;">Monican - Réponse à votre demande</h1>
+    </div>
+    
+    <div style="background: #f9fafb; padding: 24px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 10px 10px;">
+        <p>Bonjour ${data.contactName},</p>
+        <p>Nous avons bien reçu votre demande de vente en gros pour <strong>${data.companyName}</strong>.</p>
+        
+        <div style="margin: 20px 0; padding: 16px; background: white; border-radius: 8px; border-left: 4px solid #10b981;">
+            <p style="margin: 0; white-space: pre-wrap;">${messageHtml}</p>
+        </div>
+
+        <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">
+            Cordialement,<br>
+            L'équipe Monican
+        </p>
+    </div>
+</body>
+</html>
+    `.trim();
+
+    const text = `Bonjour ${data.contactName},\n\nNous avons bien reçu votre demande de vente en gros pour ${data.companyName}.\n\n${data.message}\n\nCordialement,\nL'équipe Monican`;
+
+    return sendEmail({
+        to: data.toEmail,
+        subject,
+        html,
+        text,
+        transactional: true, // Réponse 1:1 au client = email transactionnel
     });
 }

@@ -66,7 +66,7 @@ const CATEGORIES_WITHOUT_SIZES = ['accessoires'];
 
 // Tailles prédéfinies
 const CLOTHING_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-const SHOES_SIZES = ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+const SHOES_SIZES = ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46'];
 const JEANS_SIZES = ['28', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '46', '48'];
 
 export default function ProductForm({ initialData }: { initialData?: any }) {

@@ -70,6 +70,7 @@ export default function SizeGuideModal({ isOpen, onClose, productCategory }: Siz
                 { size: '43', us: '10', uk: '8', cm: '26.5 cm' },
                 { size: '44', us: '11', uk: '9', cm: '27.0 cm' },
                 { size: '45', us: '11.5', uk: '9.5', cm: '27.5 cm' },
+                { size: '46', us: '12', uk: '11', cm: '28.0 cm' },
             ]
         },
         accessories: {
